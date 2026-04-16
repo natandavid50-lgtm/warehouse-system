@@ -4,16 +4,15 @@ import pandas as pd
 from datetime import datetime
 from streamlit_calendar import calendar
 
-# הגדרות שפה וטקסטים למניעת SyntaxError
+# הגדרות שפה וטקסטים - מניעת שגיאות סינטקס
 TITLE = "מערכת ניהול מחסן"
 ROLE_LABEL = "בחר תפקיד:"
 NAV_LABEL = "תפריט ניווט:"
 SUCCESS_MSG = "המשימה נוספה בהצלחה"
-CLEAR_HISTORY_MSG = "היסטוריית המשימות נוקתה"
 
 st.set_page_config(page_title=TITLE, layout="wide")
 
-# חיבור לגיליון
+# חיבור לנתונים
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
@@ -21,7 +20,7 @@ def load_data():
         data = conn.read(ttl="0")
         if data is None or data.empty:
             return pd.DataFrame(columns=["ID", "Description", "Warehouse_Done", "Final_Approval", "Date", "Recurring", "User"])
-        # ניקוי עמודות זבל ושורות ריקות
+        # ניקוי עמודות ושורות ריקות
         data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
         data = data.dropna(subset=["ID", "Description"], how="all")
         return data
@@ -31,19 +30,20 @@ def load_data():
 
 df = load_data()
 
-# וידוא עמודות קריטיות למניעת KeyError
+# וידוא עמודות למניעת KeyError
 for col in ["ID", "Final_Approval", "Warehouse_Done", "Date", "Description"]:
     if col not in df.columns:
         df[col] = None
 
-# --- תפריט צד (הדשבורד שחזר) ---
+# --- תפריט צד (Sidebar) ---
 st.sidebar.title(TITLE)
 roles = ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"]
 user_role = st.sidebar.selectbox(ROLE_LABEL, roles)
 st.sidebar.divider()
 
+# הסרת המילה "מעוצב" מהאפשרויות
 opt1, opt2, opt3, opt4, opt5, opt6, opt7 = (
-    "📅 לוח שנה מעוצב", "➕ הוספת משימה", "🗑️ ביטול משימה", 
+    "📅 לוח שנה", "➕ הוספת משימה", "🗑️ ביטול משימה", 
     "📦 ביצוע (מחסן)", "✅ אישור סופי", "📊 דוח סיכום", "🧹 ניקוי היסטוריה"
 )
 
@@ -56,15 +56,15 @@ else:
 
 choice = st.sidebar.radio(NAV_LABEL, menu_options)
 
-# --- לוגיקת דפים ---
-
+# --- דף לוח שנה ---
 if choice == opt1:
-    st.header(opt1)
+    st.header(opt1) # כותרת נקייה: "לוח שנה"
     cal_events = []
     for i, r in df.iterrows():
         if pd.notnull(r.get("Date")) and pd.notnull(r.get("ID")):
-            # צבעים: ירוק למאושר, כחול לביצוע
+            # הגדרת צבעים לפי סטטוס
             event_color = "#28a745" if r.get("Final_Approval") == "כן" else "#007bff"
+            # מניעת שגיאת טיפוס בכותרת
             display_title = f"#{int(r['ID'])} {str(r['Description'])[:20]}"
             cal_events.append({
                 "title": display_title,
@@ -82,6 +82,7 @@ if choice == opt1:
     }
     calendar(events=cal_events, options=calendar_options, key='main_cal')
 
+# --- שאר דפי המערכת ---
 elif choice == opt2:
     st.header(opt2)
     with st.form("add_form"):
@@ -99,7 +100,6 @@ elif choice == opt2:
 
 elif choice == opt6:
     st.header(opt6)
-    # תצוגת טבלה נקייה
     st.dataframe(df.dropna(subset=["ID"]), use_container_width=True)
 
-# (שאר הדפים - ביצוע, אישור וניקוי - נשארים באותה מתכונת של המעבר בין ה-Dataframe)
+# המשך לוגיקת שאר הכפתורים...
