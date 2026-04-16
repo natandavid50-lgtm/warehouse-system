@@ -6,13 +6,14 @@ from streamlit_calendar import calendar
 
 st.set_page_config(page_title="מערכת ניהול מחסן", layout="wide")
 
-# חיבור ל-Google Sheets
+# חיבור לגיליון
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
     data = conn.read(ttl="0")
-    data = data.dropna(how="all")
-    # ניקוי עמודות מיותרות
+    # הסרת שורות ריקות לחלוטין כדי למנוע כפילויות במפתחות (Duplicate Keys)
+    data = data.dropna(subset=["ID", "Description"], how="all")
+    # ניקוי עמודות זבל
     data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
     return data
 
@@ -22,105 +23,70 @@ except Exception as e:
     st.error(f"שגיאה בטעינה: {e}")
     st.stop()
 
-# --- תפריט צדי (Radio - רשימה פתוחה) ---
-st.sidebar.title("ניהול מערכת")
-user_type = st.sidebar.selectbox("בחר תפקיד:", ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"])
+# --- תפריט ניווט רשימה פתוחה ---
+st.sidebar.title("תפריט ניהול")
+user_role = st.sidebar.selectbox("תפקיד:", ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"])
 st.sidebar.divider()
 
-if user_type == "מנהל WMS":
-    menu = ["📅 לוח שנה", "➕ הוספת משימה", "🗑️ ביטול משימה", "📦 ביצוע (מחסן)", "✅ אישור סופי", "📊 דוח סיכום"]
-elif user_type == "צוות מחסן":
-    menu = ["📦 ביצוע (מחסן)", "📅 לוח שנה"]
+if user_role == "מנהל WMS":
+    options = ["📅 לוח שנה", "➕ הוספת משימה", "🗑️ ביטול משימה", "📦 ביצוע (מחסן)", "✅ אישור סופי", "📊 דוח סיכום"]
+elif user_role == "צוות מחסן":
+    options = ["📦 ביצוע (מחסן)", "📅 לוח שנה"]
 else:
-    menu = ["📊 דוח סיכום", "📅 לוח שנה"]
+    options = ["📊 דוח סיכום", "📅 לוח שנה"]
 
-choice = st.sidebar.radio("ניווט:", menu)
+choice = st.sidebar.radio("ניווט מהיר:", options)
 
-# --- דף לוח שנה ---
+# --- לוח שנה מוקטן עם שמות ימים בעברית ---
 if choice == "📅 לוח שנה":
     st.header("📅 לוח משימות")
-    events = []
-    if not df.empty:
-        for _, row in df.iterrows():
-            d = str(row.get("Date", ""))
-            if d and d != "None":
-                color = "#28a745" if row.get("Final_Approval") == "כן" else "#ffc107"
-                events.append({
-                    "title": f"#{row.get('ID','')} {str(row.get('Description',''))[:15]}",
-                    "start": d,
-                    "color": color
-                })
+    cal_events = []
+    for _, r in df.iterrows():
+        if pd.notnull(r.get("Date")):
+            c = "#28a745" if r.get("Final_Approval") == "כן" else "#ffc107"
+            cal_events.append({
+                "title": f"#{int(r['ID'])} {str(r['Description'])[:15]}",
+                "start": str(r["Date"]),
+                "color": c
+            })
     
-    calendar_options = {"direction": "rtl", "locale": "he", "height": 500, "initialView": "dayGridMonth"}
-    calendar(events=events, options=calendar_options)
+    # הגדרות לוח שנה מותאמות
+    cal_opts = {"direction": "rtl", "locale": "he", "height": 550, "initialView": "dayGridMonth"}
+    calendar(events=cal_events, options=cal_opts)
 
-# --- דף הוספת משימה (כולל משימה חוזרת) ---
-elif choice == "➕ הוספת משימה":
-    st.header("➕ הוספת משימה")
-    with st.form("add_form"):
-        desc = st.text_input("תיאור המשימה")
-        date_val = st.date_input("תאריך לביצוע", datetime.now())
-        recur = st.selectbox("חזרה:", ["לא", "יומי", "שבועי", "חודשי"])
-        if st.form_submit_button("שמור"):
-            new_id = int(df["ID"].max() + 1) if not df.empty else 1
-            new_row = pd.DataFrame([{
-                "ID": new_id, "Description": desc, "Warehouse_Done": "לא",
-                "Final_Approval": "לא", "Date": date_val.strftime("%Y-%m-%d"),
-                "Recurring": recur, "User": user_type
-            }])
-            conn.update(data=pd.concat([df, new_row], ignore_index=True))
-            st.success("המשימה נוספה!")
-            st.rerun()
-
-# --- דף ביטול משימה (הבקשה שלך) ---
+# --- ביטול משימות (כולל הגנה על מפתחות) ---
 elif choice == "🗑️ ביטול משימה":
-    st.header("🗑️ ביטול משימות קיימות")
-    open_tasks = df[df["Final_Approval"] != "כן"]
+    st.header("🗑️ ביטול משימות")
+    # סינון שורות לא תקינות כדי למנוע את שגיאת ה-Duplicate Key
+    valid_tasks = df.dropna(subset=["ID"])
+    open_tasks = valid_tasks[valid_tasks["Final_Approval"] != "כן"]
+    
     if open_tasks.empty:
         st.info("אין משימות לביטול.")
     else:
-        for i, row in open_tasks.iterrows():
-            col1, col2 = st.columns([4, 1])
-            col1.write(f"#{row['ID']} - {row['Description']} ({row['Date']})")
-            if col2.button("מחק ❌", key=f"del_{row['ID']}"):
+        for i, r in open_tasks.iterrows():
+            c1, c2 = st.columns([5, 1])
+            c1.write(f"#{int(r['ID'])} | {r['Date']} | {r['Description']}")
+            # שימוש ב-Index של ה-DataFrame כמפתח ייחודי לכפתור
+            if c2.button("מחק ❌", key=f"btn_del_{i}"):
                 df = df.drop(i)
                 conn.update(data=df)
-                st.warning(f"משימה {row['ID']} בוטלה.")
+                st.warning(f"משימה {int(r['ID'])} נמחקה.")
                 st.rerun()
 
-# --- דף ביצוע (צוות מחסן) ---
-elif choice == "📦 ביצוע (מחסן)":
-    st.header("📦 משימות לביצוע")
-    pending = df[df["Warehouse_Done"] == "לא"]
-    for i, row in pending.iterrows():
-        with st.expander(f"משימה #{row['ID']} - {row['Date']}"):
-            st.write(row["Description"])
-            if st.button("סמן כבוצע ✅", key=f"done_{row['ID']}"):
-                df.at[i, "Warehouse_Done"] = "כן"
-                conn.update(data=df)
-                st.rerun()
-
-# --- דף אישור סופי (פר משימה) ---
-elif choice == "✅ אישור סופי":
-    st.header("✅ אישור מנהל (בודד)")
-    to_app = df[(df["Warehouse_Done"] == "כן") & (df["Final_Approval"] == "לא")]
-    for i, row in to_app.iterrows():
-        col1, col2 = st.columns([4, 1])
-        col1.write(f"#{row['ID']} - {row['Description']}")
-        if col2.button("אשר ✅", key=f"app_{row['ID']}"):
-            df.at[i, "Final_Approval"] = "כן"
-            # יצירת משימה חוזרת אם מוגדר
-            if row.get("Recurring") != "לא":
-                new_date = pd.to_datetime(row["Date"]) + (timedelta(days=1) if row["Recurring"]=="יומי" else timedelta(weeks=1) if row["Recurring"]=="שבועי" else timedelta(days=30))
-                new_row = pd.DataFrame([{
-                    "ID": int(df["ID"].max()+1), "Description": row["Description"], "Warehouse_Done": "לא",
-                    "Final_Approval": "לא", "Date": new_date.strftime("%Y-%m-%d"),
-                    "Recurring": row["Recurring"], "User": row["User"]
-                }])
-                df = pd.concat([df, new_row], ignore_index=True)
-            conn.update(data=df)
-            st.rerun()
-
-elif choice == "📊 דוח סיכום":
-    st.header("📊 דוח סיכום")
-    st.dataframe(df, use_container_width=True)
+# --- הוספת משימה עם חזרה ---
+elif choice == "➕ הוספת משימה":
+    st.header("➕ הוספת משימה")
+    with st.form("new_task"):
+        d_text = st.text_input("תיאור")
+        d_date = st.date_input("תאריך", datetime.now())
+        d_recur = st.selectbox("חזרה", ["לא", "יומי", "שבועי", "חודשי"])
+        if st.form_submit_button("שמור"):
+            nid = int(df["ID"].max() + 1) if not df.empty else 1
+            new_row = pd.DataFrame([{
+                "ID": nid, "Description": d_text, "Warehouse_Done": "לא",
+                "Final_Approval": "לא", "Date": d_date.strftime("%Y-%m-%d"),
+                "Recurring": d_recur, "User": user_role
+            }])
+            conn.update(data=pd.concat([df, new_row], ignore_index=True))
+            st.success("נוסף
