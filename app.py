@@ -4,11 +4,11 @@ import pandas as pd
 from datetime import datetime
 from streamlit_calendar import calendar
 
-# הגדרות כלליות למניעת שגיאות כתיב
+# הגדרות מערכת למניעת שגיאות סינטקס
 TITLE = "מערכת ניהול מחסן"
 st.set_page_config(page_title=TITLE, layout="wide")
 
-# חיבור למסד הנתונים
+# חיבור לנתונים
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
@@ -24,11 +24,11 @@ def load_data():
 
 df = load_data()
 
-# וידוא עמודות למניעת KeyError
+# וידוא עמודות קריטיות
 cols = ["ID", "Task_Name", "Description", "Recurring", "Day_of_Week", "Date", "Warehouse_Done", "Final_Approval"]
 for c in cols:
     if c not in df.columns:
-        df[c] = None
+        df[c] = "לא" if "Done" in c or "Approval" in c else None
 
 # --- תפריט צד (Sidebar) ---
 st.sidebar.title(TITLE)
@@ -43,15 +43,14 @@ opt1, opt2, opt3, opt4, opt5, opt6, opt7 = (
 if user_role == "מנהל WMS":
     menu_options = [opt1, opt2, opt3, opt4, opt5, opt6, opt7]
 elif user_role == "צוות מחסן":
-    menu_options = [opt4, opt1]
+    menu_options = [opt4, opt1] # כאן הגדרנו מה צוות מחסן רואה
 else:
     menu_options = [opt6, opt1]
 
 choice = st.sidebar.radio("ניווט:", menu_options)
 
-# --- לוגיקת דפים ---
-
-if choice == opt1: # לוח שנה
+# --- דף לוח שנה ---
+if choice == opt1:
     st.header(opt1)
     cal_events = []
     for _, r in df.iterrows():
@@ -62,22 +61,22 @@ if choice == opt1: # לוח שנה
             cal_events.append({"title": display_text, "start": str(r["Date"]), "color": event_color})
     calendar(events=cal_events, options={"direction": "rtl", "locale": "he", "height": 700})
 
-elif choice == opt2: # הוספת משימה
+# --- דף הוספת משימה (העדכני) ---
+elif choice == opt2:
     st.header(opt2)
-    
-    # הוצאת השדה מחוץ לטופס כדי שיעבוד "בלייב"
+    # השדה מחוץ לטופס כדי לאפשר רענון דינמי של ימי השבוע
     recur_type = st.selectbox("האם זו משימה חוזרת?", ["לא", "יומי", "שבועי", "חודשי"])
     
     day_val = "N/A"
     if recur_type != "לא":
         day_val = st.selectbox("באיזה יום בשבוע?", ["ראשון", "שני", "שלישי", "רביעי", "חמישי"])
 
-    with st.form("task_submission_form"):
-        task_name = st.text_input("שם המשימה")
-        task_desc = st.text_area("תיאור המשימה")
+    with st.form("add_task"):
+        task_name = st.text_input("שם המשימה") # שדה ראשון
+        task_desc = st.text_area("תיאור המשימה") # שדה שני
         task_date = st.date_input("תאריך ביצוע", datetime.now())
         
-        if st.form_submit_button("שמור משימה"):
+        if st.form_submit_button("שמור"):
             if task_name:
                 next_id = int(df["ID"].max() + 1) if not df.empty and pd.notnull(df["ID"].max()) else 1
                 new_row = pd.DataFrame([{
@@ -87,34 +86,32 @@ elif choice == opt2: # הוספת משימה
                     "Warehouse_Done": "לא", "Final_Approval": "לא"
                 }])
                 conn.update(data=pd.concat([df, new_row], ignore_index=True))
-                st.success(f"המשימה '{task_name}' נוספה!")
-                st.rerun()
-            else:
-                st.error("חובה להזין שם משימה")
-
-elif choice == opt3: # ביטול משימה
-    st.header(opt3)
-    if not df.empty:
-        for i, row in df.iterrows():
-            col1, col2 = st.columns([4, 1])
-            col1.write(f"#{int(row['ID'])} - {row['Task_Name']} ({row['Date']})")
-            if col2.button("מחק ❌", key=f"del_{row['ID']}"):
-                new_df = df.drop(i)
-                conn.update(data=new_df)
+                st.success("נשמר!")
                 st.rerun()
 
-elif choice == opt6: # דוח סיכום
+# --- דף ביצוע (מחסן) - הפתרון למה שראית בתמונה ---
+elif choice == opt4:
+    st.header(opt4)
+    # הצגת משימות שטרם בוצעו במחסן
+    pending = df[df["Warehouse_Done"] != "כן"]
+    if pending.empty:
+        st.info("אין משימות פתוחות לביצוע כרגע.")
+    else:
+        for i, row in pending.iterrows():
+            with st.expander(f"משימה #{int(row['ID'])}: {row['Task_Name']}"):
+                st.write(f"**תיאור:** {row['Description']}")
+                st.write(f"**תאריך:** {row['Date']}")
+                if st.button("סמן כבוצע ✅", key=f"done_{row['ID']}"):
+                    df.at[i, "Warehouse_Done"] = "כן"
+                    conn.update(data=df)
+                    st.success("המשימה עודכנה!")
+                    st.rerun()
+
+# --- דף דוח סיכום ---
+elif choice == opt6:
     st.header(opt6)
     st.dataframe(df.dropna(subset=["ID"]), use_container_width=True)
 
-elif choice == opt7: # ניקוי היסטוריה
-    st.header(opt7)
-    if st.button("נקה את כל המשימות המאושרות"):
-        # השארת רק משימות שלא אושרו סופית
-        new_df = df[df["Final_Approval"] != "כן"]
-        conn.update(data=new_df)
-        st.success("ההיסטוריה נוקתה")
-        st.rerun()
-
+# --- דפים נוספים (ביטול/אישור סופי) ---
 else:
-    st.info("דף זה בבנייה...")
+    st.warning("הדף שנבחר נמצא בתהליך הטמעה או שאינו זמין לתפקידך.")
