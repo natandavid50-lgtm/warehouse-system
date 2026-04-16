@@ -19,8 +19,7 @@ except Exception as e:
 
 # --- תפריט צדי ---
 st.sidebar.title("הגדרות מערכת")
-user_type = st.sidebar.selectbox("מי משתמש במערכת עכשיו?", ["מנהל לוגיסטיקה", "צוות מחסן", "סמנכ\"ל/הנהלה"])
-st.sidebar.markdown(f"**שלום, {user_type}** 👋")
+user_type = st.sidebar.selectbox("מי משתמש במערכת עכשיו?", ["מנהל מחסן", "מנהל WMS", "סמנכ\"ל/הנהלה"])st.sidebar.markdown(f"**שלום, {user_type}** 👋")
 st.sidebar.divider()
 
 menu = ["לוח שנה ומבט על", "הוספת משימה", "ביצוע משימות (מחסן)", "אישור סופי", "דוח סיכום"]
