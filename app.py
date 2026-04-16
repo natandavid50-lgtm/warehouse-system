@@ -9,7 +9,10 @@ st.set_page_config(page_title="מערכת ניהול מחסן מתקדמת", lay
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
-    return conn.read(ttl="0")
+    # קריאת הנתונים וניקוי שורות ריקות לחלוטין
+    data = conn.read(ttl="0")
+    data = data.dropna(how="all")
+    return data
 
 try:
     df = load_data()
@@ -19,44 +22,49 @@ except Exception as e:
 
 # --- תפריט צדי ---
 st.sidebar.title("הגדרות מערכת")
-
-# בחירת משתמש
 user_type = st.sidebar.selectbox("מי משתמש במערכת עכשיו?", ["מנהל מחסן", "מנהל WMS", "סמנכ\"ל/הנהלה"])
 st.sidebar.markdown(f"**שלום, {user_type}** 👋")
 st.sidebar.divider()
 
-# לוגיקת תפריט ניווט מבוסס הרשאות
+# לוגיקת הרשאות לתפריט
 if user_type == "מנהל WMS":
-    # רק מנהל WMS רואה את כל האפשרויות בתפריט נפתח
     menu = ["📅 לוח שנה ומבט על", "➕ הוספת משימה", "📦 ביצוע משימות (מחסן)", "✅ אישור סופי", "📊 דוח סיכום"]
-    choice = st.sidebar.selectbox("תפריט ניווט מלא (מנהל WMS)", menu)
+    choice = st.sidebar.selectbox("תפריט ניווט מלא", menu)
 else:
-    # משתמשים אחרים רואים תפריט מוגבל לפי התפקיד שלהם
     if user_type == "מנהל מחסן":
         menu = ["📦 ביצוע משימות (מחסן)", "📅 לוח שנה ומבט על"]
-    else: # סמנכ"ל/הנהלה
+    else:
         menu = ["📊 דוח סיכום", "📅 לוח שנה ומבט על"]
-    
-    choice = st.sidebar.radio("פעולות מורשות", menu)
+    choice = st.sidebar.radio("פעולות", menu)
+
+# פונקציה לעיצוב צבעים בטבלה
+def style_status(val):
+    color = 'red' if val == 'לא' else 'green'
+    return f'color: {color}; font-weight: bold'
 
 # --- דפי האפליקציה ---
 
-if choice == "📅 לוח שנה ומבט על":
+if "📅 לוח שנה ומבט על" in choice:
     st.header("📅 לוח משימות ולו\"ז")
     selected_date = st.date_input("בחר תאריך לצפייה", datetime.now())
     date_str = selected_date.strftime("%Y-%m-%d")
-    day_tasks = df[df["Date"] == date_str]
     
+    # סינון רק לעמודות החשובות
+    cols_to_show = ["ID", "Description", "Warehouse_Done", "Final_Approval", "Date", "User"]
+    
+    day_tasks = df[df["Date"] == date_str]
     if not day_tasks.empty:
-        st.dataframe(day_tasks, use_container_width=True)
+        st.subheader(f"משימות ליום {date_str}")
+        # הצגת טבלה מעוצבת
+        st.dataframe(day_tasks[cols_to_show].style.applymap(style_status, subset=['Warehouse_Done', 'Final_Approval']), use_container_width=True)
     else:
         st.info(f"אין משימות לתאריך {date_str}")
     
     st.divider()
     st.subheader("כל המשימות במערכת")
-    st.dataframe(df.sort_values(by="Date", ascending=False), use_container_width=True)
+    st.dataframe(df[cols_to_show].sort_values(by="ID", ascending=False).style.applymap(style_status, subset=['Warehouse_Done', 'Final_Approval']), use_container_width=True)
 
-elif choice == "➕ הוספת משימה":
+elif "➕ הוספת משימה" in choice:
     st.header("➕ יצירת משימה חדשה")
     with st.form("task_form"):
         desc = st.text_area("תיאור המשימה")
@@ -65,7 +73,7 @@ elif choice == "➕ הוספת משימה":
         submitted = st.form_submit_button("שלח למערכת")
         
         if submitted and desc:
-            new_id = len(df) + 1 if not df.empty else 1
+            new_id = int(df["ID"].max() + 1) if not df.empty else 1
             new_row = pd.DataFrame([{
                 "ID": new_id, "Description": desc, "Warehouse_Done": "לא",
                 "Final_Approval": "לא", "Date": task_date.strftime("%Y-%m-%d"),
@@ -76,32 +84,34 @@ elif choice == "➕ הוספת משימה":
             st.success("המשימה נוספה!")
             st.rerun()
 
-elif choice == "📦 ביצוע משימות (מחסן)":
+elif "📦 ביצוע משימות" in choice:
     st.header("📦 משימות לביצוע במחסן")
     pending = df[df["Warehouse_Done"] == "לא"]
     if pending.empty:
         st.info("אין משימות פתוחות.")
     else:
         for i, row in pending.iterrows():
-            with st.expander(f"משימה #{row['ID']} - {row['Date']}"):
-                st.write(row['Description'])
-                if st.button(f"סמן כבוצע ✅", key=f"btn_{row['ID']}"):
+            with st.expander(f"משימה #{row['ID']} | תאריך: {row['Date']}"):
+                st.write(f"**מה לעשות:** {row['Description']}")
+                if st.button(f"סימנתי כבוצע ✅", key=f"btn_{row['ID']}"):
                     df.at[i, "Warehouse_Done"] = "כן"
                     conn.update(data=df)
                     st.rerun()
 
-elif choice == "✅ אישור סופי":
+elif "✅ אישור סופי" in choice:
     st.header("✅ אישור מנהל")
     to_approve = df[(df["Warehouse_Done"] == "כן") & (df["Final_Approval"] == "לא")]
     if to_approve.empty:
         st.info("אין משימות הממתינות לאישור.")
     else:
-        st.dataframe(to_approve[["ID", "Description", "Date", "User"]])
+        st.write("אשר את המשימות שבוצעו במחסן:")
+        st.dataframe(to_approve[["ID", "Description", "Date", "User"]], use_container_width=True)
         if st.button("אשר את כל המשימות שבוצעו"):
             df.loc[(df["Warehouse_Done"] == "כן"), "Final_Approval"] = "כן"
             conn.update(data=df)
             st.rerun()
 
-elif choice == "📊 דוח סיכום":
+elif "📊 דוח סיכום" in choice:
     st.header("📊 דוח ביצועים")
-    st.dataframe(df, use_container_width=True)
+    # הצגת הטבלה הנקייה בלבד
+    st.dataframe(df[["ID", "Description", "Warehouse_Done", "Final_Approval", "Date", "User"]], use_container_width=True)
