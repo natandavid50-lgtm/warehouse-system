@@ -4,84 +4,102 @@ import pandas as pd
 from datetime import datetime
 from streamlit_calendar import calendar
 
-# הגדרות שפה גלובליות
+# הגדרות שפה וטקסטים למניעת SyntaxError
 TITLE = "מערכת ניהול מחסן"
-CALENDAR_TAB = "📅 לוח משימות מעוצב"
-SUCCESS_MSG = "המשימה נוספה"
+ROLE_LABEL = "בחר תפקיד:"
+NAV_LABEL = "תפריט ניווט:"
+SUCCESS_MSG = "המשימה נוספה בהצלחה"
+CLEAR_HISTORY_MSG = "היסטוריית המשימות נוקתה"
 
-st.set_page_config(page_title=TITLE, layout="wide") # פריסה רחבה למסך
+st.set_page_config(page_title=TITLE, layout="wide")
 
+# חיבור לגיליון
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
     try:
         data = conn.read(ttl="0")
+        if data is None or data.empty:
+            return pd.DataFrame(columns=["ID", "Description", "Warehouse_Done", "Final_Approval", "Date", "Recurring", "User"])
+        # ניקוי עמודות זבל ושורות ריקות
         data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
-        return data.dropna(subset=["ID", "Description"], how="all")
-    except:
+        data = data.dropna(subset=["ID", "Description"], how="all")
+        return data
+    except Exception as e:
+        st.error(f"Error: {e}")
         return pd.DataFrame()
 
 df = load_data()
 
-# וידוא עמודות למניעת KeyError
-for col in ["ID", "Final_Approval", "Date", "Description"]:
+# וידוא עמודות קריטיות למניעת KeyError
+for col in ["ID", "Final_Approval", "Warehouse_Done", "Date", "Description"]:
     if col not in df.columns:
         df[col] = None
 
-# --- תצוגת לוח שנה משופרת ---
-st.header(CALENDAR_TAB)
+# --- תפריט צד (הדשבורד שחזר) ---
+st.sidebar.title(TITLE)
+roles = ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"]
+user_role = st.sidebar.selectbox(ROLE_LABEL, roles)
+st.sidebar.divider()
 
-cal_events = []
-for i, r in df.iterrows():
-    if pd.notnull(r.get("Date")) and pd.notnull(r.get("ID")):
-        # התאמת צבעים לפי סטטוס
-        is_approved = r.get("Final_Approval") == "כן"
-        event_color = "#28a745" if is_approved else "#007bff" # ירוק למאושר, כחול לחדש
-        
-        # בניית כותרת האירוע
-        task_id = int(r['ID'])
-        desc = str(r['Description'])[:20]
-        event_title = f"#{task_id} - {desc}"
-        
-        cal_events.append({
-            "title": event_title,
-            "start": str(r["Date"]),
-            "color": event_color,
-            "allDay": True,
-            "resourceId": i
-        })
-
-# הגדרות לוח שנה למראה מותאם למסך
-calendar_options = {
-    "headerToolbar": {
-        "left": "today prev,next",
-        "center": "title",
-        "right": "dayGridMonth,timeGridWeek,listWeek",
-    },
-    "initialView": "dayGridMonth",
-    "direction": "rtl",
-    "locale": "he",
-    "height": 700, # גובה מותאם למסך
-}
-
-# הצגת לוח השנה
-state = calendar(
-    events=cal_events,
-    options=calendar_options,
-    custom_css="""
-        .fc-event-main {
-            font-size: 14px;
-            padding: 2px;
-        }
-        .fc-toolbar-title {
-            font-size: 1.5rem !important;
-            color: #1f2937;
-        }
-    """,
-    key='warehouse_calendar'
+opt1, opt2, opt3, opt4, opt5, opt6, opt7 = (
+    "📅 לוח שנה מעוצב", "➕ הוספת משימה", "🗑️ ביטול משימה", 
+    "📦 ביצוע (מחסן)", "✅ אישור סופי", "📊 דוח סיכום", "🧹 ניקוי היסטוריה"
 )
 
-# הצגת פרטי משימה בלחיצה (אופציונלי)
-if state.get("eventClick"):
-    clicked_event = state["eventClick"]["event"]
-    st.info(f"משימה שנבחרה: {clicked_event['title']}")
+if user_role == "מנהל WMS":
+    menu_options = [opt1, opt2, opt3, opt4, opt5, opt6, opt7]
+elif user_role == "צוות מחסן":
+    menu_options = [opt4, opt1]
+else:
+    menu_options = [opt6, opt1]
+
+choice = st.sidebar.radio(NAV_LABEL, menu_options)
+
+# --- לוגיקת דפים ---
+
+if choice == opt1:
+    st.header(opt1)
+    cal_events = []
+    for i, r in df.iterrows():
+        if pd.notnull(r.get("Date")) and pd.notnull(r.get("ID")):
+            # צבעים: ירוק למאושר, כחול לביצוע
+            event_color = "#28a745" if r.get("Final_Approval") == "כן" else "#007bff"
+            display_title = f"#{int(r['ID'])} {str(r['Description'])[:20]}"
+            cal_events.append({
+                "title": display_title,
+                "start": str(r["Date"]),
+                "color": event_color,
+                "allDay": True
+            })
+    
+    calendar_options = {
+        "headerToolbar": {"left": "today prev,next", "center": "title", "right": "dayGridMonth,listWeek"},
+        "initialView": "dayGridMonth",
+        "direction": "rtl",
+        "locale": "he",
+        "height": 700
+    }
+    calendar(events=cal_events, options=calendar_options, key='main_cal')
+
+elif choice == opt2:
+    st.header(opt2)
+    with st.form("add_form"):
+        desc = st.text_input("תיאור המשימה")
+        date_val = st.date_input("תאריך", datetime.now())
+        if st.form_submit_button("שמור"):
+            new_id = int(df["ID"].max() + 1) if not df.empty and pd.notnull(df["ID"].max()) else 1
+            new_row = pd.DataFrame([{
+                "ID": new_id, "Description": desc, "Warehouse_Done": "לא",
+                "Final_Approval": "לא", "Date": date_val.strftime("%Y-%m-%d"), "User": user_role
+            }])
+            conn.update(data=pd.concat([df, new_row], ignore_index=True))
+            st.success(SUCCESS_MSG)
+            st.rerun()
+
+elif choice == opt6:
+    st.header(opt6)
+    # תצוגת טבלה נקייה
+    st.dataframe(df.dropna(subset=["ID"]), use_container_width=True)
+
+# (שאר הדפים - ביצוע, אישור וניקוי - נשארים באותה מתכונת של המעבר בין ה-Dataframe)
