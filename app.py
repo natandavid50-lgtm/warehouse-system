@@ -1,157 +1,87 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from streamlit_calendar import calendar
 
-# הגדרות שפה גלובליות - מניעת SyntaxError
+# הגדרות שפה גלובליות
 TITLE = "מערכת ניהול מחסן"
-ROLE_LABEL = "בחר תפקיד:"
-NAV_LABEL = "תפריט ניווט:"
-SUCCESS_MSG = "המשימה נוספה בהצלחה"
-DELETE_CONFIRM = "המשימה נמחקה"
-CLEAR_HISTORY_MSG = "היסטוריית המשימות נוקתה"
+CALENDAR_TAB = "📅 לוח משימות מעוצב"
+SUCCESS_MSG = "המשימה נוספה"
 
-st.set_page_config(page_title=TITLE, layout="wide")
+st.set_page_config(page_title=TITLE, layout="wide") # פריסה רחבה למסך
 
-# חיבור לגיליון
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
     try:
         data = conn.read(ttl="0")
-        if data is None or data.empty:
-            return pd.DataFrame(columns=["ID", "Description", "Warehouse_Done", "Final_Approval", "Date", "Recurring", "User"])
-        
-        # ניקוי עמודות ושורות ריקות
         data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
-        data = data.dropna(subset=["ID", "Description"], how="all")
-        return data
-    except Exception as e:
-        st.error(f"Error loading: {e}")
+        return data.dropna(subset=["ID", "Description"], how="all")
+    except:
         return pd.DataFrame()
 
 df = load_data()
 
-# וידוא עמודות קריטיות
-for col in ["ID", "Final_Approval", "Warehouse_Done", "Date"]:
+# וידוא עמודות למניעת KeyError
+for col in ["ID", "Final_Approval", "Date", "Description"]:
     if col not in df.columns:
         df[col] = None
 
-# הגדרת אפשרויות התפריט
-opt1, opt2, opt3, opt4, opt5, opt6, opt7 = (
-    "📅 לוח שנה", "➕ הוספת משימה", "🗑️ ביטול משימה", 
-    "📦 ביצוע (מחסן)", "✅ אישור סופי", "📊 דוח סיכום", "🧹 ניקוי היסטוריה"
+# --- תצוגת לוח שנה משופרת ---
+st.header(CALENDAR_TAB)
+
+cal_events = []
+for i, r in df.iterrows():
+    if pd.notnull(r.get("Date")) and pd.notnull(r.get("ID")):
+        # התאמת צבעים לפי סטטוס
+        is_approved = r.get("Final_Approval") == "כן"
+        event_color = "#28a745" if is_approved else "#007bff" # ירוק למאושר, כחול לחדש
+        
+        # בניית כותרת האירוע
+        task_id = int(r['ID'])
+        desc = str(r['Description'])[:20]
+        event_title = f"#{task_id} - {desc}"
+        
+        cal_events.append({
+            "title": event_title,
+            "start": str(r["Date"]),
+            "color": event_color,
+            "allDay": True,
+            "resourceId": i
+        })
+
+# הגדרות לוח שנה למראה מותאם למסך
+calendar_options = {
+    "headerToolbar": {
+        "left": "today prev,next",
+        "center": "title",
+        "right": "dayGridMonth,timeGridWeek,listWeek",
+    },
+    "initialView": "dayGridMonth",
+    "direction": "rtl",
+    "locale": "he",
+    "height": 700, # גובה מותאם למסך
+}
+
+# הצגת לוח השנה
+state = calendar(
+    events=cal_events,
+    options=calendar_options,
+    custom_css="""
+        .fc-event-main {
+            font-size: 14px;
+            padding: 2px;
+        }
+        .fc-toolbar-title {
+            font-size: 1.5rem !important;
+            color: #1f2937;
+        }
+    """,
+    key='warehouse_calendar'
 )
 
-st.sidebar.title(TITLE)
-roles = ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"]
-user_role = st.sidebar.selectbox(ROLE_LABEL, roles)
-st.sidebar.divider()
-
-if user_role == "מנהל WMS":
-    menu_options = [opt1, opt2, opt3, opt4, opt5, opt6, opt7]
-elif user_role == "צוות מחסן":
-    menu_options = [opt4, opt1]
-else:
-    menu_options = [opt6, opt1]
-
-choice = st.sidebar.radio(NAV_LABEL, menu_options)
-
-# --- לוגיקה של דפים ---
-
-if choice == opt1:
-    st.header(opt1)
-    cal_events = []
-    for i, r in df.iterrows():
-        if pd.notnull(r.get("Date")) and pd.notnull(r.get("ID")):
-            color = "#28a745" if r.get("Final_Approval") == "כן" else "#ffc107"
-            # מניעת שגיאת טיפוס
-            title_text = f"#{int(r['ID'])} {str(r['Description'])[:15]}"
-            cal_events.append({
-                "title": title_text,
-                "start": str(r["Date"]),
-                "color": color
-            })
-    calendar(events=cal_events, options={"direction": "rtl", "locale": "he", "initialView": "dayGridMonth"})
-
-elif choice == opt2:
-    st.header(opt2)
-    with st.form("task_form"):
-        desc = st.text_input("תיאור המשימה")
-        date_val = st.date_input("תאריך לביצוע", datetime.now())
-        recur_val = st.selectbox("חזרה:", ["לא", "יומי", "שבועי", "חודשי"])
-        if st.form_submit_button("שמור"):
-            new_id = int(df["ID"].max() + 1) if not df.empty and pd.notnull(df["ID"].max()) else 1
-            new_row = pd.DataFrame([{
-                "ID": new_id, "Description": desc, "Warehouse_Done": "לא",
-                "Final_Approval": "לא", "Date": date_val.strftime("%Y-%m-%d"),
-                "Recurring": recur_val, "User": user_role
-            }])
-            conn.update(data=pd.concat([df, new_row], ignore_index=True))
-            st.success(SUCCESS_MSG)
-            st.rerun()
-
-elif choice == opt3:
-    st.header(opt3)
-    to_cancel = df[df["Final_Approval"] != "כן"].dropna(subset=["ID"])
-    for i, r in to_cancel.iterrows():
-        c1, c2 = st.columns([5, 1])
-        # שימוש במשתנה נפרד למניעת SyntaxError
-        display_text = f"#{int(r['ID'])} | {r['Description']}"
-        c1.write(display_text)
-        if c2.button("מחק ❌", key=f"del_{i}"):
-            df = df.drop(i)
-            conn.update(data=df)
-            st.warning(DELETE_CONFIRM)
-            st.rerun()
-
-elif choice == opt4:
-    st.header(opt4)
-    pending = df[df["Warehouse_Done"] != "כן"].dropna(subset=["ID"])
-    for i, r in pending.iterrows():
-        expander_label = f"#{int(r['ID'])} - {r['Date']}"
-        with st.expander(expander_label):
-            st.write(r["Description"])
-            if st.button("סמן כבוצע ✅", key=f"done_{i}"):
-                df.at[i, "Warehouse_Done"] = "כן"
-                conn.update(data=df)
-                st.rerun()
-
-elif choice == opt5:
-    st.header(opt5)
-    to_approve = df[(df["Warehouse_Done"] == "כן") & (df["Final_Approval"] != "כן")].dropna(subset=["ID"])
-    for i, r in to_approve.iterrows():
-        c1, c2 = st.columns([5, 1])
-        display_text = f"#{int(r['ID'])} | {r['Description']}"
-        c1.write(display_text)
-        if c2.button("אשר ✅", key=f"app_{i}"):
-            df.at[i, "Final_Approval"] = "כן"
-            conn.update(data=df)
-            st.rerun()
-
-elif choice == opt6:
-    st.header(opt6)
-    st.dataframe(df.dropna(subset=["ID"]), use_container_width=True)
-
-elif choice == opt7:
-    st.header(opt7)
-    completed = df[df["Final_Approval"] == "כן"].dropna(subset=["ID"])
-    if completed.empty:
-        st.info("אין משימות שהושלמו למחיקה.")
-    else:
-        if st.button("נקה את כל ההיסטוריה ⚠️"):
-            df = df[df["Final_Approval"] != "כן"]
-            conn.update(data=df)
-            st.success(CLEAR_HISTORY_MSG)
-            st.rerun()
-        
-        st.divider()
-        for i, r in completed.iterrows():
-            c1, c2 = st.columns([5, 1])
-            display_text = f"#{int(r['ID'])} | {r['Description']}"
-            c1.write(display_text)
-            if c2.button("מחק 🗑️", key=f"clr_{i}"):
-                df = df.drop(i)
-                conn.update(data=df)
-                st.rerun()
+# הצגת פרטי משימה בלחיצה (אופציונלי)
+if state.get("eventClick"):
+    clicked_event = state["eventClick"]["event"]
+    st.info(f"משימה שנבחרה: {clicked_event['title']}")
