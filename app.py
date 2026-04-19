@@ -7,7 +7,7 @@ import os
 # 1. הגדרות עמוד
 st.set_page_config(page_title="מערכת ניהול משימות - אחים כהן", layout="wide", initial_sidebar_state="expanded")
 
-# 2. עיצוב UI/UX מלא - הכל בחבילה אחת
+# 2. עיצוב UI/UX מלא
 st.markdown("""
     <style>
     .stApp { background-color: #f1f5f9; }
@@ -17,7 +17,7 @@ st.markdown("""
     section[data-testid="stSidebar"] * { color: white !important; }
     section[data-testid="stSidebar"] h3 { color: #60a5fa !important; font-weight: 800 !important; }
 
-    /* כפתור התנתקות פרימיום בתחתית */
+    /* כפתור התנתקות בתחתית */
     .stButton > button[key="logout_btn"] {
         background-color: #b91c1c !important;
         border-radius: 12px !important;
@@ -43,14 +43,14 @@ st.markdown("""
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
-        pointer-events: none; /* מאפשר ללחיצה לעבור לכפתור השקוף */
+        pointer-events: none;
     }
     
     .card-icon { font-size: 80px; margin-bottom: 20px; }
     .card-title { font-size: 36px; font-weight: 900; color: #1e293b; text-align: center; }
     .card-strip { width: 100%; height: 20px; position: absolute; bottom: 0; left: 0; }
 
-    /* הפיכת כפתורי ה-Streamlit לשקופים ופרוסים על הכרטיסים */
+    /* הפיכת כפתורי ה-Streamlit לשקופים מעל הכרטיסים */
     div.stButton > button:not([key="logout_btn"]):not(.action-btn) {
         height: 450px !important;
         width: 100% !important;
@@ -73,13 +73,6 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
-    }
-    .detail-box {
-        background: #eff6ff;
-        border: 2px solid #3b82f6;
-        padding: 20px;
-        border-radius: 15px;
-        margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -111,11 +104,18 @@ def get_daily_status(target_date):
                 f = row.get('Recurring', 'לא')
                 hit = (f=="לא" and diff==0) or (f=="יומי") or (f=="שבועי" and diff%7==0) or (f=="דו-שבועי" and diff%14==0) or (f=="חודשי" and diff%30==0)
                 if hit:
-                    scheduled.append({"idx": idx, "id": row['ID'], "name": row['Task_Name'], "desc": row['Description'], "recurring": f, "is_done": target_str in str(row['Done_Dates']).split(",")})
+                    scheduled.append({
+                        "idx": idx, 
+                        "id": row['ID'], 
+                        "name": row['Task_Name'], 
+                        "desc": row['Description'], 
+                        "recurring": f, 
+                        "is_done": target_str in str(row['Done_Dates']).split(",")
+                    })
         except: continue
     return scheduled
 
-# 4. ניהול כניסה ותפקידים
+# 4. ניהול כניסה
 if "user_role" not in st.session_state: st.session_state.user_role = None
 
 if st.session_state.user_role is None:
@@ -132,25 +132,18 @@ if st.session_state.user_role is None:
     for i, col in enumerate([col1, col2, col3]):
         with col:
             r = roles[i]
-            st.markdown(f"""
-                <div class='login-card'>
-                    <div class='card-icon'>{r['icon']}</div>
-                    <div class='card-title'>{r['title']}</div>
-                    <div class='card-strip' style='background-color: {r['color']};'></div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"<div class='login-card'><div class='card-icon'>{r['icon']}</div><div class='card-title'>{r['title']}</div><div class='card-strip' style='background-color: {r['color']};'></div></div>", unsafe_allow_html=True)
             if st.button("", key=f"btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
                 st.rerun()
     st.stop()
 
-# 5. ניווט ותפריט צד
+# 5. ניווט
 if "df" not in st.session_state: st.session_state.df = load_data()
 
 with st.sidebar:
     st.markdown(f"<h3>שלום, {st.session_state.user_role} 👋</h3>", unsafe_allow_html=True)
     st.divider()
-    
     OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
     
     if st.session_state.user_role == "מנהל WMS": menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
@@ -163,7 +156,7 @@ with st.sidebar:
         st.session_state.user_role = None
         st.rerun()
 
-# 6. הצגת דפים
+# 6. דפים
 if choice == OPT_DASH:
     st.title("📊 דשבורד בקרה")
     tasks = get_daily_status(datetime.now())
@@ -179,20 +172,31 @@ if choice == OPT_DASH:
 
 elif choice == OPT_WORK:
     st.title("📋 סידור עבודה שבועי")
+    st.info("אנא סמן בתיבה (V) ברגע שסיימת משימה כדי לעדכן את המערכת")
     start = datetime.now() - timedelta(days=(datetime.now().weekday() + 1) % 7)
     days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(len(days))
+    
     for i, day in enumerate(days):
         curr = start + timedelta(days=i)
+        curr_str = curr.strftime('%Y-%m-%d')
         with cols[i]:
             st.markdown(f"<div style='background:#1e293b; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:15px;'>{day} {curr.strftime('%d/%m')}</div>", unsafe_allow_html=True)
-            for t in get_daily_status(curr):
-                status = "✅" if t['is_done'] else "⏳"
-                st.markdown(f"**{status} {t['name']}**")
-                if not t['is_done'] and st.button("בצע", key=f"d_{t['id']}_{i}"):
-                    idx = t['idx']
-                    st.session_state.df.at[idx, "Done_Dates"] = f"{str(st.session_state.df.at[idx, 'Done_Dates'])},{curr.strftime('%Y-%m-%d')}".strip(",")
-                    save_data(st.session_state.df); st.rerun()
+            tasks = get_daily_status(curr)
+            for t in tasks:
+                if t['is_done']:
+                    st.success(f"✅ {t['name']}")
+                else:
+                    # הוספת תיבת סימון לאישור משימה
+                    confirm = st.checkbox(f"אישור: {t['name']}", key=f"chk_{t['id']}_{i}")
+                    if confirm:
+                        idx = t['idx']
+                        current_done = str(st.session_state.df.at[idx, "Done_Dates"]).strip()
+                        new_done = f"{current_done},{curr_str}".strip(",")
+                        st.session_state.df.at[idx, "Done_Dates"] = new_done
+                        save_data(st.session_state.df)
+                        st.success(f"בוצע!")
+                        st.rerun()
 
 elif choice == OPT_CAL:
     st.title("📅 לוח שנה משימות")
@@ -213,10 +217,10 @@ elif choice == OPT_CAL:
     if res.get("eventClick"):
         task = task_lookup.get(res["eventClick"]["event"]["id"])
         if task is not None:
-            st.markdown(f'<div class="detail-box"><h2>🔍 פרטי משימה</h2><p><strong>משימה:</strong> {task["Task_Name"]}</p><p><strong>תדירות:</strong> {task["Recurring"]}</p><p><strong>תיאור:</strong> {task["Description"]}</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="background:#eff6ff; border:2px solid #3b82f6; padding:20px; border-radius:15px;"><h2>🔍 פרטי משימה</h2><p><strong>משימה:</strong> {task["Task_Name"]}</p><p><strong>תדירות:</strong> {task["Recurring"]}</p><p><strong>תיאור:</strong> {task["Description"]}</p></div>', unsafe_allow_html=True)
 
 elif choice == OPT_ADD:
-    st.title("➕ הוספת משימה")
+    st.title("➕ הוספת משימה חדשה")
     with st.form("new_task"):
         n = st.text_input("שם המשימה")
         f = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
@@ -229,10 +233,10 @@ elif choice == OPT_ADD:
             save_data(st.session_state.df); st.success("נשמר!"); st.rerun()
 
 elif choice == OPT_MANAGE:
-    st.title("⚙️ הגדרות")
+    st.title("⚙️ הגדרות ניהול")
     st.dataframe(st.session_state.df, use_container_width=True)
     if not st.session_state.df.empty:
         t_del = st.selectbox("בחר משימה למחיקה:", st.session_state.df["Task_Name"].unique())
-        if st.button("מחק לצמיתות", key="del_btn"):
+        if st.button("מחק לצמיתות"):
             st.session_state.df = st.session_state.df[st.session_state.df["Task_Name"] != t_del]
             save_data(st.session_state.df); st.rerun()
