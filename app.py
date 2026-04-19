@@ -47,26 +47,43 @@ def get_daily_status(target_date):
         except: continue
     return scheduled
 
-# --- ניהול התחברות (Login Logic) ---
+# --- מסך בחירת משתמש גרפי (Visual Login) ---
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
-# פונקציה להצגת מסך הכניסה
-@st.dialog("כניסה למערכת")
-def login():
-    st.write("ברוך הבא למערכת ניהול המחסן. אנא הזדהה כדי להמשיך:")
-    role = st.selectbox("בחר תפקיד:", ["מנהל WMS", "צוות מחסן", "סמנכ\"ל"])
-    if st.button("התחבר"):
-        st.session_state.user_role = role
-        st.rerun()
-
-# הפעלת מסך הכניסה אם המשתמש לא מחובר
 if st.session_state.user_role is None:
-    login()
-    st.warning("אנא בחר משתמש כדי לצפות בנתונים.")
-    st.stop() # עוצר את הרצת שאר הקוד עד להתחברות
+    # עיצוב מרכז למסך
+    st.markdown("<h1 style='text-align: center;'>ברוכים הבאים למערכת המחסן</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'>אנא בחר את התפקיד שלך לכניסה למערכת</p>", unsafe_allow_html=True)
+    st.write("---")
+    
+    # יצירת 3 עמודות עבור הכרטיסים
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("<div style='text-align: center;'><h2>🔑</h2></div>", unsafe_allow_html=True)
+        if st.button("מנהל WMS", use_container_width=True, type="primary"):
+            st.session_state.user_role = "מנהל WMS"
+            st.rerun()
+        st.caption("גישה מלאה: ניהול משימות, ביצוע ודוחות")
 
-# --- המשך האפליקציה (רק לאחר התחברות) ---
+    with col2:
+        st.markdown("<div style='text-align: center;'><h2>📦</h2></div>", unsafe_allow_html=True)
+        if st.button("צוות מחסן", use_container_width=True):
+            st.session_state.user_role = "צוות מחסן"
+            st.rerun()
+        st.caption("צפייה בסידור עבודה ובלוח השנה")
+
+    with col3:
+        st.markdown("<div style='text-align: center;'><h2>📊</h2></div>", unsafe_allow_html=True)
+        if st.button("סמנכ\"ל", use_container_width=True):
+            st.session_state.user_role = "סמנכ\"ל"
+            st.rerun()
+        st.caption("צפייה בדשבורד בקרה וסטטיסטיקות")
+
+    st.stop()
+
+# --- המשך האפליקציה (לאחר בחירה) ---
 if "df" not in st.session_state:
     st.session_state.df = load_data()
 
@@ -74,7 +91,7 @@ user_role = st.session_state.user_role
 
 # תפריט צד
 st.sidebar.title(f"שלום, {user_role}")
-if st.sidebar.button("החלף משתמש/התנתק"):
+if st.sidebar.button("החלף משתמש"):
     st.session_state.user_role = None
     st.rerun()
 
@@ -91,7 +108,7 @@ else:
 
 choice = st.sidebar.radio("עבור אל:", menu)
 
-# --- תוכן הדפים ---
+# --- דפים (לוגיקה זהה לגרסה המוצלחת) ---
 if choice == OPT_DASH:
     st.header(f"📊 תמונת מצב יומית - {datetime.now().strftime('%d/%m/%Y')}")
     today_tasks = get_daily_status(datetime.now())
@@ -149,14 +166,14 @@ elif choice == OPT_ADD:
     with st.form("add_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1: t_name, t_freq = st.text_input("שם המשימה"), st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        with c2: t_date, t_desc = st.date_input("תאריך התחלה", datetime.now()), st.text_area("תיאור")
+        with c2: t_date, t_desc = st.date_input("תאריך התחלה", datetime.now()), st.text_area("תיאור המשימה")
         if st.form_submit_button("שמור משימה"):
             if t_name:
                 new_id = int(st.session_state.df["ID"].max() + 1) if not st.session_state.df.empty else 1000
                 new_row = pd.DataFrame([{"ID": new_id, "Task_Name": t_name, "Description": t_desc, "Recurring": t_freq, "Date": t_date.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save_data(st.session_state.df)
-                st.success(f"נשמר: {t_name}")
+                st.success(f"נשמר בהצלחה: {t_name}")
                 st.rerun()
 
 elif choice == OPT_MANAGE:
