@@ -125,54 +125,70 @@ elif choice == opt4:
                                     st.rerun()
                 except: continue
 
-# --- 5. דשבורד סמנכ"ל (משימות שהושלמו היום) ---
+# --- 5. דשבורד סמנכ"ל (משימות של היום בלבד) ---
 elif choice == opt5:
     st.header("📊 דשבורד בקרה לסמנכ\"ל")
-    today_str = datetime.now().strftime("%Y-%m-%d")
     
-    c1, c2 = st.columns(2)
-    c1.metric("משימות במערכת", len(st.session_state.df))
+    # הגדרת תאריך היום
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
     
-    # סינון משימות שבוצעו היום
+    # חישוב משימות המתוכננות להיום
+    tasks_scheduled_today = []
     completed_today = []
-    for _, r in st.session_state.df.iterrows():
-        if today_str in str(r['Done_Dates']).split(","):
-            completed_today.append(r['Task_Name'])
     
-    c2.metric("בוצעו היום", len(completed_today))
+    for _, r in st.session_state.df.iterrows():
+        try:
+            base = pd.to_datetime(r['Date']).to_pydatetime()
+            diff = (now - base).days
+            
+            # בדיקה האם המשימה אמורה לקרות היום לפי התדירות
+            is_scheduled_today = (diff == 0) or \
+                                 (r['Recurring'] == "יומי" and diff > 0) or \
+                                 (r['Recurring'] == "שבועי" and diff > 0 and diff % 7 == 0) or \
+                                 (r['Recurring'] == "דו-שבועי" and diff > 0 and diff % 14 == 0) or \
+                                 (r['Recurring'] == "חודשי" and diff > 0 and diff % 30 == 0)
+            
+            if is_scheduled_today:
+                tasks_scheduled_today.append(r['Task_Name'])
+                # בדיקה האם היא גם סומנה כבוצעה היום
+                if today_str in str(r['Done_Dates']).split(","):
+                    completed_today.append(r['Task_Name'])
+        except:
+            continue
 
-    st.subheader(f"✅ משימות שהושלמו היום ({datetime.now().strftime('%d/%m/%Y')})")
-    if completed_today:
-        for task in completed_today:
-            st.write(f"🔹 {task}")
-    else:
-        st.write("טרם הושלמו משימות היום.")
+    # תצוגת מטריקות של היום
+    c1, c2, c3 = st.columns(3)
+    c1.metric("משימות מתוכננות להיום", len(tasks_scheduled_today))
+    c2.metric("בוצעו בפועל", len(completed_today))
+    
+    # חישוב אחוז ביצוע יומי
+    progress = (len(completed_today) / len(tasks_scheduled_today)) * 100 if tasks_scheduled_today else 0
+    c3.metric("אחוז ביצוע יומי", f"{int(progress)}%")
 
     st.divider()
-    st.subheader("📋 סטטוס אישורים סופיים")
-    st.dataframe(st.session_state.df[["Task_Name", "Recurring", "Final_Approval"]], use_container_width=True)
 
-# --- 3. הוספת משימה (מנהל WMS בלבד) ---
-elif choice == opt3:
-    st.header("➕ הוספת משימה")
-    with st.form("add"):
-        n = st.text_input("שם המשימה")
-        f = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        sd = st.date_input("תאריך התחלה", datetime.now())
-        if st.form_submit_button("שמור"):
-            nid = int(st.session_state.df["ID"].max() + 1) if not st.session_state.df.empty else 100
-            new_r = pd.DataFrame([{"ID": nid, "Task_Name": n, "Description": "", "Recurring": f, "Date": sd.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
-            st.session_state.df = pd.concat([st.session_state.df, new_r], ignore_index=True)
-            save_data(st.session_state.df)
-            st.rerun()
+    # פירוט למנהל
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.subheader("📋 מתוכנן להיום")
+        if tasks_scheduled_today:
+            for t in tasks_scheduled_today:
+                status = "✅" if t in completed_today else "⏳"
+                st.write(f"{status} {t}")
+        else:
+            st.write("אין משימות מתוכננות להיום.")
 
-# --- 2. ניהול ומחיקה ---
-elif choice == opt2:
-    st.header("⚙️ ניהול")
-    st.dataframe(st.session_state.df)
-    if not st.session_state.df.empty:
-        to_del = st.selectbox("בחר למחיקה:", st.session_state.df["Task_Name"])
-        if st.button("מחק"):
-            st.session_state.df = st.session_state.df[st.session_state.df["Task_Name"] != to_del]
-            save_data(st.session_state.df)
-            st.rerun()
+    with col_b:
+        st.subheader("🏁 סטטוס אישורים סופיים")
+        # מציג את הטבלה הכללית עם דגש על אישור סמנכ"ל
+        st.dataframe(st.session_state.df[["Task_Name", "Final_Approval"]], use_container_width=True)
+        
+        # אפשרות לסמנכ"ל לתת אישור סופי (כפי שהיה קודם)
+        st.caption("מתן אישור סופי למשימות שהסתיימו:")
+        for i, r in st.session_state.df[st.session_state.df["Final_Approval"] != "כן"].iterrows():
+            if st.button(f"אישור סופי: {r['Task_Name']}", key=f"final_{r['ID']}"):
+                st.session_state.df.at[i, "Final_Approval"] = "כן"
+                save_data(st.session_state.df)
+                st.rerun()
