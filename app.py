@@ -7,9 +7,38 @@ import os
 # הגדרות עמוד
 st.set_page_config(page_title="מערכת מחסן - אחים כהן", layout="wide")
 
+# --- עיצוב CSS למלבנים צפים ---
+st.markdown("""
+    <style>
+    .stButton>button {
+        height: 150px;
+        border-radius: 20px;
+        border: 2px solid #e0e0e0;
+        background-color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        font-size: 24px;
+        font-weight: bold;
+        color: #1E3A8A;
+    }
+    .stButton>button:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+        border-color: #1E3A8A;
+        color: #ff4b4b;
+    }
+    .card-label {
+        text-align: center;
+        margin-top: -20px;
+        font-size: 14px;
+        color: #666;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 DB_FILE = "warehouse_management_db.csv"
 
-# --- פונקציות ליבה (נתונים) ---
+# --- פונקציות ליבה ---
 def load_data():
     if os.path.exists(DB_FILE):
         try:
@@ -28,79 +57,75 @@ def save_data(df_to_save):
 def get_daily_status(target_date):
     scheduled = []
     target_str = target_date.strftime("%Y-%m-%d")
+    # הגנה מפני DataFrame ריק או שגיאות Key
+    if st.session_state.df.empty: return []
+    
     for idx, row in st.session_state.df.iterrows():
         try:
-            if not row['Date']: continue
+            if not row.get('Date'): continue
             base_date = pd.to_datetime(row['Date']).to_pydatetime()
             diff_days = (target_date - base_date).days
             if diff_days >= 0:
                 is_hit = False
-                # לוגיקת 200 מופעים חוזרים
-                if row['Recurring'] == "לא" and diff_days == 0: is_hit = True
-                elif row['Recurring'] == "יומי" and diff_days < 200: is_hit = True
-                elif row['Recurring'] == "שבועי" and diff_days % 7 == 0 and (diff_days // 7) < 200: is_hit = True
-                elif row['Recurring'] == "דו-שבועי" and diff_days % 14 == 0 and (diff_days // 14) < 200: is_hit = True
-                elif row['Recurring'] == "חודשי" and diff_days % 30 == 0 and (diff_days // 30) < 200: is_hit = True
+                freq = row.get('Recurring', 'לא')
+                if freq == "לא" and diff_days == 0: is_hit = True
+                elif freq == "יומי" and diff_days < 200: is_hit = True
+                elif freq == "שבועי" and diff_days % 7 == 0: is_hit = True
+                elif freq == "דו-שבועי" and diff_days % 14 == 0: is_hit = True
+                elif freq == "חודשי" and diff_days % 30 == 0: is_hit = True
                 
                 if is_hit:
-                    done_list = str(row['Done_Dates']).split(",")
+                    done_dates = str(row.get('Done_Dates', ""))
                     scheduled.append({
                         "idx": idx, "id": row['ID'], "name": row['Task_Name'], 
-                        "desc": row['Description'], "is_done": target_str in done_list
+                        "desc": row['Description'], "is_done": target_str in done_dates.split(",")
                     })
         except: continue
     return scheduled
 
-# --- מסך בחירת משתמש גרפי (אחים כהן) ---
+# --- מסך כניסה מעוצב (אחים כהן) ---
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
 if st.session_state.user_role is None:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>ברוכים הבאים למערכת המחסן - אחים כהן</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A; font-family: sans-serif;'>ברוכים הבאים למערכת המחסן - אחים כהן</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: gray; font-size: 1.2em;'>אנא בחר את התפקיד שלך לכניסה למערכת</p>", unsafe_allow_html=True)
-    st.write("---")
+    st.write("<br>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3, gap="large")
     
     with col1:
-        st.markdown("<div style='text-align: center; font-size: 4rem;'>🔑</div>", unsafe_allow_html=True)
-        if st.button("מנהל WMS", use_container_width=True, type="primary"):
+        if st.button("🔑\n\nמנהל WMS", use_container_width=True):
             st.session_state.user_role = "מנהל WMS"
             st.rerun()
-        st.markdown("<p style='text-align: center;'>ניהול משימות, ביצוע והגדרות</p>", unsafe_allow_html=True)
+        st.markdown("<p class='card-label'>ניהול משימות, ביצוע והגדרות</p>", unsafe_allow_html=True)
 
     with col2:
-        st.markdown("<div style='text-align: center; font-size: 4rem;'>📦</div>", unsafe_allow_html=True)
-        if st.button("צוות מחסן", use_container_width=True):
+        if st.button("📦\n\nצוות מחסן", use_container_width=True):
             st.session_state.user_role = "צוות מחסן"
             st.rerun()
-        st.markdown("<p style='text-align: center;'>צפייה בסידור עבודה שבועי</p>", unsafe_allow_html=True)
+        st.markdown("<p class='card-label'>צפייה בסידור עבודה וביצוע</p>", unsafe_allow_html=True)
 
     with col3:
-        st.markdown("<div style='text-align: center; font-size: 4rem;'>📊</div>", unsafe_allow_html=True)
-        if st.button("סמנכ\"ל", use_container_width=True):
+        if st.button("📊\n\nסמנכ\"ל", use_container_width=True):
             st.session_state.user_role = "סמנכ\"ל"
             st.rerun()
-        st.markdown("<p style='text-align: center;'>דשבורד בקרה וסטטיסטיקה</p>", unsafe_allow_html=True)
+        st.markdown("<p class='card-label'>דשבורד בקרה וסטטיסטיקה</p>", unsafe_allow_html=True)
 
     st.stop()
 
-# --- המשך האפליקציה לאחר הזדהות ---
+# --- המשך האפליקציה ---
 if "df" not in st.session_state:
     st.session_state.df = load_data()
 
 user_role = st.session_state.user_role
-
-# תפריט צד
 st.sidebar.subheader(f"👤 משתמש: {user_role}")
-if st.sidebar.button("החלף משתמש"):
+if st.sidebar.button("התנתק / החלף משתמש"):
     st.session_state.user_role = None
     st.rerun()
 
-st.sidebar.divider()
-
-OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד מנהלים", "📋 סידור עבודה שבועי", "📅 לוח שנה משימות", "➕ הוספת משימה חדשה", "⚙️ הגדרות ומחיקה"
+OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד מנהלים", "📋 סידור עבודה שבועי", "📅 לוח שנה משימות", "➕ הוספת משימה", "⚙️ הגדרות"
 
 if user_role == "מנהל WMS":
     menu = [OPT_CAL, OPT_WORK, OPT_ADD, OPT_MANAGE, OPT_DASH]
@@ -111,32 +136,39 @@ else:
 
 choice = st.sidebar.radio("ניווט:", menu)
 
-# --- דפים ---
+# --- טיפול ב-KeyError ובסטטיסטיקה (תיקון לפי התמונה ששלחת) ---
 if choice == OPT_DASH:
-    st.header(f"📊 תמונת מצב יומית - {datetime.now().strftime('%d/%m/%Y')}")
+    st.header("📊 דשבורד בקרה לסמנכ\"ל")
     today_tasks = get_daily_status(datetime.now())
-    total, done = len(today_tasks), sum(1 for t in today_tasks if t['is_done'])
+    total = len(today_tasks)
+    done = sum(1 for t in today_tasks if t['is_done'])
+    
     c1, c2, c3 = st.columns(3)
     c1.metric("משימות להיום", total)
-    c2.metric("בוצעו בפועל", done)
+    c2.metric("בוצעו היום", done)
     pct = (done/total*100) if total > 0 else 0
-    c3.metric("אחוז עמידה ביעדים", f"{int(pct)}%")
+    c3.metric("עמידה ביעדים", f"{int(pct)}%")
+    
     st.divider()
     if today_tasks:
-        for t in today_tasks: st.write(f"{'✅' if t['is_done'] else '⏳'} **{t['name']}** - {t['desc']}")
-    else: st.info("אין משימות מתוכננות להיום.")
+        st.subheader(f"✅ משימות להיום ({datetime.now().strftime('%d/%m/%Y')}):")
+        for t in today_tasks:
+            st.write(f"- **{t['name']}**: {'בוצע ✅' if t['is_done'] else 'ממתין ⏳'}")
+    else:
+        st.info("אין משימות להיום.")
 
 elif choice == OPT_WORK:
     st.header("📋 סידור עבודה שבועי")
-    start_of_week = datetime.now() - timedelta(days=(datetime.now().weekday() + 1) % 7)
+    start = datetime.now() - timedelta(days=(datetime.now().weekday() + 1) % 7)
     days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(5)
     for i, day_label in enumerate(days):
-        curr_date = start_of_week + timedelta(days=i)
+        curr_date = start + timedelta(days=i)
         date_str = curr_date.strftime("%Y-%m-%d")
         with cols[i]:
             st.markdown(f"### {day_label}\n*{curr_date.strftime('%d/%m')}*")
-            for t in get_daily_status(curr_date):
+            tasks = get_daily_status(curr_date)
+            for t in tasks:
                 if t['is_done']: st.success(f"**{t['name']}**")
                 else:
                     st.warning(f"**{t['name']}**")
@@ -147,16 +179,17 @@ elif choice == OPT_WORK:
                             st.session_state.df.at[idx, "Done_Dates"] = f"{old},{date_str}".strip(",")
                             save_data(st.session_state.df)
                             st.rerun()
-            st.divider()
 
 elif choice == OPT_CAL:
-    st.header("📅 לוח שנה משימות")
+    st.header("📅 לוח שנה אינטראקטיבי")
     cal_events = []
     for _, row in st.session_state.df.iterrows():
         try:
-            base, done_list = pd.to_datetime(row['Date']).to_pydatetime(), str(row['Done_Dates']).split(",")
-            num = 200 if row['Recurring'] != "לא" else 1
-            gap = 1 if row['Recurring'] == "יומי" else 7 if row['Recurring'] == "שבועי" else 14 if row['Recurring'] == "דו-שבועי" else 30 if row['Recurring'] == "חודשי" else 0
+            base = pd.to_datetime(row['Date']).to_pydatetime()
+            done_list = str(row['Done_Dates']).split(",")
+            freq = row['Recurring']
+            num = 200 if freq != "לא" else 1
+            gap = 1 if freq == "יומי" else 7 if freq == "שבועי" else 14 if freq == "דו-שבועי" else 30 if freq == "חודשי" else 0
             for i in range(num):
                 curr = base + timedelta(days=i * gap)
                 c_str = curr.strftime("%Y-%m-%d")
@@ -168,22 +201,22 @@ elif choice == OPT_ADD:
     st.header("➕ הוספת משימה חדשה")
     with st.form("add_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        with c1: t_name, t_freq = st.text_input("שם המשימה"), st.selectbox("תדירות (200 מופעים)", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        with c2: t_date, t_desc = st.date_input("תאריך התחלה", datetime.now()), st.text_area("תיאור המשימה")
-        if st.form_submit_button("שמור משימה"):
+        with c1: t_name, t_freq = st.text_input("שם המשימה"), st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        with c2: t_date, t_desc = st.date_input("תאריך התחלה"), st.text_area("תיאור")
+        if st.form_submit_button("שמור"):
             if t_name:
                 new_id = int(st.session_state.df["ID"].max() + 1) if not st.session_state.df.empty else 1000
                 new_row = pd.DataFrame([{"ID": new_id, "Task_Name": t_name, "Description": t_desc, "Recurring": t_freq, "Date": t_date.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save_data(st.session_state.df)
-                st.success(f"נשמר בהצלחה")
+                st.success("נשמר!")
                 st.rerun()
 
 elif choice == OPT_MANAGE:
-    st.header("⚙️ ניהול נתונים")
+    st.header("⚙️ הגדרות מערכת")
     st.dataframe(st.session_state.df, use_container_width=True)
     if not st.session_state.df.empty:
-        to_del = st.selectbox("מחיקה:", st.session_state.df["Task_Name"].unique())
+        to_del = st.selectbox("בחר משימה למחיקה:", st.session_state.df["Task_Name"].unique())
         if st.button("מחק לצמיתות"):
             st.session_state.df = st.session_state.df[st.session_state.df["Task_Name"] != to_del]
             save_data(st.session_state.df)
