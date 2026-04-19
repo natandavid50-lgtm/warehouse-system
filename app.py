@@ -1,28 +1,36 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime, timedelta
 from streamlit_calendar import calendar
+import os
 
 # הגדרות עמוד
 st.set_page_config(page_title="מערכת ניהול מחסן", layout="wide")
 
-if "selected_event" not in st.session_state:
-    st.session_state.selected_event = None
-
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- ניהול נתונים מקומי (במקום Google Sheets) ---
+DB_FILE = "warehouse_data.csv"
 
 def load_data():
-    try:
-        data = conn.read(ttl="0")
-        if data is None or data.empty:
-            return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates", "Final_Approval"])
-        data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
+    if os.path.exists(DB_FILE):
+        data = pd.read_csv(DB_FILE)
+        # הבטחת קיום עמודות הכרחיות
+        cols = ["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates", "Final_Approval"]
+        for col in cols:
+            if col not in data.columns:
+                data[col] = ""
         return data.fillna("")
-    except Exception:
-        return pd.DataFrame()
+    else:
+        # יצירת בסיס נתונים חדש אם לא קיים
+        return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates", "Final_Approval"])
+
+def save_data(df):
+    df.to_csv(DB_FILE, index=False)
 
 df = load_data()
+
+# אתחול ה-State עבור לחיצה על אירועים
+if "selected_event" not in st.session_state:
+    st.session_state.selected_event = None
 
 # --- תפריט צד ---
 st.sidebar.title("מערכת ניהול מחסן")
@@ -43,99 +51,127 @@ else:
 
 choice = st.sidebar.radio("ניווט:", menu)
 
-# --- לוגיקת צביעה חכמה ללוח שנה ---
+# --- 1. לוח שנה אינטראקטיבי ---
 if choice == opt1:
     st.header(opt1)
     events = []
     for _, r in df.iterrows():
         try:
             base_date = pd.to_datetime(r['Date']).to_pydatetime()
-            done_dates = str(r.get('Done_Dates', "")).split(",") # רשימת תאריכים שבוצעו
+            done_dates = str(r['Done_Dates']).split(",") if r['Done_Dates'] else []
             
-            iterations = 30 if r['Recurring'] == "יומי" else 12 if r['Recurring'] == "שבועי" else 6 if r['Recurring'] == "דו-שבועי" else 4 if r['Recurring'] == "חודשי" else 1
-            days_step = 1 if r['Recurring'] == "יומי" else 7 if r['Recurring'] == "שבועי" else 14 if r['Recurring'] == "דו-שבועי" else 30 if r['Recurring'] == "חודשי" else 0
+            # לוגיקת חזרתיות
+            iterations = 30 if r['Recurring'] == "יומי" else 12 if r['Recurring'] == "שבועי" else 8 if r['Recurring'] == "דו-שבועי" else 4 if r['Recurring'] == "חודשי" else 1
+            step = 1 if r['Recurring'] == "יומי" else 7 if r['Recurring'] == "שבועי" else 14 if r['Recurring'] == "דו-שבועי" else 30 if r['Recurring'] == "חודשי" else 0
             
             for i in range(iterations):
-                curr = base_date + timedelta(days=i * days_step)
+                curr = base_date + timedelta(days=i * step)
                 curr_str = curr.strftime("%Y-%m-%d")
                 
-                # צביעה פרטנית: אם התאריך הספציפי ברשימת הבוצעו -> כחול. אחרת -> אדום.
+                # צבעים: ירוק (מאושר), כחול (בוצע באותו יום), אדום (ממתין)
                 color = "#28a745" if r['Final_Approval'] == "כן" else "#007bff" if curr_str in done_dates else "#dc3545"
                 
                 events.append({
                     "id": f"{r['ID']}_{curr_str}",
-                    "title": r['Task_Name'],
+                    "title": str(r['Task_Name']),
                     "start": curr_str,
                     "color": color,
-                    "extendedProps": {"desc": r['Description'], "id": r['ID']}
+                    "extendedProps": {"desc": r['Description'], "status": "בוצע" if curr_str in done_dates else "ממתין"}
                 })
         except: continue
 
     res = calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 650})
+    
     if res.get("eventClick"):
         st.session_state.selected_event = res["eventClick"]["event"]
+    
     if st.session_state.selected_event:
-        st.info(f"**משימה:** {st.session_state.selected_event['title']} | {st.session_state.selected_event['extendedProps']['desc']}")
+        ev = st.session_state.selected_event
+        st.info(f"**משימה:** {ev['title']} | **תיאור:** {ev['extendedProps']['desc']} | **סטטוס:** {ev['extendedProps']['status']}")
 
-# --- דשבורד סמנכ"ל משופר ---
-elif choice == opt5:
-    st.header("📊 דשבורד בקרה למנהלים")
-    
-    col1, col2, col3 = st.columns(3)
-    total_tasks = len(df)
-    # ספירת ביצועים כוללת מתוך מחרוזת התאריכים
-    total_done = sum([len(str(x).split(",")) if x else 0 for x in df['Done_Dates']])
-    
-    col1.metric("סה\"כ משימות מוגדרות", total_tasks)
-    col2.metric("סה\"כ ביצועים בשטח", total_done)
-    col3.metric("ממתין לאישור סופי", len(df[df["Final_Approval"] != "כן"]))
-
-    st.subheader("פירוט סטטוס משימות")
-    st.table(df[["ID", "Task_Name", "Recurring", "Final_Approval"]])
-    
-    st.divider()
-    st.subheader("✅ אישור משימות שבוצעו")
-    to_app = df[df["Final_Approval"] != "כן"]
-    for i, r in to_app.iterrows():
-        if st.button(f"אשר סופית: {r['Task_Name']}", key=f"ap_{r['ID']}"):
-            df.at[i, "Final_Approval"] = "כן"
-            conn.update(data=df)
-            st.rerun()
-
-# --- סידור עבודה לצוות (עם שמירת תאריך ספציפי) ---
-elif choice == opt4:
-    st.header("📦 סידור עבודה יומי")
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    st.subheader(f"משימות להיום: {today_str}")
-    
-    for i, r in df.iterrows():
-        # בדיקה אם המשימה חלה היום (לוגיקה דומה ללוח שנה)
-        done_dates = str(r.get('Done_Dates', "")).split(",")
-        if st.button(f"סמן כבוצע: {r['Task_Name']}", key=f"work_{r['ID']}"):
-            if today_str not in done_dates:
-                new_done = f"{r['Done_Dates']},{today_str}".strip(",")
-                df.at[i, "Done_Dates"] = new_done
-                conn.update(data=df)
-                st.success(f"בוצע ב-{today_str}!")
-                st.rerun()
-
-# --- שאר הדפים (הוספה וניהול) נשארים כפי שהיו ---
-elif choice == opt3:
-    st.header(opt3)
-    with st.form("add"):
-        n = st.text_input("שם המשימה")
-        r = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        dt = st.date_input("תאריך התחלה")
-        if st.form_submit_button("שמור"):
-            new_id = int(df["ID"].max() + 1) if not df.empty else 1
-            new_row = pd.DataFrame([{"ID": new_id, "Task_Name": n, "Description": "", "Recurring": r, "Date": dt.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
-            conn.update(data=pd.concat([df, new_row], ignore_index=True))
-            st.rerun()
-
+# --- 2. ניהול ומחיקה ---
 elif choice == opt2:
     st.header(opt2)
-    st.dataframe(df)
-    tid = st.selectbox("מחק ID:", df["ID"].unique())
-    if st.button("מחק"):
-        conn.update(data=df[df["ID"] != tid])
-        st.rerun()
+    st.dataframe(df, use_container_width=True)
+    if not df.empty:
+        tid = st.selectbox("בחר מזהה (ID) למחיקה:", df["ID"].unique())
+        if st.button("🗑️ מחק משימה לצמיתות"):
+            df = df[df["ID"] != tid]
+            save_data(df)
+            st.success("המשימה נמחקה")
+            st.rerun()
+
+# --- 3. הוספת משימה ---
+elif choice == opt3:
+    st.header(opt3)
+    with st.form("add_task"):
+        name = st.text_input("שם המשימה")
+        desc = st.text_area("תיאור")
+        rec = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        start_dt = st.date_input("תאריך התחלה", datetime.now())
+        if st.form_submit_button("✅ שמור משימה"):
+            new_id = int(df["ID"].max() + 1) if not df.empty else 100
+            new_row = pd.DataFrame([{"ID": new_id, "Task_Name": name, "Description": desc, "Recurring": rec, "Date": start_dt.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
+            df = pd.concat([df, new_row], ignore_index=True)
+            save_data(df)
+            st.success("המשימה נשמרה במערכת")
+            st.rerun()
+
+# --- 4. סידור עבודה שבועי (צוות מחסן) ---
+elif choice == opt4:
+    st.header("📦 סידור עבודה שבועי - ראשון עד חמישי")
+    today = datetime.now()
+    start_of_week = today - timedelta(days=(today.weekday() + 1) % 7)
+    
+    cols = st.columns(5)
+    days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
+    
+    for i, day in enumerate(days):
+        target_dt = start_of_week + timedelta(days=i)
+        t_str = target_dt.strftime("%Y-%m-%d")
+        with cols[i]:
+            st.subheader(f"{day} {target_dt.strftime('%d/%m')}")
+            # לוגיקת הצגת משימות ליום ספציפי
+            for idx, r in df.iterrows():
+                try:
+                    base = pd.to_datetime(r['Date']).to_pydatetime()
+                    diff = (target_dt - base).days
+                    show = False
+                    if diff == 0: show = True
+                    elif r['Recurring'] == "יומי" and diff > 0: show = True
+                    elif r['Recurring'] == "שבועי" and diff > 0 and diff % 7 == 0: show = True
+                    elif r['Recurring'] == "דו-שבועי" and diff > 0 and diff % 14 == 0: show = True
+                    elif r['Recurring'] == "חודשי" and diff > 0 and diff % 30 == 0: show = True
+                    
+                    if show:
+                        done_list = str(r['Done_Dates']).split(",")
+                        if t_str in done_list:
+                            st.write(f"✅ {r['Task_Name']}")
+                        else:
+                            st.write(f"⏳ {r['Task_Name']}")
+                            if st.button("בצע", key=f"do_{r['ID']}_{t_str}"):
+                                current_done = str(r['Done_Dates'])
+                                new_done = f"{current_done},{t_str}".strip(",")
+                                df.at[idx, "Done_Dates"] = new_done
+                                save_data(df)
+                                st.rerun()
+                except: continue
+            st.divider()
+
+# --- 5. דשבורד מנהלים (סמנכ"ל) ---
+elif choice == opt5:
+    st.header("📊 דשבורד ניהולי")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("סה\"כ משימות", len(df))
+    done_count = sum([len(str(x).split(",")) for x in df['Done_Dates'] if x])
+    c2.metric("ביצועים שדווחו", done_count)
+    c3.metric("ממתינים לאישור סופי", len(df[df["Final_Approval"] != "כן"]))
+
+    st.subheader("אישור סופי של משימות שבוצעו")
+    to_approve = df[df["Final_Approval"] != "כן"]
+    for i, r in to_approve.iterrows():
+        if st.button(f"אשר לצמיתות: {r['Task_Name']}", key=f"fin_{r['ID']}"):
+            df.at[i, "Final_Approval"] = "כן"
+            save_data(df)
+            st.success(f"משימה {r['Task_Name']} אושרה סופית")
+            st.rerun()
