@@ -5,7 +5,7 @@ from streamlit_calendar import calendar
 import os
 
 # הגדרות עמוד
-st.set_page_config(page_title="מערכת ניהול מחסן חכמה", layout="wide")
+st.set_page_config(page_title="מערכת מחסן - אחים כהן", layout="wide")
 
 DB_FILE = "warehouse_management_db.csv"
 
@@ -35,6 +35,7 @@ def get_daily_status(target_date):
             diff_days = (target_date - base_date).days
             if diff_days >= 0:
                 is_hit = False
+                # לוגיקת 200 מופעים חוזרים
                 if row['Recurring'] == "לא" and diff_days == 0: is_hit = True
                 elif row['Recurring'] == "יומי" and diff_days < 200: is_hit = True
                 elif row['Recurring'] == "שבועי" and diff_days % 7 == 0 and (diff_days // 7) < 200: is_hit = True
@@ -43,54 +44,56 @@ def get_daily_status(target_date):
                 
                 if is_hit:
                     done_list = str(row['Done_Dates']).split(",")
-                    scheduled.append({"idx": idx, "id": row['ID'], "name": row['Task_Name'], "desc": row['Description'], "is_done": target_str in done_list})
+                    scheduled.append({
+                        "idx": idx, "id": row['ID'], "name": row['Task_Name'], 
+                        "desc": row['Description'], "is_done": target_str in done_list
+                    })
         except: continue
     return scheduled
 
-# --- מסך בחירת משתמש גרפי (Visual Login) ---
+# --- מסך בחירת משתמש גרפי (אחים כהן) ---
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
 if st.session_state.user_role is None:
-    # עיצוב מרכז למסך
-    st.markdown("<h1 style='text-align: center;'>ברוכים הבאים למערכת המחסן</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'>אנא בחר את התפקיד שלך לכניסה למערכת</p>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A;'>ברוכים הבאים למערכת המחסן - אחים כהן</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray; font-size: 1.2em;'>אנא בחר את התפקיד שלך לכניסה למערכת</p>", unsafe_allow_html=True)
     st.write("---")
     
-    # יצירת 3 עמודות עבור הכרטיסים
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("<div style='text-align: center;'><h2>🔑</h2></div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; font-size: 4rem;'>🔑</div>", unsafe_allow_html=True)
         if st.button("מנהל WMS", use_container_width=True, type="primary"):
             st.session_state.user_role = "מנהל WMS"
             st.rerun()
-        st.caption("גישה מלאה: ניהול משימות, ביצוע ודוחות")
+        st.markdown("<p style='text-align: center;'>ניהול משימות, ביצוע והגדרות</p>", unsafe_allow_html=True)
 
     with col2:
-        st.markdown("<div style='text-align: center;'><h2>📦</h2></div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; font-size: 4rem;'>📦</div>", unsafe_allow_html=True)
         if st.button("צוות מחסן", use_container_width=True):
             st.session_state.user_role = "צוות מחסן"
             st.rerun()
-        st.caption("צפייה בסידור עבודה ובלוח השנה")
+        st.markdown("<p style='text-align: center;'>צפייה בסידור עבודה שבועי</p>", unsafe_allow_html=True)
 
     with col3:
-        st.markdown("<div style='text-align: center;'><h2>📊</h2></div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; font-size: 4rem;'>📊</div>", unsafe_allow_html=True)
         if st.button("סמנכ\"ל", use_container_width=True):
             st.session_state.user_role = "סמנכ\"ל"
             st.rerun()
-        st.caption("צפייה בדשבורד בקרה וסטטיסטיקות")
+        st.markdown("<p style='text-align: center;'>דשבורד בקרה וסטטיסטיקה</p>", unsafe_allow_html=True)
 
     st.stop()
 
-# --- המשך האפליקציה (לאחר בחירה) ---
+# --- המשך האפליקציה לאחר הזדהות ---
 if "df" not in st.session_state:
     st.session_state.df = load_data()
 
 user_role = st.session_state.user_role
 
 # תפריט צד
-st.sidebar.title(f"שלום, {user_role}")
+st.sidebar.subheader(f"👤 משתמש: {user_role}")
 if st.sidebar.button("החלף משתמש"):
     st.session_state.user_role = None
     st.rerun()
@@ -106,9 +109,9 @@ elif user_role == "צוות מחסן":
 else:
     menu = [OPT_DASH, OPT_CAL]
 
-choice = st.sidebar.radio("עבור אל:", menu)
+choice = st.sidebar.radio("ניווט:", menu)
 
-# --- דפים (לוגיקה זהה לגרסה המוצלחת) ---
+# --- דפים ---
 if choice == OPT_DASH:
     st.header(f"📊 תמונת מצב יומית - {datetime.now().strftime('%d/%m/%Y')}")
     today_tasks = get_daily_status(datetime.now())
@@ -165,7 +168,7 @@ elif choice == OPT_ADD:
     st.header("➕ הוספת משימה חדשה")
     with st.form("add_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        with c1: t_name, t_freq = st.text_input("שם המשימה"), st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        with c1: t_name, t_freq = st.text_input("שם המשימה"), st.selectbox("תדירות (200 מופעים)", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
         with c2: t_date, t_desc = st.date_input("תאריך התחלה", datetime.now()), st.text_area("תיאור המשימה")
         if st.form_submit_button("שמור משימה"):
             if t_name:
@@ -173,7 +176,7 @@ elif choice == OPT_ADD:
                 new_row = pd.DataFrame([{"ID": new_id, "Task_Name": t_name, "Description": t_desc, "Recurring": t_freq, "Date": t_date.strftime("%Y-%m-%d"), "Done_Dates": "", "Final_Approval": "לא"}])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
                 save_data(st.session_state.df)
-                st.success(f"נשמר בהצלחה: {t_name}")
+                st.success(f"נשמר בהצלחה")
                 st.rerun()
 
 elif choice == OPT_MANAGE:
