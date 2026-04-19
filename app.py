@@ -2,12 +2,13 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime, timedelta
+import calendar as cal_lib
 from streamlit_calendar import calendar
 
-# הגדרות עמוד - מבטיח שהלוח לא ייצא מפרופורציה
+# הגדרות עמוד
 st.set_page_config(page_title="מערכת ניהול מחסן", layout="wide")
 
-# אתחול ה-State עבור הפירוט בלחיצה
+# אתחול ה-State
 if "selected_event" not in st.session_state:
     st.session_state.selected_event = None
 
@@ -32,136 +33,125 @@ st.sidebar.divider()
 
 opt1, opt2, opt3, opt4, opt5 = (
     "📅 לוח שנה אינטראקטיבי", "⚙️ ניהול ומחיקת משימות", 
-    "➕ הוספת משימה", "📦 ביצוע (מחסן)", "✅ אישור סמנכ\"ל"
+    "➕ הוספת משימה", "📦 סידור עבודה שבועי (מחסן)", "✅ אישור סמנכ\"ל"
 )
 
-# הגדרת הרשאות
 if user_role == "מנהל WMS":
     menu = [opt1, opt2, opt3, opt4, opt5]
 elif user_role == "צוות מחסן":
-    menu = [opt1, opt4]
+    menu = [opt4, opt1]
 else:
     menu = [opt1, opt5]
 
 choice = st.sidebar.radio("ניווט:", menu)
 
-# --- 1. לוח שנה אינטראקטיבי (תדירויות מלאות) ---
+# --- 1. לוח שנה אינטראקטיבי ---
 if choice == opt1:
     st.header(opt1)
-    
     events = []
     for _, r in df.iterrows():
         try:
             if r['Date'] == "לא צוין": continue
             base_date = pd.to_datetime(r['Date']).to_pydatetime()
-            
-            # לוגיקת חזרתיות מלאה
-            iterations = 1
-            days_step = 0
-            
-            if r['Recurring'] == "יומי": iterations, days_step = 30, 1
-            elif r['Recurring'] == "שבועי": iterations, days_step = 12, 7
-            elif r['Recurring'] == "דו-שבועי": iterations, days_step = 6, 14
-            elif r['Recurring'] == "חודשי": iterations, days_step = 4, 30
+            iterations = 30 if r['Recurring'] == "יומי" else 12 if r['Recurring'] == "שבועי" else 6 if r['Recurring'] == "דו-שבועי" else 4 if r['Recurring'] == "חודשי" else 1
+            days_step = 1 if r['Recurring'] == "יומי" else 7 if r['Recurring'] == "שבועי" else 14 if r['Recurring'] == "דו-שבועי" else 30 if r['Recurring'] == "חודשי" else 0
             
             for i in range(iterations):
                 curr = base_date + timedelta(days=i * days_step)
-                
-                # צבעים לפי סטטוס
                 color = "#28a745" if r['Final_Approval'] == "כן" else "#dc3545" if r['Warehouse_Done'] == "לא" else "#007bff"
-                
                 events.append({
                     "id": f"{r['ID']}_{i}",
                     "title": str(r['Task_Name']),
                     "start": curr.strftime("%Y-%m-%d"),
                     "color": color,
-                    "extendedProps": {
-                        "orig_id": str(r['ID']),
-                        "desc": str(r['Description']),
-                        "rec": str(r['Recurring']),
-                        "status": "בוצע" if r['Warehouse_Done'] == "כן" else "ממתין"
-                    }
+                    "extendedProps": {"orig_id": str(r['ID']), "desc": str(r['Description']), "rec": str(r['Recurring'])}
                 })
         except: continue
 
-    # הצגת הלוח עם הגבלת גובה למניעת עיוות
     res = calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 650})
-    
-    # תפיסת לחיצה
     if res.get("eventClick"):
         st.session_state.selected_event = res["eventClick"]["event"]
     
     if st.session_state.selected_event:
         ev = st.session_state.selected_event
-        st.divider()
-        st.subheader(f"🔍 פירוט משימה: {ev['title']}")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.write(f"**תיאור:** {ev['extendedProps']['desc']}")
-            st.write(f"**תדירות:** {ev['extendedProps']['rec']}")
-        with c2:
-            st.write(f"**סטטוס:** {ev['extendedProps']['status']}")
-            if st.button("סגור פירוט"):
-                st.session_state.selected_event = None
-                st.rerun()
+        st.info(f"**משימה:** {ev['title']} | **תיאור:** {ev['extendedProps']['desc']}")
 
-# --- 2. ניהול ומחיקה לצמיתות ---
+# --- 4. סידור עבודה שבועי למחסן (התצוגה החדשה שביקשת) ---
+elif choice == opt4:
+    st.header("📦 סידור עבודה שבועי - צוות מחסן")
+    
+    # חישוב ימי השבוע הנוכחי (ראשון עד חמישי)
+    today = datetime.now()
+    start_of_week = today - timedelta(days=(today.weekday() + 1) % 7) # יום ראשון הקרוב/האחרון
+    
+    days_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
+    cols = st.columns(5)
+    
+    for i, day_name in enumerate(days_names):
+        target_date = start_of_week + timedelta(days=i)
+        date_str = target_date.strftime("%Y-%m-%d")
+        
+        with cols[i]:
+            st.markdown(f"### יום {day_name}\n**{target_date.strftime('%d/%m')}**")
+            st.divider()
+            
+            # סינון משימות שחלות ביום הזה (כולל משימות חוזרות)
+            day_tasks = []
+            for _, r in df.iterrows():
+                try:
+                    base_date = pd.to_datetime(r['Date']).to_pydatetime()
+                    # בדיקה אם המשימה חלה ביום הספציפי הזה בלוח
+                    rec = r['Recurring']
+                    diff = (target_date - base_date).days
+                    is_today = False
+                    
+                    if diff == 0: is_today = True
+                    elif rec == "יומי" and diff > 0: is_today = True
+                    elif rec == "שבועי" and diff > 0 and diff % 7 == 0: is_today = True
+                    elif rec == "דו-שבועי" and diff > 0 and diff % 14 == 0: is_today = True
+                    elif rec == "חודשי" and diff > 0 and diff % 30 == 0: is_today = True
+                    
+                    if is_today:
+                        status_icon = "✅" if r['Warehouse_Done'] == "כן" else "⏳"
+                        st.write(f"{status_icon} **{r['Task_Name']}**")
+                        if r['Warehouse_Done'] == "לא":
+                            if st.button("בצע", key=f"btn_{r['ID']}_{date_str}"):
+                                df.loc[df['ID'] == r['ID'], "Warehouse_Done"] = "כן"
+                                conn.update(data=df)
+                                st.rerun()
+                        st.caption(f"ID: {r['ID']}")
+                        st.divider()
+                except: continue
+
+# --- 2. ניהול ומחיקה ---
 elif choice == opt2:
     st.header(opt2)
-    if df.empty:
-        st.info("אין משימות.")
-    else:
-        st.dataframe(df, use_container_width=True)
-        st.divider()
-        task_id = st.selectbox("בחר ID של משימה למחיקה לצמיתות:", df["ID"].unique())
-        if st.button("🗑️ מחק משימה לצמיתות"):
-            updated_df = df[df["ID"] != task_id]
-            conn.update(data=updated_df)
-            st.success(f"משימה {task_id} נמחקה מהגיליון.")
-            st.rerun()
+    st.dataframe(df, use_container_width=True)
+    task_id = st.selectbox("בחר ID למחיקה:", df["ID"].unique())
+    if st.button("🗑️ מחק לצמיתות"):
+        conn.update(data=df[df["ID"] != task_id])
+        st.success("נמחק!")
+        st.rerun()
 
-# --- 3. הוספת משימה (כולל חודשי) ---
+# --- 3. הוספת משימה ---
 elif choice == opt3:
     st.header(opt3)
-    with st.form("add_form"):
-        t_name = st.text_input("שם המשימה")
-        t_desc = st.text_area("תיאור")
-        col1, col2 = st.columns(2)
-        with col1:
-            t_rec = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        with col2:
-            t_date = st.date_input("תאריך התחלה", datetime.now())
-        
-        if st.form_submit_button("שמור משימה"):
-            if t_name:
-                next_id = int(df["ID"].max() + 1) if not df.empty else 1
-                new_row = pd.DataFrame([{"ID": next_id, "Task_Name": t_name, "Description": t_desc, "Recurring": t_rec, "Date": t_date.strftime("%Y-%m-%d"), "Warehouse_Done": "לא", "Final_Approval": "לא"}])
-                conn.update(data=pd.concat([df, new_row], ignore_index=True))
-                st.success("המשימה נוספה!")
-                st.rerun()
-
-# --- 4. ביצוע (מחסן) ---
-elif choice == opt4:
-    st.header(opt4)
-    pending = df[df["Warehouse_Done"] == "לא"]
-    if pending.empty:
-        st.info("אין משימות פתוחות.")
-    else:
-        for i, r in pending.iterrows():
-            if st.button(f"סמן כבוצע: {r['Task_Name']}", key=f"d_{r['ID']}"):
-                df.at[i, "Warehouse_Done"] = "כן"
-                conn.update(data=df)
-                st.rerun()
+    with st.form("add"):
+        n = st.text_input("שם")
+        d = st.text_area("תיאור")
+        r = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        dt = st.date_input("תאריך", datetime.now())
+        if st.form_submit_button("שמור"):
+            new_id = int(df["ID"].max() + 1) if not df.empty else 1
+            new_row = pd.DataFrame([{"ID": new_id, "Task_Name": n, "Description": d, "Recurring": r, "Date": dt.strftime("%Y-%m-%d"), "Warehouse_Done": "לא", "Final_Approval": "לא"}])
+            conn.update(data=pd.concat([df, new_row], ignore_index=True))
+            st.rerun()
 
 # --- 5. אישור סמנכ"ל ---
 elif choice == opt5:
     st.header(opt5)
-    to_app = df[(df["Warehouse_Done"] == "כן") & (df["Final_Approval"] == "לא")]
-    if to_app.empty:
-        st.info("אין משימות הממתינות לאישור.")
-    else:
-        for i, r in to_app.iterrows():
-            if st.button(f"אשר סופית: {r['Task_Name']}", key=f"a_{r['ID']}"):
-                df.at[i, "Final_Approval"] = "כן"
-                conn.update(data=df)
-                st.rerun()
+    for i, r in df[(df["Warehouse_Done"]=="כן") & (df["Final_Approval"]=="לא")].iterrows():
+        if st.button(f"אשר: {r['Task_Name']}", key=f"app_{r['ID']}"):
+            df.at[i, "Final_Approval"] = "כן"
+            conn.update(data=df)
+            st.rerun()
