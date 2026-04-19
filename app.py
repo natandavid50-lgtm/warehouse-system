@@ -7,77 +7,79 @@ import os
 # 1. הגדרות עמוד
 st.set_page_config(page_title="מערכת מחסן - אחים כהן", layout="wide", initial_sidebar_state="expanded")
 
-# 2. עיצוב UI/UX ממוקד קריאות ונוכחות
+# 2. עיצוב UI/UX - פרופורציות נכונות וקריאות
 st.markdown("""
     <style>
     /* רקע כללי */
     .stApp {
-        background: #f1f5f9;
+        background: #f8fafc;
     }
     
-    /* תיקון Sidebar - קריאות מקסימלית */
+    /* תיקון Sidebar - צבעים בולטים וקריאים */
     section[data-testid="stSidebar"] {
         background-color: #0f172a !important;
     }
-    /* צבע הטקסט של הרדיו באטנס והלייבלים */
+    /* צבע הטקסט בניווט */
     section[data-testid="stSidebar"] .st-bd, 
     section[data-testid="stSidebar"] .st-bc,
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span {
-        color: white !important;
-        font-size: 1.15rem !important;
-        font-weight: 500 !important;
+        color: #ffffff !important;
+        font-size: 1.1rem !important;
     }
-    /* צבע הכותרת ב-Sidebar */
     section[data-testid="stSidebar"] h3 {
-        color: #3b82f6 !important;
+        color: #60a5fa !important;
         font-weight: 800 !important;
     }
 
-    /* מסך כניסה - כפתורים ענקיים למילוי המסך */
+    /* מסך כניסה - כפתורים בפרופורציה נורמלית */
     .login-container {
-        padding-top: 50px;
+        padding: 80px 20px;
+        text-align: center;
     }
     .stButton>button {
-        height: 450px !important; /* גובה ענקי למילוי המסך */
+        height: 300px !important; /* גובה מאוזן יותר */
         width: 100% !important;
-        border-radius: 35px !important;
+        border-radius: 25px !important;
         background: white !important;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+        transition: all 0.3s ease !important;
+        border: 1px solid #f1f5f9 !important;
+        padding: 20px !important;
     }
     .stButton>button:hover {
-        transform: scale(1.02) !important;
-        box-shadow: 0 30px 60px rgba(0,0,0,0.15) !important;
-        background: #f8fafc !important;
+        transform: translateY(-10px) !important;
+        box-shadow: 0 20px 45px rgba(0,0,0,0.12) !important;
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
     }
     /* טקסט בתוך כפתורי הכניסה */
     .stButton>button p {
-        font-size: 38px !important;
-        font-weight: 900 !important;
+        font-size: 32px !important;
+        font-weight: 800 !important;
+        margin-top: 15px !important;
     }
 
-    /* פס צבע תחתון לכל כפתור כניסה */
-    div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-bottom: 20px solid #1e40af !important; color: #1e40af !important; }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-bottom: 20px solid #d97706 !important; color: #d97706 !important; }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-bottom: 20px solid #059669 !important; color: #059669 !important; }
+    /* פסי צבע תחתונים */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-bottom: 12px solid #2563eb !important; color: #1e40af !important; }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-bottom: 12px solid #d97706 !important; color: #d97706 !important; }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-bottom: 12px solid #059669 !important; color: #059669 !important; }
 
-    /* עיצוב כרטיסי משימות */
+    /* כרטיסי משימות */
     .task-card {
         background: white;
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 15px;
-        border-right: 10px solid #3b82f6;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        border-right: 8px solid #3b82f6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     </style>
     """, unsafe_allow_html=True)
 
 DB_FILE = "warehouse_management_db.csv"
 
-# --- לוגיקה ופונקציות (ללא שינוי) ---
+# --- פונקציות ניהול נתונים ---
 def load_data():
     if os.path.exists(DB_FILE):
         try:
@@ -106,56 +108,48 @@ def get_daily_status(target_date):
         except: continue
     return scheduled
 
-# 4. מסך כניסה משודרג
+# 4. ניהול כניסה
 if "user_role" not in st.session_state: st.session_state.user_role = None
 
 if st.session_state.user_role is None:
     st.markdown("<div class='login-container'>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; color: #0f172a; font-size: 4rem; font-weight: 900;'>מערכת המחסן - אחים כהן</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #475569; font-size: 1.8rem; margin-bottom: 50px;'>ניהול לוגיסטי מתקדם | בחר תפקיד לכניסה</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #0f172a; font-size: 3.5rem; font-weight: 800; margin-bottom: 10px;'>מערכת המחסן - אחים כהן</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #64748b; font-size: 1.5rem; margin-bottom: 60px;'>בחר תפקיד לכניסה למערכת</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3, gap="large")
     with col1:
-        if st.button("🔑\nמנהל WMS", key="admin_btn"):
-            st.session_state.user_role = "מנהל WMS"
-            st.rerun()
+        if st.button("🔑\nמנהל WMS", key="btn1"):
+            st.session_state.user_role = "מנהל WMS"; st.rerun()
     with col2:
-        if st.button("📦\nצוות מחסן", key="staff_btn"):
-            st.session_state.user_role = "צוות מחסן"
-            st.rerun()
+        if st.button("📦\nצוות מחסן", key="btn2"):
+            st.session_state.user_role = "צוות מחסן"; st.rerun()
     with col3:
-        if st.button("📊\nסמנכ\"ל", key="vp_btn"):
-            st.session_state.user_role = "סמנכ\"ל"
-            st.rerun()
+        if st.button("📈\nסמנכ\"ל", key="btn3"):
+            st.session_state.user_role = "סמנכ\"ל"; st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# 5. טעינת נתונים ותפריט
+# 5. תפריט Sidebar
 if "df" not in st.session_state: st.session_state.df = load_data()
 
 with st.sidebar:
     st.markdown(f"<h3>שלום, {st.session_state.user_role} 👋</h3>", unsafe_allow_html=True)
     st.divider()
     OPT_CAL, OPT_WORK, OPT_ADD, OPT_MANAGE, OPT_DASH = "📅 לוח שנה", "📋 סידור עבודה", "➕ הוספת משימה", "⚙️ הגדרות", "📊 דשבורד בקרה"
-    
     if st.session_state.user_role == "מנהל WMS": menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
     elif st.session_state.user_role == "צוות מחסן": menu = [OPT_WORK, OPT_CAL]
     else: menu = [OPT_DASH, OPT_CAL]
-    
-    choice = st.radio("ניווט במערכת:", menu)
-    
-    st.write("<br>"*10, unsafe_allow_html=True)
+    choice = st.radio("ניווט:", menu)
     if st.button("🚪 התנתקות", use_container_width=True):
-        st.session_state.user_role = None
-        st.rerun()
+        st.session_state.user_role = None; st.rerun()
 
-# 6. הצגת דפים (נשאר ללא שינוי לוגי, רק שיפור קל בלוח שנה)
+# 6. הצגת דפים
 if choice == OPT_DASH:
     st.title("📊 דשבורד בקרה")
     tasks = get_daily_status(datetime.now())
-    c1, c2, c3 = st.columns(3)
-    c1.metric("משימות היום", len(tasks))
-    c2.metric("בוצעו", sum(1 for t in tasks if t['is_done']))
+    m1, m2 = st.columns(2)
+    m1.metric("משימות היום", len(tasks))
+    m2.metric("בוצעו", sum(1 for t in tasks if t['is_done']))
     st.divider()
     for t in tasks:
         color = "#10b981" if t['is_done'] else "#f59e0b"
@@ -169,7 +163,7 @@ elif choice == OPT_WORK:
     for i, day in enumerate(days):
         curr = start + timedelta(days=i)
         with cols[i]:
-            st.markdown(f"<div style='background:#0f172a; color:white; padding:10px; border-radius:10px; text-align:center;'>{day} {curr.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#1e293b; color:white; padding:10px; border-radius:10px; text-align:center;'>{day} {curr.strftime('%d/%m')}</div>", unsafe_allow_html=True)
             for t in get_daily_status(curr):
                 if t['is_done']: st.success(t['name'])
                 else:
@@ -195,22 +189,22 @@ elif choice == OPT_CAL:
 
 elif choice == OPT_ADD:
     st.title("➕ הוספת משימה")
-    with st.form("add_task_form"):
+    with st.form("add"):
         n = st.text_input("שם המשימה")
         f = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
         d = st.date_input("תאריך התחלה")
         ds = st.text_area("תיאור")
-        if st.form_submit_button("שמור במערכת"):
+        if st.form_submit_button("שמור"):
             new_id = int(st.session_state.df["ID"].max()+1) if not st.session_state.df.empty else 1000
             new_row = pd.DataFrame([{"ID":new_id, "Task_Name":n, "Description":ds, "Recurring":f, "Date":d.strftime("%Y-%m-%d"), "Done_Dates":""}])
             st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-            save_data(st.session_state.df); st.success("המשימה נוספה!"); st.rerun()
+            save_data(st.session_state.df); st.success("נוסף!"); st.rerun()
 
 elif choice == OPT_MANAGE:
     st.title("⚙️ הגדרות")
     st.dataframe(st.session_state.df, use_container_width=True)
     if not st.session_state.df.empty:
-        t_del = st.selectbox("מחיקת משימה:", st.session_state.df["Task_Name"].unique())
+        t_del = st.selectbox("מחק משימה:", st.session_state.df["Task_Name"].unique())
         if st.button("מחק לצמיתות"):
             st.session_state.df = st.session_state.df[st.session_state.df["Task_Name"] != t_del]
             save_data(st.session_state.df); st.rerun()
