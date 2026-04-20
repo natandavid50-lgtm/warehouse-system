@@ -7,7 +7,7 @@ import os
 # 1. הגדרות עמוד
 st.set_page_config(page_title="מערכת ניהול משימות - אחים כהן", layout="wide", initial_sidebar_state="expanded")
 
-# 2. עיצוב UI/UX מלא - תיקון ה-CSS והבאגים בניווט
+# 2. עיצוב UI/UX מלא
 st.markdown("""
     <style>
     .stApp { background-color: #f1f5f9; }
@@ -125,19 +125,17 @@ if st.session_state.user_role is None:
         with col:
             r = roles[i]
             st.markdown(f"<div class='login-card'><div class='card-icon'>{r['icon']}</div><div class='card-title'>{r['title']}</div><div class='card-strip' style='background-color: {r['color']};'></div></div>", unsafe_allow_html=True)
-            if st.button("", key=f"log_{r['id']}", use_container_width=True):
+            if st.button("", key=f"login_btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
-                # קביעת דף ברירת מחדל לפי תפקיד
                 st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
                 st.rerun()
     st.stop()
 
-# --- הגדרת תפריט לפי תפקיד ---
+# --- הגדרת תפריט ---
 if st.session_state.user_role == "מנהל WMS": menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "צוות מחסן": menu = [OPT_WORK, OPT_CAL]
 else: menu = [OPT_DASH, OPT_CAL]
 
-# בדיקה שהדף הנוכחי קיים בתפריט של המשתמש (מונע קריסה כשמחליפים משתמש)
 if st.session_state.current_page not in menu:
     st.session_state.current_page = menu[0]
 
@@ -146,8 +144,7 @@ with st.sidebar:
     st.markdown(f"<h3>שלום, {st.session_state.user_role} 👋</h3>", unsafe_allow_html=True)
     st.divider()
     
-    # התיקון הקריטי: key דינמי שכולל את שם המשתמש למניעת התנגשויות
-    choice = st.radio("ניווט:", menu, index=menu.index(st.session_state.current_page), key=f"nav_{st.session_state.user_role}")
+    choice = st.radio("ניווט:", menu, index=menu.index(st.session_state.current_page), key=f"nav_radio_{st.session_state.user_role}")
     st.session_state.current_page = choice
 
     st.write("<br>"*15, unsafe_allow_html=True)
@@ -212,7 +209,10 @@ elif choice == OPT_CAL:
                 if f == "לא": break
         except: continue
     
-    res = calendar(events=cal_events, options={"direction": "rtl", "locale": "he", "height": 600}, key="calendar_v_final")
+    # התיקון הקריטי: מפתח דינמי ללוח השנה שמשתנה לפי התפקיד
+    cal_key = f"calendar_component_{st.session_state.user_role}"
+    res = calendar(events=cal_events, options={"direction": "rtl", "locale": "he", "height": 600}, key=cal_key)
+    
     if res.get("eventClick"):
         t_data = task_lookup.get(res["eventClick"]["event"]["id"])
         if t_data is not None:
@@ -236,7 +236,7 @@ elif choice == OPT_ADD:
 elif choice == OPT_MANAGE:
     st.title("⚙️ הגדרות מערכת")
     st.write("ניהול משימות קיים:")
-    edited_df = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic", key="editor_v1")
+    edited_df = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic", key="data_editor_global")
     if st.button("שמור שינויים בטבלה"):
         st.session_state.df = edited_df
         save_data(st.session_state.df)
