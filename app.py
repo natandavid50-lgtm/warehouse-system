@@ -7,59 +7,91 @@ import os
 # 1. הגדרות עמוד
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
-# 2. הזרקת CSS - שדרוג ויזואלי למסך הכניסה ושאר המערכת
+# 2. הזרקת CSS - שדרוג ויזואלי מקיף (מעוצב על ידי "מעצב על")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap');
 
+    /* הגדרות גלובליות */
     html, body, [class*="css"] {
         font-family: 'Assistant', sans-serif;
         direction: rtl;
         text-align: right;
     }
 
-    .stApp { background-color: #f1f5f9; }
+    /* רקע כללי עדין יותר כדי שהכרטיסים יבלטו */
+    .stApp { background-color: #f8fafc; }
 
-    /* עיצוב כרטיסי הכניסה */
+    /* --- עיצוב כרטיסי הכניסה הדינמיים (SaaS Premium Look) --- */
     .login-container {
         display: flex;
         justify-content: center;
-        gap: 30px;
-        padding-top: 50px;
+        gap: 35px;
+        padding: 50px 0;
     }
 
-    /* הגדרת כפתור Streamlit ככרטיס צף */
+    /* הגדרת כפתור Streamlit ככרטיס יוקרתי */
     div.stButton > button {
-        height: 280px;
-        width: 100%;
-        background-color: white !important;
-        color: #1e293b !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 24px !important;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-        transition: all 0.3s ease-in-out !important;
-        font-size: 24px !important;
+        height: 350px !important; /* הגדלנו את הגובה */
+        width: 100% !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 30px !important;
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        font-size: 38px !important; /* טקסט גדול יותר */
         font-weight: 800 !important;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+        position: relative;
+        overflow: hidden;
     }
 
+    /* אפקט האנימציה של צבע עולה ויורד (Gradient Moving Background) */
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* התאמת רקעים דינמיים לפי מפתח לחיץ */
+    /* מנהל WMS - כחול */
+    div.stButton:has(> button[key="login_admin"]) > button {
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6, #60a5fa);
+        background-size: 300% 300%;
+        animation: gradientBG 6s ease infinite;
+    }
+
+    /* צוות מחסן - כתום/זהב */
+    div.stButton:has(> button[key="login_staff"]) > button {
+        background: linear-gradient(135deg, #d97706, #f59e0b, #fbbf24);
+        background-size: 300% 300%;
+        animation: gradientBG 6s ease infinite;
+    }
+
+    /* סמנכ"ל - ירוק אמרלד */
+    div.stButton:has(> button[key="login_vp"]) > button {
+        background: linear-gradient(135deg, #065f46, #10b981, #34d399);
+        background-size: 300% 300%;
+        animation: gradientBG 6s ease infinite;
+    }
+
+    /* אפקט Hover - התרוממות והעמקת הצל */
     div.stButton > button:hover {
-        transform: translateY(-10px) !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-        border-color: #3b82f6 !important;
-        color: #3b82f6 !important;
+        transform: translateY(-15px) !important;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.2) !important;
     }
 
-    /* אייקונים גדולים בתוך הכפתורים */
+    /* עיצוב האייקונים הגדולים בתוך הכפתור */
     .role-icon {
-        font-size: 60px;
-        margin-bottom: 20px;
-        display: block;
+        font-size: 100px; /* אייקון ענק */
+        margin-bottom: 25px;
+        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
     }
 
+    /* --- שאר עיצובי המערכת (ללא שינוי) --- */
     section[data-testid="stSidebar"] { background-color: #0f172a !important; }
     section[data-testid="stSidebar"] * { color: #f8fafc !important; }
     
@@ -81,7 +113,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. פונקציות ליבה (ללא שינוי)
+# 3. פונקציות ליבה (ללא שינוי פונקציונלי)
 DB_FILE = "warehouse_management_db.csv"
 
 def load_data():
@@ -123,33 +155,35 @@ if "df" not in st.session_state: st.session_state.df = load_data()
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- מסך כניסה מעוצב מחדש ---
+# --- מסך כניסה מעוצב מחדש (The 'Super Designer' Edition) ---
 if st.session_state.user_role is None:
-    st.markdown("<br><br><h1 style='text-align: center; color: #1e293b; font-size: 45px;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #64748b; font-size: 20px;'>בחר תפקיד כדי להתחבר למערכת</p>", unsafe_allow_html=True)
+    # כותרות גדולות ומקצועיות
+    st.markdown("<br><h1 style='text-align: center; color: #1e293b; font-size: 50px; font-weight: 900;'>אחים כהן - ניהול משימות</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #475569; font-size: 24px; margin-bottom: 40px;'>בחר את תפקידך כדי להיכנס למערכת הניהול</p>", unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # שימוש בטורים ליצירת הכרטיסים הצפים
+    # שימוש בטורים ליצירת הכרטיסים הצפים הדינמיים
     col1, col2, col3 = st.columns(3)
     
+    # כל כפתור מקבל Key ייחודי כדי שנוכל לשייך לו את האנימציה ב-CSS
     with col1:
-        if st.button("🔑\n\nמנהל WMS", use_container_width=True):
+        if st.button("<div class='role-icon'>🔑</div>מנהל WMS", use_container_width=True, key="login_admin"):
             st.session_state.user_role = "מנהל WMS"
             st.rerun()
             
     with col2:
-        if st.button("📦\n\nצוות מחסן", use_container_width=True):
+        if st.button("<div class='role-icon'>📦</div>צוות מחסן", use_container_width=True, key="login_staff"):
             st.session_state.user_role = "צוות מחסן"
             st.rerun()
             
     with col3:
-        if st.button("📈\n\nסמנכ\"ל", use_container_width=True):
+        if st.button("<div class='role-icon'>📈</div>סמנכ\"ל", use_container_width=True, key="login_vp"):
             st.session_state.user_role = "סמנכ\"ל"
             st.rerun()
     st.stop()
 
-# --- שאר הקוד (ללא שינוי פונקציונלי) ---
+# --- שאר הקוד (ללא שינוי, כפי שביקשת) ---
 if st.session_state.user_role == "מנהל WMS":
     menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "סמנכ\"ל":
@@ -161,7 +195,7 @@ with st.sidebar:
     st.markdown(f"### שלום, {st.session_state.user_role} 👋")
     choice = st.radio("תפריט ניווט:", menu)
     st.markdown("<br><br>", unsafe_allow_html=True)
-    if st.button("🚪 התנתקות מהמערכת", use_container_width=True):
+    if st.button("🚪 התנתקות מהמערכת", use_container_width=True, logout="logout_btn"):
         st.session_state.user_role = None
         st.rerun()
 
