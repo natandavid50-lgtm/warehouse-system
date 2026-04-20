@@ -15,56 +15,51 @@ def get_supabase():
 
 db = get_supabase()
 
-# --- 2. הגדרות עמוד ועיצוב (נייבי-ירוק טכנולוגי) ---
+# --- 2. הגדרות עמוד ועיצוב ---
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* רקע האפליקציה - נייבי כהה מאוד */
     .stApp { 
         background-color: #020617;
         direction: rtl;
         text-align: right;
     }
     
-    /* כותרת ראשית */
-    h1 {
-        color: #f8fafc !important;
-        font-family: 'Segoe UI', sans-serif;
-        font-weight: 800 !important;
+    /* עיצוב גלובלי לכפתורי הכניסה הגדולים */
+    div[data-testid="stColumn"] button[key^="btn_"] {
+        height: 320px !important;
+        width: 100% !important;
+        background-color: #0f172a !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 20px !important;
+        color: #10b981 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 15px !important;
+        transition: all 0.4s ease !important;
+        padding: 20px !important;
     }
 
-    /* כרטיס הכניסה ה"צף" */
-    .login-card {
-        background: #0f172a; 
-        border-radius: 20px;
-        height: 320px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        border: 1px solid #1e293b;
-        margin-bottom: 20px;
-        transition: all 0.4s ease;
-    }
-    
-    .login-card:hover {
-        transform: translateY(-12px);
-        border-color: #10b981; 
-        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15);
+    div[data-testid="stColumn"] button[key^="btn_"]:hover {
+        transform: translateY(-12px) !important;
+        border-color: #10b981 !important;
+        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.2) !important;
+        background-color: #1e293b !important;
     }
 
-    .login-card h1 { font-size: 4rem !important; margin: 0; }
-    .login-card h2 { 
-        color: #10b981 !important; 
-        font-size: 1.8rem;
-        margin-top: 15px;
-        font-weight: 600;
+    /* תיקון הטקסט בתוך הכפתור הגדול */
+    div[data-testid="stColumn"] button[key^="btn_"] p {
+        font-size: 1.8rem !important;
+        font-weight: bold !important;
+        line-height: 1.4 !important;
+        white-space: pre-wrap !important;
     }
-    
-    /* עיצוב כפתורי כניסה - שחור עם מסגרת ירוקה */
-    div.stButton > button {
+
+    /* עיצוב כפתורים רגילים (התנתקות, מחק וכו') - שומר על העיצוב המקורי שלך */
+    div.stButton > button:not([key^="btn_"]) {
         background-color: #000000 !important;
         color: #10b981 !important;
         border: 2px solid #10b981 !important;
@@ -75,19 +70,14 @@ st.markdown("""
         transition: 0.3s;
     }
     
-    div.stButton > button:hover {
+    div.stButton > button:not([key^="btn_"]):hover {
         background-color: #10b981 !important;
         color: #000000 !important;
     }
 
-    /* סיידבר נייבי */
-    section[data-testid="stSidebar"] {
-        background-color: #020617 !important;
-        border-left: 1px solid #1e293b;
-    }
+    section[data-testid="stSidebar"] { background-color: #020617 !important; border-left: 1px solid #1e293b; }
     section[data-testid="stSidebar"] * { color: white !important; }
     
-    /* כרטיסי משימות */
     .task-card {
         background: #0f172a;
         color: white;
@@ -100,7 +90,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. פונקציות עבודה (ללא שינוי לוגי) ---
+# --- 3. פונקציות עבודה ---
 def load_data():
     try:
         res = db.table("tasks").select("*").execute()
@@ -156,47 +146,22 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- 5. מסך כניסה - כרטיסים גדולים ולחיצים ---
+# --- 5. מסך כניסה ---
 if st.session_state.user_role is None:
-    st.markdown("<h1 style='text-align: center; margin-top: 50px;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-top: 50px; color: white;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
+    st.write("") # מרווח
     
     cols = st.columns(3, gap="large")
     roles = [
-        {"role": "מנהל WMS", "icon": "🔑", "id": "admin"},
+        {"role": "סמנכ\"ל", "icon": "📊", "id": "vp"},
         {"role": "צוות מחסן", "icon": "📦", "id": "staff"},
-        {"role": "סמנכ\"ל", "icon": "📊", "id": "vp"}
+        {"role": "מנהל WMS", "icon": "🔑", "id": "admin"}
     ]
     
     for i, col in enumerate(cols):
         with col:
             r = roles[i]
-            # יצירת הכפתור עם סגנון CSS מוטמע כדי להחזיר את הגובה
-            button_code = f"""
-                <style>
-                div[data-testid="stButton"] > button[key*="btn_{r['id']}"] {{
-                    height: 320px !important;
-                    background-color: #0f172a !important;
-                    border: 1px solid #1e293b !important;
-                    border-radius: 20px !important;
-                    color: #10b981 !important;
-                    font-size: 1.8rem !important;
-                    display: flex !important;
-                    flex-direction: column !important;
-                    justify-content: center !important;
-                    align-items: center !important;
-                    gap: 20px !important;
-                    transition: all 0.4s ease !important;
-                }}
-                div[data-testid="stButton"] > button[key*="btn_{r['id']}"]:hover {{
-                    transform: translateY(-12px) !important;
-                    border-color: #10b981 !important;
-                    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15) !important;
-                }}
-                </style>
-            """
-            st.markdown(button_code, unsafe_allow_html=True)
-            
-            # הכפתור עצמו מכיל את האייקון והטקסט עם ירידת שורה
+            # לחיצה על כל הכרטיס
             if st.button(f"{r['icon']}\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
                 st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
@@ -213,7 +178,7 @@ with st.sidebar:
     st.markdown(f"### שלום, {st.session_state.user_role} 👋")
     choice = st.radio("ניווט:", menu)
     st.session_state.current_page = choice
-    if st.button("🚪 התנתקות"):
+    if st.button("🚪 התנתקות", key="logout_btn"):
         st.session_state.user_role = None
         st.rerun()
 
