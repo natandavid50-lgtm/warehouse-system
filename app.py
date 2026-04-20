@@ -15,50 +15,64 @@ def get_supabase():
 
 db = get_supabase()
 
-# --- 2. הגדרות עמוד ועיצוב ---
+# --- 2. הגדרות עמוד ועיצוב (מראה טכנולוגי ענק) ---
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
+    /* הגדרות כלליות */
     .stApp { 
         background-color: #020617;
         direction: rtl;
         text-align: right;
     }
     
-    /* עיצוב גלובלי לכפתורי הכניסה הגדולים */
+    /* כותרת דף הכניסה */
+    .main-title {
+        text-align: center;
+        margin-top: 40px;
+        margin-bottom: 40px;
+        color: white;
+        font-size: 4rem !important;
+        font-weight: 900;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* עיצוב אגרסיבי לכפתורי הכניסה - להפוך אותם לכרטיסים ענקיים */
     div[data-testid="stColumn"] button[key^="btn_"] {
-        height: 320px !important;
+        height: 500px !important; /* גובה מקסימלי */
         width: 100% !important;
         background-color: #0f172a !important;
-        border: 1px solid #1e293b !important;
-        border-radius: 20px !important;
+        border: 2px solid #1e293b !important;
+        border-radius: 40px !important;
         color: #10b981 !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 15px !important;
-        transition: all 0.4s ease !important;
-        padding: 20px !important;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        padding: 40px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
     }
 
+    /* עיצוב הטקסט והאייקון בתוך הכפתור */
+    div[data-testid="stColumn"] button[key^="btn_"] p {
+        font-size: 3.5rem !important; /* אייקון וטקסט ענקיים */
+        font-weight: 800 !important;
+        line-height: 1.5 !important;
+        white-space: pre-line !important;
+        text-align: center !important;
+    }
+
+    /* אפקט ריחוף (Hover) מודגש */
     div[data-testid="stColumn"] button[key^="btn_"]:hover {
-        transform: translateY(-12px) !important;
+        transform: scale(1.05) translateY(-20px) !important;
         border-color: #10b981 !important;
-        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.2) !important;
+        box-shadow: 0 25px 60px rgba(16, 185, 129, 0.3) !important;
         background-color: #1e293b !important;
     }
 
-    /* תיקון הטקסט בתוך הכפתור הגדול */
-    div[data-testid="stColumn"] button[key^="btn_"] p {
-        font-size: 1.8rem !important;
-        font-weight: bold !important;
-        line-height: 1.4 !important;
-        white-space: pre-wrap !important;
-    }
-
-    /* עיצוב כפתורים רגילים (התנתקות, מחק וכו') - שומר על העיצוב המקורי שלך */
+    /* כפתורים רגילים (התנתקות, מחק) */
     div.stButton > button:not([key^="btn_"]) {
         background-color: #000000 !important;
         color: #10b981 !important;
@@ -67,14 +81,14 @@ st.markdown("""
         height: 55px !important;
         font-weight: bold !important;
         width: 100%;
-        transition: 0.3s;
-    }
-    
-    div.stButton > button:not([key^="btn_"]):hover {
-        background-color: #10b981 !important;
-        color: #000000 !important;
     }
 
+    /* ניקוי רווחים פנימיים של Streamlit שמפריעים לגודל */
+    [data-testid="stVerticalBlock"] > div {
+        padding: 0px !important;
+    }
+
+    /* סיידבר וכותרות */
     section[data-testid="stSidebar"] { background-color: #020617 !important; border-left: 1px solid #1e293b; }
     section[data-testid="stSidebar"] * { color: white !important; }
     
@@ -146,10 +160,12 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- 5. מסך כניסה ---
+# --- 5. מסך כניסה (כרטיסים ענקיים) ---
 if st.session_state.user_role is None:
-    st.markdown("<h1 style='text-align: center; margin-top: 50px; color: white;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
-    st.write("") # מרווח
+    st.markdown('<h1 class="main-title">אחים כהן - ניהול משימות מחסן</h1>', unsafe_allow_html=True)
+    
+    # שימוש במרווחים כדי למרכז את התוכן בעמוד
+    st.write("##")
     
     cols = st.columns(3, gap="large")
     roles = [
@@ -161,8 +177,8 @@ if st.session_state.user_role is None:
     for i, col in enumerate(cols):
         with col:
             r = roles[i]
-            # לחיצה על כל הכרטיס
-            if st.button(f"{r['icon']}\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
+            # ירידות שורה רבות כדי ליצור מרווח גדול בין האייקון לטקסט
+            if st.button(f"{r['icon']}\n\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
                 st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
                 st.rerun()
