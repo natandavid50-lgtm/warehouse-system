@@ -7,8 +7,8 @@ import os
 
 # --- 1. הגדרות התחברות ל-SUPABASE ---
 SUPABASE_URL = "https://jvyzdftdvzufulwgldck.supabase.co"
-# תדביק כאן את המפתח שהעתקת מהלשונית Publishable key
-SUPABASE_KEY = "תדביק_כאן_את_המפתח" 
+# תדביק כאן בין המירכאות את המפתח שהעתקת מהלשונית Publishable key
+SUPABASE_KEY = "sb_publishable_3GLq2axHGkaCPfHG79Fpyw_428KfxBQ" 
 
 @st.cache_resource
 def get_supabase():
@@ -69,8 +69,8 @@ def load_data():
         res = db.table("tasks").select("*").execute()
         df = pd.DataFrame(res.data)
         if df.empty:
-            return pd.DataFrame(columns=["id", "task_name", "description", "recurring", "task_date", "done_dates"])
-        # המרה לשמות עמודות שהקוד מכיר
+            return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
+        # המרה לשמות עמודות שהקוד מכיר (במקרה והן באותיות קטנות ב-DB)
         df.columns = ["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"]
         return df
     except:
@@ -111,7 +111,13 @@ def get_daily_status(df_input, target_date):
                 if hit:
                     done_dates = str(row['Done_Dates']).strip()
                     is_done = target_str in done_dates.split(",") if done_dates else False
-                    scheduled.append({"id": row['ID'], "name": row['Task_Name'], "desc": row['Description'], "is_done": is_done, "done_str": done_dates})
+                    scheduled.append({
+                        "id": row['ID'], 
+                        "name": row['Task_Name'], 
+                        "desc": row['Description'], 
+                        "is_done": is_done, 
+                        "done_str": done_dates
+                    })
         except: continue
     return scheduled
 
@@ -207,7 +213,11 @@ elif choice == OPT_CAL:
                 gap = 0 if freq=="לא" else 1 if freq=="יומי" else 7 if freq=="שבועי" else 14 if freq=="דו-שבועי" else 30
                 d = (base + timedelta(days=i * gap)).strftime("%Y-%m-%d")
                 is_done = d in str(row['Done_Dates'])
-                events.append({"title": f"{'✅' if is_done else '⏳'} {row['Task_Name']}", "start": d, "color": "#10b981" if is_done else "#ef4444"})
+                events.append({
+                    "title": f"{'✅' if is_done else '⏳'} {row['Task_Name']}", 
+                    "start": d, 
+                    "color": "#10b981" if is_done else "#ef4444"
+                })
                 if freq == "לא": break
         except: continue
     calendar(events=events, options={"direction": "rtl", "locale": "he"}, key="warehouse_cal")
