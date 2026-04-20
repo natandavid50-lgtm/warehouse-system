@@ -290,10 +290,18 @@ elif choice == OPT_ADD:
 
 elif choice == OPT_MANAGE:
     st.markdown("<h1 style='color: #0f172a;'>ניהול בסיס נתונים</h1>", unsafe_allow_html=True)
-    st.info("כאן ניתן לערוך, למחוק או לעדכן משימות קיימות בצורה ישירה.")
-    edited = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic")
+    st.info("💡 לעריכה: לחץ פעמיים על תא. למחיקה: סמן שורה ולחץ Delete במקלדת.")
+    
+    # התיקון: num_rows="dynamic" מאפשר מחיקה והוספה, ו-key ייחודי מבטיח סנכרון
+    edited_df = st.data_editor(
+        st.session_state.df, 
+        use_container_width=True, 
+        num_rows="dynamic", 
+        key="main_data_editor"
+    )
+    
     if st.button("💾 שמור שינויים במערכת", use_container_width=True):
-        st.session_state.df = edited
-        save_data(edited)
-        st.success("הנתונים עודכנו!")
+        st.session_state.df = edited_df
+        save_data(edited_df)
+        st.success("הנתונים נשמרו בהצלחה!")
         st.rerun()
