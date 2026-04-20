@@ -15,19 +15,17 @@ def get_supabase():
 
 db = get_supabase()
 
-# --- 2. הגדרות עמוד ועיצוב (Light Mode - בהיר ומודרני) ---
+# --- 2. הגדרות עמוד ועיצוב ---
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* רקע האפליקציה - אפור בהיר מאוד */
     .stApp { 
         background-color: #f8fafc;
         direction: rtl;
         text-align: right;
     }
     
-    /* כותרת דף הכניסה - כחול נייבי עמוק */
     .main-title {
         text-align: center;
         margin-top: 40px;
@@ -37,7 +35,6 @@ st.markdown("""
         font-weight: 900;
     }
 
-    /* כפתורי כניסה - כרטיסים לבנים עם צל עדין */
     div[data-testid="stColumn"] button[key^="btn_"] {
         height: 500px !important;
         width: 100% !important;
@@ -54,7 +51,6 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
     }
 
-    /* טקסט ואייקון בתוך הכפתור */
     div[data-testid="stColumn"] button[key^="btn_"] p {
         font-size: 3.5rem !important;
         font-weight: 800 !important;
@@ -63,7 +59,6 @@ st.markdown("""
         white-space: pre-line !important;
     }
 
-    /* אפקט ריחוף - צבע כחול חי */
     div[data-testid="stColumn"] button[key^="btn_"]:hover {
         transform: translateY(-15px) !important;
         border-color: #3b82f6 !important;
@@ -71,28 +66,32 @@ st.markdown("""
         color: #3b82f6 !important;
     }
 
-    /* כפתורים רגילים (התנתקות, מחק) - כחול כהה */
+    /* תיקון כפתור ההתנתקות - צבע לבן לטקסט */
     div.stButton > button:not([key^="btn_"]) {
         background-color: #1e293b !important;
-        color: white !important;
         border-radius: 12px !important;
-        height: 50px !important;
+        height: 55px !important;
         font-weight: bold !important;
         border: none !important;
+        width: 100%;
+    }
+
+    /* כאן הגדרנו שהטקסט בתוך הכפתור יהיה לבן */
+    div.stButton > button:not([key^="btn_"]) p {
+        color: white !important;
+        font-size: 1.1rem !important;
     }
     
     div.stButton > button:not([key^="btn_"]):hover {
         background-color: #334155 !important;
     }
 
-    /* סיידבר בהיר */
     section[data-testid="stSidebar"] { 
         background-color: #ffffff !important; 
         border-left: 1px solid #e2e8f0; 
     }
     section[data-testid="stSidebar"] * { color: #1e293b !important; }
     
-    /* כרטיסי משימות בתוך המערכת */
     .task-card {
         background: #ffffff;
         color: #1e293b;
@@ -103,7 +102,6 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
 
-    /* התאמת צבעים של מטריקות */
     [data-testid="stMetricValue"] { color: #1e293b !important; }
     [data-testid="stMetricLabel"] { color: #64748b !important; }
     </style>
