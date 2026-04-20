@@ -7,24 +7,29 @@ import os
 # 1. הגדרות עמוד - רוחב מלא
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
-# 2. הזרקת CSS - שילוב של העיצוב היוקרתי ותיקון הלוח שנה
+# 2. הזרקת CSS - כולל תיקון כיוון לימין (RTL)
 st.markdown("""
     <style>
-    /* רקע כללי */
-    .stApp { background-color: #f8fafc; }
+    /* הגדרת כיוון כללית לימין */
+    .stApp { 
+        background-color: #f8fafc;
+        direction: rtl;
+        text-align: right;
+    }
     
-    /* סיידבר כהה ומקצועי */
+    /* תיקון כיוון לטקסטים ספציפיים בסיידבר */
     section[data-testid="stSidebar"] {
         background-color: #0f172a !important;
         min-width: 280px !important;
+        direction: rtl;
     }
-    section[data-testid="stSidebar"] * { color: white !important; }
+    section[data-testid="stSidebar"] * { color: white !important; text-align: right; }
     section[data-testid="stSidebar"] h3 { 
         color: #60a5fa !important; 
         font-weight: 800 !important; 
     }
 
-    /* כרטיסי כניסה מעוצבים - החזרתי את המראה היוקרתי */
+    /* כרטיסי כניסה מעוצבים */
     .login-card {
         background: white;
         border-radius: 20px;
@@ -42,7 +47,7 @@ st.markdown("""
     .card-icon { font-size: 75px; margin-bottom: 15px; }
     .card-title { font-size: 32px; font-weight: 800; color: #1e293b; text-align: center; }
     
-    /* עיצוב כרטיסי משימות בדשבורד */
+    /* כרטיסי משימות בדשבורד */
     .task-card {
         background: white;
         padding: 20px;
@@ -50,19 +55,21 @@ st.markdown("""
         margin-bottom: 12px;
         border-right: 10px solid #3b82f6;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        text-align: right;
     }
 
-    /* תיקון לוח שנה - הגבלת גובה ועיצוב נקי */
+    /* מסגרת לוח שנה */
     .calendar-container {
         background: white;
         padding: 20px;
         border-radius: 15px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        direction: ltr; /* לוח שנה טכנית עובד טוב יותר ב-LTR אבל התוכן RTL */
     }
     .fc { max-height: 650px !important; }
     
-    /* כפתור התנתקות */
+    /* כפתור התנתקות אדום */
     .stButton > button[key="logout_btn"] {
         background-color: #ef4444 !important;
         color: white !important;
@@ -73,7 +80,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. פונקציות ליבה (לוגיקה יציבה)
+# 3. פונקציות ליבה (Data Management)
 DB_FILE = "warehouse_management_db.csv"
 
 def load_data():
@@ -84,10 +91,13 @@ def load_data():
             for col in cols:
                 if col not in data.columns: data[col] = ""
             return data.fillna("")
-        except: return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
+        except: 
+            return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
     return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
 
 def save_data(df_to_save):
+    if df_to_save.empty and os.path.exists(DB_FILE):
+        return 
     df_to_save.to_csv(DB_FILE, index=False)
 
 def get_daily_status(target_date):
@@ -117,7 +127,7 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- מסך כניסה (החזרת העיצוב הויזואלי המלא) ---
+# --- מסך כניסה ---
 if st.session_state.user_role is None:
     st.markdown("<h1 style='text-align: center; color: #0f172a; margin-top: 50px; font-weight: 900;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #64748b; font-size: 1.2rem; margin-bottom: 50px;'>בחר תפקיד כדי להיכנס למערכת</p>", unsafe_allow_html=True)
@@ -138,7 +148,7 @@ if st.session_state.user_role is None:
                 st.rerun()
     st.stop()
 
-# --- תפריט לפי הרשאות ---
+# --- הגדרת תפריט לפי הרשאות ---
 if st.session_state.user_role == "מנהל WMS": menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "צוות מחסן": menu = [OPT_WORK, OPT_CAL]
 else: menu = [OPT_DASH, OPT_CAL]
@@ -152,7 +162,7 @@ with st.sidebar:
     choice = st.radio("תפריט ניווט:", menu, index=menu.index(st.session_state.current_page))
     st.session_state.current_page = choice
     st.markdown("<br>" * 10, unsafe_allow_html=True)
-    if st.button("🚪 התנתקות מהמערכת", key="logout_btn", use_container_width=True):
+    if st.button("🚪 התנתקות", key="logout_btn", use_container_width=True):
         st.session_state.user_role = None
         st.rerun()
 
@@ -162,9 +172,10 @@ if choice == OPT_DASH:
     tasks = get_daily_status(datetime.now())
     t_count, d_count = len(tasks), sum(1 for t in tasks if t['is_done'])
     c1, c2, c3 = st.columns(3)
-    c1.metric("משימות היום", t_count)
+    # שימוש ב-columns ליצירת מטריקות מימין לשמאל
+    c3.metric("משימות היום", t_count)
     c2.metric("בוצעו", d_count)
-    c3.metric("אחוז ביצוע", f"{int(d_count/t_count*100) if t_count>0 else 0}%")
+    c1.metric("אחוז ביצוע", f"{int(d_count/t_count*100) if t_count>0 else 0}%")
     st.divider()
     for t in tasks:
         color = "#10b981" if t['is_done'] else "#f59e0b"
@@ -174,11 +185,13 @@ elif choice == OPT_WORK:
     st.title("📋 סידור עבודה שבועי")
     today = datetime.now()
     start = today - timedelta(days=(today.weekday() + 1) % 7)
+    # סדר העמודות הפוך כדי שיום ראשון יהיה בימין
     cols = st.columns(5)
     for i, day in enumerate(["ראשון", "שני", "שלישי", "רביעי", "חמישי"]):
         curr = start + timedelta(days=i)
         curr_str = curr.strftime("%Y-%m-%d")
-        with cols[i]:
+        # מציגים את יום ראשון בעמודה הימנית ביותר (אינדקס 4) וכו'
+        with cols[4-i]:
             st.markdown(f"<div style='background:#1e293b; color:white; padding:10px; border-radius:10px; text-align:center; margin-bottom:15px;'>{day} {curr.strftime('%d/%m')}</div>", unsafe_allow_html=True)
             for t in get_daily_status(curr):
                 if t['is_done']: st.success(f"✅ {t['name']}")
@@ -209,6 +222,7 @@ elif choice == OPT_CAL:
 
 elif choice == OPT_ADD:
     st.title("➕ הוספת משימה")
+    # העברת הטפסים לימין
     with st.form("add_task"):
         name = st.text_input("שם המשימה")
         freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
@@ -220,12 +234,12 @@ elif choice == OPT_ADD:
                 new_id = int(max_id + 1) if not pd.isna(max_id) else 1000
                 new_row = pd.DataFrame([{"ID":new_id, "Task_Name":name, "Description":desc, "Recurring":freq, "Date":date.strftime("%Y-%m-%d"), "Done_Dates":""}])
                 st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-                save_data(st.session_state.df); st.success("המשימה נוספה!"); st.rerun()
-            else: st.error("חובה להזין שם!")
+                save_data(st.session_state.df); st.success("המשימה נוספה בהצלחה!"); st.rerun()
+            else: st.error("חובה להזין שם משימה!")
 
 elif choice == OPT_MANAGE:
     st.title("⚙️ ניהול נתונים")
     edited = st.data_editor(st.session_state.df, use_container_width=True, num_rows="dynamic")
     if st.button("שמור שינויים"):
         st.session_state.df = edited
-        save_data(edited); st.success("נשמר!"); st.rerun()
+        save_data(edited); st.success("הנתונים נשמרו בהצלחה!"); st.rerun()
