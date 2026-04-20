@@ -7,7 +7,7 @@ import os
 # 1. הגדרות עמוד
 st.set_page_config(page_title="אחים כהן - ניהול משימות", layout="wide", initial_sidebar_state="expanded")
 
-# 2. הזרקת CSS מקצועי - Navy Blue Theme
+# 2. הזרקת CSS - כחול בהיר וכרטיסים גדולים
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap');
@@ -18,73 +18,67 @@ st.markdown("""
         text-align: right;
     }
 
-    /* רקע כללי נקי */
-    .stApp { background-color: #f4f7f9; }
+    .stApp { background-color: #f0f4f8; }
 
-    /* עיצוב כפתורי הכניסה - Navy Blue */
+    /* עיצוב כפתורי הכניסה הגדולים - כחול בהיר */
     div.stButton > button[key^="login_"] {
-        height: 380px !important;
+        height: 400px !important; /* הגדלה משמעותית של הגובה */
         width: 100% !important;
-        background-color: #000080 !important; /* Navy Blue */
-        color: white !important;
+        background-color: #38bdf8 !important; /* כחול בהיר (Sky Blue) */
+        color: #ffffff !important;
         border: none !important;
-        border-radius: 20px !important;
-        box-shadow: 0 10px 20px rgba(0,0,128,0.2) !important;
+        border-radius: 25px !important;
+        box-shadow: 0 12px 24px rgba(56, 189, 248, 0.3) !important;
         transition: all 0.3s ease !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
+        padding: 40px !important;
     }
 
+    /* אפקט מעבר עכבר */
     div.stButton > button[key^="login_"]:hover {
-        transform: translateY(-8px) !important;
-        background-color: #0000a0 !important; /* כחול מעט בהיר יותר במעבר עכבר */
-        box-shadow: 0 15px 30px rgba(0,0,128,0.3) !important;
+        transform: translateY(-10px) !important;
+        background-color: #0ea5e9 !important; /* כחול מעט כהה יותר ב-Hover */
+        box-shadow: 0 20px 40px rgba(56, 189, 248, 0.5) !important;
     }
 
-    /* הגדרת הטקסט והסמל בתוך הכפתור */
-    .button-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
+    /* עיצוב האייקון והטקסט בתוך הכפתור */
+    .btn-icon {
+        font-size: 100px !important; /* סמל ענק */
+        margin-bottom: 20px;
     }
 
-    .button-icon {
-        font-size: 100px !important; /* סמל ענק וברור */
-        line-height: 1 !important;
-    }
-
-    .button-text {
-        font-size: 36px !important; /* טקסט גדול */
+    .btn-text {
+        font-size: 40px !important; /* טקסט גדול מאוד */
         font-weight: 800 !important;
     }
 
     /* עיצוב ה-Sidebar */
-    section[data-testid="stSidebar"] { background-color: #000080 !important; }
+    section[data-testid="stSidebar"] { background-color: #0c4a6e !important; }
     section[data-testid="stSidebar"] * { color: white !important; }
     
-    /* כרטיסי משימות */
+    /* עיצוב כרטיסי משימות */
     .task-card {
         background: white;
         padding: 20px;
-        border-radius: 12px;
+        border-radius: 15px;
         margin-bottom: 10px;
-        border-right: 6px solid #000080;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border-right: 8px solid #38bdf8;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. ניהול נתונים (CSV)
-DB_FILE = "warehouse_db.csv"
+# 3. ניהול נתונים
+DB_FILE = "warehouse_tasks_db.csv"
 
 def load_data():
     if os.path.exists(DB_FILE):
-        df = pd.read_csv(DB_FILE)
-        return df.fillna("")
+        try:
+            return pd.read_csv(DB_FILE).fillna("")
+        except: pass
     return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
 
 def save_data(df):
@@ -108,19 +102,18 @@ def get_tasks_for_date(target_date):
         except: continue
     return tasks
 
-# אתחול
+# אתחול Session State
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "df" not in st.session_state: st.session_state.df = load_data()
 
 # --- מסך כניסה ---
 if st.session_state.user_role is None:
-    st.markdown("<br><h1 style='text-align: center; color: #000080; font-size: 50px;'>אחים כהן - ניהול משימות</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 20px;'>בחר תפקיד להתחברות</p><br>", unsafe_allow_html=True)
+    st.markdown("<br><h1 style='text-align: center; color: #0c4a6e; font-size: 55px; font-weight: 900;'>אחים כהן - ניהול משימות</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 22px; color: #475569;'>בחר תפקיד כדי להיכנס למערכת</p><br>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # שימוש ב-Markdown בתוך הכפתור כדי לשלוט בגודל
         if st.button("🔑\n\nמנהל WMS", key="login_admin", use_container_width=True):
             st.session_state.user_role = "מנהל WMS"
             st.rerun()
@@ -136,74 +129,75 @@ if st.session_state.user_role is None:
             st.rerun()
     st.stop()
 
-# --- תפריט ראשי ---
-menu_options = {
-    "מנהל WMS": ["📊 דשבורד", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ ניהול"],
+# --- תפריט וניווט ---
+roles_menu = {
+    "מנהל WMS": ["📊 דשבורד", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"],
     "צוות מחסן": ["📋 סידור עבודה", "📅 לוח שנה"],
     "סמנכ\"ל": ["📊 דשבורד", "📅 לוח שנה"]
 }
 
 with st.sidebar:
-    st.markdown(f"### שלום, {st.session_state.user_role}")
-    choice = st.radio("ניווט:", menu_options[st.session_state.user_role])
-    if st.button("🚪 התנתקות"):
+    st.markdown(f"### מחובר כ: **{st.session_state.user_role}**")
+    choice = st.radio("ניווט במערכת:", roles_menu[st.session_state.user_role])
+    st.markdown("---")
+    if st.button("🚪 התנתקות מהמערכת", use_container_width=True):
         st.session_state.user_role = None
         st.rerun()
 
-# --- לוגיקת דפים ---
-if "דשבורד" in choice:
-    st.title("📊 דשבורד סטטוס")
-    t_tasks = get_tasks_for_date(datetime.now().date())
-    done = sum(1 for t in t_tasks if t['done'])
-    total = len(t_tasks)
+# --- לוגיקת עמודים ---
+if choice == "📊 דשבורד":
+    st.title("📊 דשבורד בקרה")
+    tasks = get_tasks_for_date(datetime.now().date())
+    done = sum(1 for t in tasks if t['done'])
+    total = len(tasks)
     
     c1, c2 = st.columns(2)
-    c1.metric("משימות להיום", total)
-    c2.metric("בוצעו", done)
+    c1.metric("משימות היום", total)
+    c2.metric("בוצעו בפועל", done)
     
     st.markdown("---")
-    for t in t_tasks:
-        c = "#10b981" if t['done'] else "#000080"
-        st.markdown(f"<div class='task-card' style='border-right-color: {c}'><b>{t['name']}</b><br>{t['desc']}</div>", unsafe_allow_html=True)
+    for t in tasks:
+        color = "#10b981" if t['done'] else "#38bdf8"
+        st.markdown(f"<div class='task-card' style='border-right-color: {color}'><b>{t['name']}</b><br>{t['desc']}</div>", unsafe_allow_html=True)
 
-elif "סידור עבודה" in choice:
-    st.title("📋 סידור עבודה")
+elif choice == "📋 סידור עבודה":
+    st.title("📋 סידור עבודה יומי")
     today = datetime.now().date()
-    t_tasks = get_tasks_for_date(today)
-    for t in t_tasks:
+    tasks = get_tasks_for_date(today)
+    for t in tasks:
         if t['done']:
-            st.success(f"✅ {t['name']} - בוצע")
+            st.success(f"✅ {t['name']} - הושלם")
         else:
-            if st.checkbox(f"סמן כבוצע: {t['name']}", key=f"check_{t['idx']}"):
-                d_dates = str(st.session_state.df.at[t['idx'], 'Done_Dates'])
-                st.session_state.df.at[t['idx'], 'Done_Dates'] = f"{d_dates},{today.strftime('%Y-%m-%d')}".strip(",")
+            if st.checkbox(f"סיום ביצוע: {t['name']}", key=f"chk_{t['idx']}"):
+                history = str(st.session_state.df.at[t['idx'], 'Done_Dates'])
+                st.session_state.df.at[t['idx'], 'Done_Dates'] = f"{history},{today.strftime('%Y-%m-%d')}".strip(",")
                 save_data(st.session_state.df)
                 st.rerun()
 
-elif "הוספת משימה" in choice:
-    st.title("➕ הוספת משימה")
-    with st.form("add"):
+elif choice == "📅 לוח שנה":
+    st.title("📅 לוח משימות")
+    events = []
+    for _, r in st.session_state.df.iterrows():
+        events.append({"title": r['Task_Name'], "start": r['Date'], "color": "#38bdf8"})
+    calendar(events=events)
+
+elif choice == "➕ הוספת משימה":
+    st.title("➕ הוספת משימה חדשה")
+    with st.form("new_task"):
         name = st.text_input("שם המשימה")
         desc = st.text_area("תיאור")
         freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "חודשי"])
-        if st.form_submit_button("שמור"):
+        if st.form_submit_button("שמור במערכת"):
             new_id = int(st.session_state.df["ID"].max() + 1) if not st.session_state.df.empty else 100
             new_row = {"ID": new_id, "Task_Name": name, "Description": desc, "Recurring": freq, "Date": datetime.now().strftime("%Y-%m-%d"), "Done_Dates": ""}
             st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
             save_data(st.session_state.df)
-            st.success("נשמר!")
+            st.success("המשימה נשמרה!")
 
-elif "לוח שנה" in choice:
-    st.title("📅 לוח שנה")
-    ev = []
-    for _, r in st.session_state.df.iterrows():
-        ev.append({"title": r['Task_Name'], "start": r['Date'], "color": "#000080"})
-    calendar(events=ev)
-
-elif "ניהול" in choice:
-    st.title("⚙️ ניהול נתונים")
-    st.write(st.session_state.df)
-    if st.button("מחק הכל (זהירות)"):
+elif choice == "⚙️ הגדרות":
+    st.title("⚙️ ניהול בסיס נתונים")
+    st.dataframe(st.session_state.df, use_container_width=True)
+    if st.button("🗑️ נקה את כל המשימות"):
         st.session_state.df = pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
         save_data(st.session_state.df)
         st.rerun()
