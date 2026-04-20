@@ -156,24 +156,46 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- 5. מסך כניסה (העיצוב החדש) ---
+
+# --- 5. מסך כניסה משופר (לחיצה על כל הכרטיס) ---
 if st.session_state.user_role is None:
     st.markdown("<h1 style='text-align: center; margin-top: 50px;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
+    
     cols = st.columns(3, gap="large")
     roles = [
         {"role": "מנהל WMS", "icon": "🔑", "id": "admin"},
         {"role": "צוות מחסן", "icon": "📦", "id": "staff"},
         {"role": "סמנכ\"ל", "icon": "📊", "id": "vp"}
     ]
+    
     for i, col in enumerate(cols):
         with col:
             r = roles[i]
-            st.markdown(f"<div class='login-card'><h1>{r['icon']}</h1><h2>{r['role']}</h2></div>", unsafe_allow_html=True)
-            if st.button(f"כניסה", key=f"login_{r['id']}"):
+            # יצירת הכפתור שמכיל את כל העיצוב בתוכו
+            if st.button(f"{r['icon']}\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
                 st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
                 st.rerun()
+                
+            # הוספת העיצוב לכרטיס (הכפתור יתלבש על העיצוב שהגדרנו ב-CSS)
+            st.markdown(f"""
+                <style>
+                /* גורם לכפתור ספציפי להיראות כמו הכרטיס הצף */
+                div[data-testid="stButton"] > button[key*="btn_{r['id']}"] {{
+                    height: 320px !important;
+                    background-color: #0f172a !important;
+                    border: 1px solid #1e293b !important;
+                    border-radius: 20px !important;
+                    color: #10b981 !important;
+                    font-size: 2rem !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    white-space: pre-line !important;
+                }}
+                </style>
+            """, unsafe_allow_html=True)
     st.stop()
+
 
 # --- 6. תפריט צד ---
 df = load_data()
