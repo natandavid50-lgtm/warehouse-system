@@ -25,18 +25,6 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] * { color: #f8fafc !important; }
     
-    .login-card {
-        background: white;
-        border-radius: 24px;
-        padding: 40px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid #f1f5f9;
-        margin-bottom: 20px;
-    }
-    
     .task-card {
         background: white;
         padding: 20px;
@@ -56,8 +44,13 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
-    .stButton > button {
-        border-radius: 12px !important;
+    /* מסגרת יפה ללוח השנה */
+    .cal-container {
+        background: white;
+        padding: 20px;
+        border-radius: 24px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -117,11 +110,11 @@ if st.session_state.user_role is None:
                 st.rerun()
     st.stop()
 
-# --- תפריט וניווט ---
+# --- תפריט ---
 menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE] if st.session_state.user_role == "מנהל WMS" else [OPT_WORK, OPT_CAL]
 with st.sidebar:
     st.markdown(f"### {st.session_state.user_role}")
-    choice = st.sidebar.radio("ניווט", menu)
+    choice = st.radio("ניווט", menu)
     if st.button("🚪 התנתקות"):
         st.session_state.user_role = None
         st.rerun()
@@ -156,7 +149,7 @@ elif choice == OPT_WORK:
                         st.rerun()
 
 elif choice == OPT_CAL:
-    st.title(OPT_CAL)
+    st.markdown("<h1 style='color: #0f172a;'>📅 יומן משימות מלא</h1>", unsafe_allow_html=True)
     events = []
     for _, row in st.session_state.df.iterrows():
         try:
@@ -169,8 +162,10 @@ elif choice == OPT_CAL:
                 events.append({"title": f"{'✅' if done else '⏳'} {row['Task_Name']}", "start": d, "color": "#10b981" if done else "#3b82f6"})
         except: continue
     
-    # הקטנת לוח השנה באמצעות height: 450
-    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 450}, key="cal_small")
+    # הצגת הלוח בתוך Container מעוצב ובגובה מתאים לעמוד (600px)
+    st.markdown('<div class="cal-container">', unsafe_allow_html=True)
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 600}, key="cal_full_v2")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 elif choice == OPT_ADD:
     st.title(OPT_ADD)
@@ -183,13 +178,13 @@ elif choice == OPT_ADD:
             new_row = pd.DataFrame([{"ID":new_id, "Task_Name":name, "Recurring":freq, "Date":date.strftime("%Y-%m-%d"), "Done_Dates":""}])
             st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
             save_data(st.session_state.df)
-            st.success("המשימה נוספה!")
+            st.success("נוסף בהצלחה!")
             st.rerun()
 
 elif choice == OPT_MANAGE:
     st.title("⚙️ ניהול ועריכת משימות")
     if st.session_state.df.empty:
-        st.info("אין משימות במערכת.")
+        st.info("אין משימות.")
     else:
         task_list = st.session_state.df['Task_Name'].tolist()
         task_to_edit = st.selectbox("בחר משימה לניהול", task_list)
@@ -208,7 +203,7 @@ elif choice == OPT_MANAGE:
                 st.session_state.df.at[idx, 'Recurring'] = u_freq
                 st.session_state.df.at[idx, 'Date'] = u_date.strftime("%Y-%m-%d")
                 save_data(st.session_state.df)
-                st.success("עודכן בהצלחה!")
+                st.success("עודכן!")
                 st.rerun()
             
             if c_btn2.button("🗑️ מחק משימה", use_container_width=True):
