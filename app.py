@@ -15,92 +15,97 @@ def get_supabase():
 
 db = get_supabase()
 
-# --- 2. הגדרות עמוד ועיצוב (מראה טכנולוגי ענק) ---
+# --- 2. הגדרות עמוד ועיצוב (Light Mode - בהיר ומודרני) ---
 st.set_page_config(page_title="אחים כהן - ניהול מחסן", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* הגדרות כלליות */
+    /* רקע האפליקציה - אפור בהיר מאוד */
     .stApp { 
-        background-color: #020617;
+        background-color: #f8fafc;
         direction: rtl;
         text-align: right;
     }
     
-    /* כותרת דף הכניסה */
+    /* כותרת דף הכניסה - כחול נייבי עמוק */
     .main-title {
         text-align: center;
         margin-top: 40px;
         margin-bottom: 40px;
-        color: white;
+        color: #1e293b;
         font-size: 4rem !important;
         font-weight: 900;
-        text-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
 
-    /* עיצוב אגרסיבי לכפתורי הכניסה - להפוך אותם לכרטיסים ענקיים */
+    /* כפתורי כניסה - כרטיסים לבנים עם צל עדין */
     div[data-testid="stColumn"] button[key^="btn_"] {
-        height: 500px !important; /* גובה מקסימלי */
+        height: 500px !important;
         width: 100% !important;
-        background-color: #0f172a !important;
-        border: 2px solid #1e293b !important;
+        background-color: #ffffff !important;
+        border: 2px solid #e2e8f0 !important;
         border-radius: 40px !important;
-        color: #10b981 !important;
+        color: #1e293b !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
-        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        transition: all 0.4s ease !important;
         padding: 40px !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
     }
 
-    /* עיצוב הטקסט והאייקון בתוך הכפתור */
+    /* טקסט ואייקון בתוך הכפתור */
     div[data-testid="stColumn"] button[key^="btn_"] p {
-        font-size: 3.5rem !important; /* אייקון וטקסט ענקיים */
+        font-size: 3.5rem !important;
         font-weight: 800 !important;
+        color: #1e293b !important;
         line-height: 1.5 !important;
         white-space: pre-line !important;
-        text-align: center !important;
     }
 
-    /* אפקט ריחוף (Hover) מודגש */
+    /* אפקט ריחוף - צבע כחול חי */
     div[data-testid="stColumn"] button[key^="btn_"]:hover {
-        transform: scale(1.05) translateY(-20px) !important;
-        border-color: #10b981 !important;
-        box-shadow: 0 25px 60px rgba(16, 185, 129, 0.3) !important;
-        background-color: #1e293b !important;
+        transform: translateY(-15px) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15) !important;
+        color: #3b82f6 !important;
     }
 
-    /* כפתורים רגילים (התנתקות, מחק) */
+    /* כפתורים רגילים (התנתקות, מחק) - כחול כהה */
     div.stButton > button:not([key^="btn_"]) {
-        background-color: #000000 !important;
-        color: #10b981 !important;
-        border: 2px solid #10b981 !important;
+        background-color: #1e293b !important;
+        color: white !important;
         border-radius: 12px !important;
-        height: 55px !important;
+        height: 50px !important;
         font-weight: bold !important;
-        width: 100%;
+        border: none !important;
     }
-
-    /* ניקוי רווחים פנימיים של Streamlit שמפריעים לגודל */
-    [data-testid="stVerticalBlock"] > div {
-        padding: 0px !important;
-    }
-
-    /* סיידבר וכותרות */
-    section[data-testid="stSidebar"] { background-color: #020617 !important; border-left: 1px solid #1e293b; }
-    section[data-testid="stSidebar"] * { color: white !important; }
     
+    div.stButton > button:not([key^="btn_"]):hover {
+        background-color: #334155 !important;
+    }
+
+    /* סיידבר בהיר */
+    section[data-testid="stSidebar"] { 
+        background-color: #ffffff !important; 
+        border-left: 1px solid #e2e8f0; 
+    }
+    section[data-testid="stSidebar"] * { color: #1e293b !important; }
+    
+    /* כרטיסי משימות בתוך המערכת */
     .task-card {
-        background: #0f172a;
-        color: white;
+        background: #ffffff;
+        color: #1e293b;
         padding: 20px;
         border-radius: 15px;
         margin-bottom: 15px;
-        border-right: 6px solid #10b981; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        border-right: 6px solid #3b82f6; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
+
+    /* התאמת צבעים של מטריקות */
+    [data-testid="stMetricValue"] { color: #1e293b !important; }
+    [data-testid="stMetricLabel"] { color: #64748b !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -160,11 +165,9 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# --- 5. מסך כניסה (כרטיסים ענקיים) ---
+# --- 5. מסך כניסה ---
 if st.session_state.user_role is None:
     st.markdown('<h1 class="main-title">אחים כהן - ניהול משימות מחסן</h1>', unsafe_allow_html=True)
-    
-    # שימוש במרווחים כדי למרכז את התוכן בעמוד
     st.write("##")
     
     cols = st.columns(3, gap="large")
@@ -177,7 +180,6 @@ if st.session_state.user_role is None:
     for i, col in enumerate(cols):
         with col:
             r = roles[i]
-            # ירידות שורה רבות כדי ליצור מרווח גדול בין האייקון לטקסט
             if st.button(f"{r['icon']}\n\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
                 st.session_state.user_role = r['role']
                 st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
@@ -222,7 +224,7 @@ elif choice == OPT_WORK:
         curr_day = start_of_week + timedelta(days=i)
         curr_str = curr_day.strftime("%Y-%m-%d")
         with cols[4-i]:
-            st.markdown(f"<div style='background:#1e293b; color:white; padding:10px; border-radius:10px; text-align:center;'>{day_name} {curr_day.strftime('%d/%m')}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#f1f5f9; color:#1e293b; padding:10px; border-radius:10px; text-align:center; border: 1px solid #e2e8f0;'>{day_name} {curr_day.strftime('%d/%m')}</div>", unsafe_allow_html=True)
             for t in get_daily_status(df, curr_day):
                 if t['is_done']: st.success(f"✅ {t['name']}")
                 elif st.checkbox(f"בצע: {t['name']}", key=f"chk_{t['id']}_{curr_str}"):
