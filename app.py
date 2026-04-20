@@ -39,9 +39,9 @@ st.markdown("""
     
     .task-card {
         background: white;
-        padding: 24px;
+        padding: 20px;
         border-radius: 16px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
         border-right: 8px solid #3b82f6;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
@@ -49,11 +49,11 @@ st.markdown("""
     .day-header {
         background: #1e293b;
         color: #f8fafc;
-        padding: 12px;
+        padding: 10px;
         border-radius: 12px;
         text-align: center;
         font-weight: 600;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
 
     .stButton > button {
@@ -102,7 +102,6 @@ def get_daily_status(target_date):
 # 4. ניהול מצב (Session)
 if "user_role" not in st.session_state: st.session_state.user_role = None
 if "df" not in st.session_state: st.session_state.df = load_data()
-if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
@@ -118,11 +117,11 @@ if st.session_state.user_role is None:
                 st.rerun()
     st.stop()
 
-# --- Sidebar ---
+# --- תפריט וניווט ---
 menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE] if st.session_state.user_role == "מנהל WMS" else [OPT_WORK, OPT_CAL]
 with st.sidebar:
     st.markdown(f"### {st.session_state.user_role}")
-    choice = st.radio("ניווט", menu)
+    choice = st.sidebar.radio("ניווט", menu)
     if st.button("🚪 התנתקות"):
         st.session_state.user_role = None
         st.rerun()
@@ -131,11 +130,9 @@ with st.sidebar:
 if choice == OPT_DASH:
     st.title(OPT_DASH)
     tasks = get_daily_status(datetime.now())
-    t_count = len(tasks)
-    d_count = sum(1 for t in tasks if t['is_done'])
     c1, c2 = st.columns(2)
-    c1.metric("משימות להיום", t_count)
-    c2.metric("בוצעו", d_count)
+    c1.metric("משימות להיום", len(tasks))
+    c2.metric("בוצעו", sum(1 for t in tasks if t['is_done']))
     for t in tasks:
         color = "#10b981" if t['is_done'] else "#f59e0b"
         st.markdown(f'<div class="task-card" style="border-right-color: {color}"><b>{t["name"]}</b></div>', unsafe_allow_html=True)
@@ -171,7 +168,9 @@ elif choice == OPT_CAL:
                 done = d in str(row['Done_Dates'])
                 events.append({"title": f"{'✅' if done else '⏳'} {row['Task_Name']}", "start": d, "color": "#10b981" if done else "#3b82f6"})
         except: continue
-    calendar(events=events, options={"direction": "rtl", "locale": "he"}, key="cal_main")
+    
+    # הקטנת לוח השנה באמצעות height: 450
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 450}, key="cal_small")
 
 elif choice == OPT_ADD:
     st.title(OPT_ADD)
@@ -179,21 +178,21 @@ elif choice == OPT_ADD:
         name = st.text_input("שם המשימה")
         freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
         date = st.date_input("תאריך התחלה", datetime.now())
-        if st.form_submit_button("הוסף"):
+        if st.form_submit_button("הוסף משימה"):
             new_id = int(st.session_state.df["ID"].max() + 1) if not st.session_state.df.empty else 1000
             new_row = pd.DataFrame([{"ID":new_id, "Task_Name":name, "Recurring":freq, "Date":date.strftime("%Y-%m-%d"), "Done_Dates":""}])
             st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
             save_data(st.session_state.df)
-            st.success("נוסף!")
+            st.success("המשימה נוספה!")
             st.rerun()
 
 elif choice == OPT_MANAGE:
     st.title("⚙️ ניהול ועריכת משימות")
     if st.session_state.df.empty:
-        st.info("אין משימות.")
+        st.info("אין משימות במערכת.")
     else:
-        # ממשק בחירה ועריכה
-        task_to_edit = st.selectbox("בחר משימה לעריכה או מחיקה", st.session_state.df['Task_Name'].tolist())
+        task_list = st.session_state.df['Task_Name'].tolist()
+        task_to_edit = st.selectbox("בחר משימה לניהול", task_list)
         idx = st.session_state.df[st.session_state.df['Task_Name'] == task_to_edit].index[0]
         row = st.session_state.df.loc[idx]
 
@@ -204,16 +203,16 @@ elif choice == OPT_MANAGE:
             u_date = col1.date_input("תאריך התחלה", value=pd.to_datetime(row['Date']))
             
             c_btn1, c_btn2 = st.columns(2)
-            if c_btn1.button("✅ שמור שינויים (יעודכן בלוח שנה)", use_container_width=True):
+            if c_btn1.button("✅ שמור שינויים", use_container_width=True):
                 st.session_state.df.at[idx, 'Task_Name'] = u_name
                 st.session_state.df.at[idx, 'Recurring'] = u_freq
                 st.session_state.df.at[idx, 'Date'] = u_date.strftime("%Y-%m-%d")
                 save_data(st.session_state.df)
-                st.success("המשימה עודכנה!")
+                st.success("עודכן בהצלחה!")
                 st.rerun()
             
-            if c_btn2.button("🗑️ מחק משימה לגמרי", use_container_width=True):
+            if c_btn2.button("🗑️ מחק משימה", use_container_width=True):
                 st.session_state.df = st.session_state.df.drop(idx).reset_index(drop=True)
                 save_data(st.session_state.df)
-                st.warning("המשימה נמחקה!")
+                st.warning("נמחק!")
                 st.rerun()
