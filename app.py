@@ -156,8 +156,7 @@ if "current_page" not in st.session_state: st.session_state.current_page = None
 
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-
-# --- 5. מסך כניסה משופר (לחיצה על כל הכרטיס) ---
+# --- 5. מסך כניסה - כרטיסים גדולים ולחיצים ---
 if st.session_state.user_role is None:
     st.markdown("<h1 style='text-align: center; margin-top: 50px;'>אחים כהן - ניהול משימות מחסן</h1>", unsafe_allow_html=True)
     
@@ -171,31 +170,38 @@ if st.session_state.user_role is None:
     for i, col in enumerate(cols):
         with col:
             r = roles[i]
-            # יצירת הכפתור שמכיל את כל העיצוב בתוכו
-            if st.button(f"{r['icon']}\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
-                st.session_state.user_role = r['role']
-                st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
-                st.rerun()
-                
-            # הוספת העיצוב לכרטיס (הכפתור יתלבש על העיצוב שהגדרנו ב-CSS)
-            st.markdown(f"""
+            # יצירת הכפתור עם סגנון CSS מוטמע כדי להחזיר את הגובה
+            button_code = f"""
                 <style>
-                /* גורם לכפתור ספציפי להיראות כמו הכרטיס הצף */
                 div[data-testid="stButton"] > button[key*="btn_{r['id']}"] {{
                     height: 320px !important;
                     background-color: #0f172a !important;
                     border: 1px solid #1e293b !important;
                     border-radius: 20px !important;
                     color: #10b981 !important;
-                    font-size: 2rem !important;
+                    font-size: 1.8rem !important;
                     display: flex !important;
                     flex-direction: column !important;
-                    white-space: pre-line !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                    gap: 20px !important;
+                    transition: all 0.4s ease !important;
+                }}
+                div[data-testid="stButton"] > button[key*="btn_{r['id']}"]:hover {{
+                    transform: translateY(-12px) !important;
+                    border-color: #10b981 !important;
+                    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.15) !important;
                 }}
                 </style>
-            """, unsafe_allow_html=True)
+            """
+            st.markdown(button_code, unsafe_allow_html=True)
+            
+            # הכפתור עצמו מכיל את האייקון והטקסט עם ירידת שורה
+            if st.button(f"{r['icon']}\n\n{r['role']}", key=f"btn_{r['id']}", use_container_width=True):
+                st.session_state.user_role = r['role']
+                st.session_state.current_page = OPT_WORK if r['role'] == "צוות מחסן" else OPT_DASH
+                st.rerun()
     st.stop()
-
 
 # --- 6. תפריט צד ---
 df = load_data()
