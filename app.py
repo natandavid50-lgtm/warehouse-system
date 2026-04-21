@@ -1,26 +1,435 @@
-import uuid
-from datetime import date as dt_date
+import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta, date
+from streamlit_calendar import calendar
+import calendar as pycal
+import os
 
-def parse_done_dates(done_str: str) -> set[str]:
-    if not done_str:
-        return set()
-    return {d.strip() for d in done_str.split(",") if d.strip()}
+# =========================
+# 1) App Config
+# =========================
+st.set_page_config(
+    page_title="אחים כהן | ניהול מחסן",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-def serialize_done_dates(done_dates: set[str]) -> str:
-    return ",".join(sorted(done_dates))
+DB_FILE = "warehouse_management_db.csv"
 
-def save_new_task(name, desc, freq, task_date):
-    new_id = str(uuid.uuid4())  # במקום timestamp
-    db.table("tasks").insert({
-        "id": new_id,
-        "task_name": name,
-        "description": desc,
-        "recurring": freq,
-        "task_date": str(task_date),
-        "done_dates": ""
-    }).execute()
+# =========================
+# 2) Theme / CSS (Professional Light UI)
+# =========================
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 
-def mark_task_done(task_id, existing_done_str, day_str):
-    done = parse_done_dates(existing_done_str)
-    done.add(day_str)  # מונע כפילויות
-    db.table("tasks").update({"done_dates": serialize_done_dates(done)}).eq("id", task_id).execute()
+:root {
+    --bg-main: #f3f6fb;
+    --bg-soft: #eef3fa;
+    --card-white: #ffffff;
+    --text-dark: #0f172a;
+    --text-muted: #64748b;
+    --accent-blue: #2563eb;
+    --accent-blue-2: #1d4ed8;
+    --accent-violet: #7c3aed;
+    --border-color: #dbe4f0;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 10px 24px rgba(15, 23, 42, 0.08);
+    --radius: 16px;
+    --radius-lg: 22px;
+}
+
+html, body, [class*="css"] {
+    font-family: "Heebo", "Inter", sans-serif !important;
+    direction: rtl;
+    text-align: right;
+}
+
+/* App background */
+.stApp {
+    background:
+        radial-gradient(circle at 85% 10%, rgba(37,99,235,0.08), transparent 40%),
+        radial-gradient(circle at 10% 15%, rgba(124,58,237,0.07), transparent 35%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg-main) 45%, #edf3fa 100%);
+    color: var(--text-dark);
+}
+
+/* Main container spacing */
+.main .block-container {
+    padding-top: 1.2rem;
+    padding-bottom: 1.5rem;
+    max-width: 1350px;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%) !important;
+    border-left: 1px solid var(--border-color) !important;
+}
+section[data-testid="stSidebar"] * {
+    color: var(--text-dark) !important;
+}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+    font-weight: 800 !important;
+}
+
+/* Hero */
+.hero-wrap {
+    background: linear-gradient(120deg, #ffffff 0%, #f8fbff 55%, #f2f7ff 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: var(--shadow-md);
+    padding: 30px 24px 18px 24px;
+    margin-bottom: 18px;
+}
+.hero-title {
+    text-align: center;
+    font-size: 3.15rem !important;
+    font-weight: 900;
+    color: #0b1220;
+    margin-bottom: 0.2rem;
+    line-height: 1.2;
+}
+.hero-subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 0;
+}
+
+/* General headers */
+h1, h2, h3 {
+    color: #0f172a !important;
+    letter-spacing: 0.2px;
+}
+h2, h3 {
+    font-weight: 800 !important;
+}
+
+/* Login buttons (large role cards) */
+.stButton > button {
+    min-height: 210px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%) !important;
+    border: 1.5px solid var(--border-color) !important;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s ease;
+    color: var(--text-dark) !important;
+    font-weight: 800 !important;
+}
+.stButton > button:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-md);
+    border-color: #b8c8e3 !important;
+}
+.stButton > button div p {
+    font-size: 1.65rem !important;
+    font-weight: 900 !important;
+    line-height: 1.6 !important;
+}
+
+/* Role-card top accents */
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
+    border-top: 8px solid #2563eb !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
+    border-top: 8px solid #f59e0b !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
+    border-top: 8px solid #10b981 !important;
+}
+
+/* Dashboard metric cards */
+[data-testid="stMetric"] {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    box-shadow: var(--shadow-sm);
+}
+[data-testid="stMetricLabel"] {
+    color: var(--text-muted) !important;
+    font-weight: 600 !important;
+}
+[data-testid="stMetricValue"] {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+}
+
+/* Task cards */
+.task-item {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    border-right: 6px solid #cbd5e1;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(2, 6, 23, 0.04);
+}
+.task-done {
+    border-right-color: var(--success);
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+}
+.task-pending {
+    border-right-color: var(--warning);
+    background: linear-gradient(180deg, #fffbeb 0%, #fff9e8 100%);
+}
+
+/* Inputs */
+.stTextInput input,
+.stTextArea textarea,
+.stDateInput input,
+div[data-baseweb="select"] > div {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    color: var(--text-dark) !important;
+}
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+    border-color: #93b4ff !important;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.12) !important;
+}
+
+/* Form submit button (short buttons too) */
+.stFormSubmitButton > button,
+section[data-testid="stSidebar"] .stButton > button,
+button[kind="primary"] {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    border: none !important;
+    background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-violet) 100%) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    box-shadow: 0 8px 18px rgba(37,99,235,0.22) !important;
+}
+.stFormSubmitButton > button:hover,
+section[data-testid="stSidebar"] .stButton > button:hover,
+button[kind="primary"]:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+/* Sidebar radio & text */
+[data-testid="stRadio"] label {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+/* Table/DataFrame */
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Alerts */
+.stInfo, .stSuccess, .stWarning, .stError {
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Week header mini cards */
+.week-day-chip {
+    background: linear-gradient(180deg, #edf3ff 0%, #e8f0ff 100%);
+    border: 1px solid #cfe0ff;
+    color: #1e3a8a;
+    border-radius: 12px;
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+    font-weight: 800;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================
+# 3) Data Layer
+# =========================
+def load_data():
+    if os.path.exists(DB_FILE):
+        try:
+            df = pd.read_csv(DB_FILE)
+            for col in ["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"]:
+                if col not in df.columns: df[col] = ""
+            return df.fillna("")
+        except: pass
+    return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
+
+def save_data(df):
+    df.to_csv(DB_FILE, index=False)
+
+# =========================
+# 4) Utilities
+# =========================
+def is_scheduled_on(base_date, recurring, target_date):
+    if target_date < base_date: return False
+    diff = (target_date - base_date).days
+    if recurring == "לא": return diff == 0
+    if recurring == "יומי": return diff < 365
+    if recurring == "שבועי": return diff % 7 == 0
+    if recurring == "דו-שבועי": return diff % 14 == 0
+    if recurring == "חודשי": return target_date.day == base_date.day
+    return False
+
+def get_daily_status(df_input, target_dt):
+    target_date = target_dt.date()
+    target_str = target_date.strftime("%Y-%m-%d")
+    scheduled = []
+    for idx, row in df_input.iterrows():
+        try:
+            base_date = pd.to_datetime(row["Date"]).date()
+            if is_scheduled_on(base_date, row["Recurring"], target_date):
+                done_list = str(row["Done_Dates"]).split(",")
+                scheduled.append({
+                    "idx": idx, "id": row["ID"], "name": row["Task_Name"],
+                    "desc": row["Description"], "is_done": target_str in done_list
+                })
+        except: continue
+    return scheduled
+
+# =========================
+# 5) Main Logic
+# =========================
+if "user_role" not in st.session_state:
+    st.session_state.user_role = None
+
+# --- Welcome Screen ---
+if st.session_state.user_role is None:
+    st.markdown("""
+    <div class="hero-wrap">
+        <div class="hero-title">אחים כהן • ניהול מחסן</div>
+        <p class="hero-subtitle">מערכת ניהול משימות ובקרה</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3, gap="medium")
+    with c1:
+        if st.button("🔑\nמנהל WMS", use_container_width=True):
+            st.session_state.user_role = "מנהל WMS"
+            st.rerun()
+    with c2:
+        if st.button("📦\nצוות מחסן", use_container_width=True):
+            st.session_state.user_role = "צוות מחסן"
+            st.rerun()
+    with c3:
+        if st.button("📊\nסמנכ\"ל", use_container_width=True):
+            st.session_state.user_role = "סמנכ\"ל"
+            st.rerun()
+    st.stop()
+
+df = load_data()
+st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
+if st.sidebar.button("🚪 התנתקות"):
+    st.session_state.user_role = None
+    st.rerun()
+
+OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
+if st.session_state.user_role == "מנהל WMS": menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
+elif st.session_state.user_role == "צוות מחסן": menu = [OPT_WORK, OPT_CAL]
+else: menu = [OPT_DASH, OPT_CAL]
+
+choice = st.sidebar.radio("ניווט", menu)
+
+# --- Pages ---
+if choice == OPT_DASH:
+    st.markdown(f"## {OPT_DASH}")
+    today_tasks = get_daily_status(df, datetime.now())
+    total, done = len(today_tasks), sum(1 for t in today_tasks if t["is_done"])
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("משימות פתוחות היום", total)
+    c2.metric("בוצעו בפועל", done)
+    c3.metric("אחוז עמידה ביעדים", f"{int(done/total*100) if total > 0 else 0}%")
+
+    st.write("<br>", unsafe_allow_html=True)
+    st.subheader("סטטוס משימות נוכחי")
+
+    if not today_tasks:
+        st.info("אין משימות מתוזמנות להיום.")
+    else:
+        for t in today_tasks:
+            status_class = "task-done" if t["is_done"] else "task-pending"
+            icon = "✅" if t["is_done"] else "⏳"
+            st.markdown(f"""
+            <div class="task-item {status_class}">
+                <b style="font-size:1.08rem;">{icon} {t['name']}</b><br>
+                <span style="color:var(--text-muted);">{t['desc'] if t['desc'] else 'אין תיאור למשימה'}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+elif choice == OPT_WORK:
+    st.markdown(f"## {OPT_WORK}")
+    today = datetime.now()
+    start_of_week = today - timedelta(days=(today.weekday() + 1) % 7)
+    days_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
+    cols = st.columns(5)
+
+    for i, day_name in enumerate(days_names):
+        curr_day = start_of_week + timedelta(days=i)
+        date_str = curr_day.strftime("%Y-%m-%d")
+        with cols[i]:
+            st.markdown(f"""
+            <div class="week-day-chip">
+                <b>{day_name}</b><br>{curr_day.strftime('%d/%m')}
+            </div>
+            """, unsafe_allow_html=True)
+            tasks = get_daily_status(df, curr_day)
+            for t in tasks:
+                if t["is_done"]:
+                    st.success(f"**{t['name']}**")
+                else:
+                    if st.button(f"סמן: {t['name']}", key=f"btn_{t['id']}_{date_str}"):
+                        idx = t['idx']
+                        old = str(df.at[idx, "Done_Dates"])
+                        df.at[idx, "Done_Dates"] = f"{old},{date_str}".strip(",")
+                        save_data(df)
+                        st.rerun()
+
+elif choice == OPT_CAL:
+    st.markdown(f"## {OPT_CAL}")
+    events = []
+    for _, row in df.iterrows():
+        try:
+            base = pd.to_datetime(row["Date"]).date()
+            for i in range(90):
+                d = base + timedelta(days=i)
+                if is_scheduled_on(base, row["Recurring"], d):
+                    d_str = d.strftime("%Y-%m-%d")
+                    events.append({
+                        "title": row["Task_Name"], "start": d_str,
+                        "color": "#10b981" if d_str in str(row["Done_Dates"]) else "#ef4444"
+                    })
+        except: continue
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 600})
+
+elif choice == OPT_ADD:
+    st.markdown(f"## {OPT_ADD}")
+    with st.form("add_form"):
+        name = st.text_input("שם המשימה (למשל: ספירת גבינות)")
+        desc = st.text_area("הוראות לביצוע")
+        freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        start_d = st.date_input("תאריך התחלה", value=datetime.now().date())
+        if st.form_submit_button("הוסף למערכת"):
+            if name:
+                new_id = int(datetime.now().timestamp())
+                new_row = pd.DataFrame([{"ID": new_id, "Task_Name": name, "Description": desc, "Recurring": freq, "Date": start_d.strftime("%Y-%m-%d"), "Done_Dates": ""}])
+                df = pd.concat([df, new_row], ignore_index=True)
+                save_data(df)
+                st.success("המשימה נוספה בהצלחה!")
+                st.rerun()
+
+elif choice == OPT_MANAGE:
+    st.markdown(f"## {OPT_MANAGE}")
+    st.write("ניהול ומחיקת משימות קיימות:")
+    st.dataframe(df[["Task_Name", "Recurring", "Date"]], use_container_width=True)
+    if not df.empty:
+        to_del = st.selectbox("בחר משימה למחיקה:", df["Task_Name"].unique())
+        if st.button("מחק משימה זו"):
+            df = df[df["Task_Name"] != to_del]
+            save_data(df)
+            st.rerun()
