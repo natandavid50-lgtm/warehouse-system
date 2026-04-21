@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from streamlit_calendar import calendar
-import calendar as pycal
 import os
 
 # =========================
@@ -21,98 +20,79 @@ DB_FILE = "warehouse_management_db.csv"
 # =========================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
-
-:root {
-    --bg-main: #f3f6fb;
-    --text-dark: #0f172a;
-    --text-muted: #64748b;
-    --accent-blue: #2563eb;
-    --border-color: #dbe4f0;
-    --shadow-md: 0 10px 24px rgba(15, 23, 42, 0.08);
-    --radius-lg: 22px;
-}
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap');
 
 html, body, [class*="css"] {
-    font-family: "Heebo", "Inter", sans-serif !important;
+    font-family: "Heebo", sans-serif !important;
     direction: rtl;
     text-align: right;
 }
 
 .stApp {
-    background: 
-        radial-gradient(circle at 85% 10%, rgba(37,99,235,0.08), transparent 40%),
-        linear-gradient(180deg, #f8fbff 0%, var(--bg-main) 45%, #edf3fa 100%);
-    color: var(--text-dark);
+    background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 45%, #edf3fa 100%);
 }
 
-.hero-wrap {
+/* כותרת ברוך הבא */
+.welcome-banner {
     background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
-    box-shadow: var(--shadow-md);
-    padding: 30px 24px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid #dbe4f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     margin-bottom: 25px;
     text-align: center;
 }
 
-div[data-testid="stHorizontalBlock"] .stButton > button {
-    min-height: 210px !important;
-    border-radius: var(--radius-lg) !important;
+/* מטריקות דשבורד */
+[data-testid="stMetric"] {
     background: white !important;
-    border: 1px solid var(--border-color) !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06) !important;
-    font-size: 1.65rem !important;
+    padding: 20px !important;
+    border-radius: 18px !important;
+    border: 1px solid #dbe4f0 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+}
+
+/* כפתורי כניסה */
+div[data-testid="stHorizontalBlock"] .stButton > button {
+    min-height: 200px !important;
+    border-radius: 22px !important;
+    font-size: 1.5rem !important;
     font-weight: 900 !important;
-    color: var(--text-dark) !important;
+    background: white !important;
+    border: 1px solid #dbe4f0 !important;
 }
 
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 8px solid #2563eb !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 8px solid #f59e0b !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 8px solid #10b981 !important; }
 
+/* פופ-אובר למשימות */
 div[data-testid="stPopover"] > button {
     width: 100% !important;
-    min-height: 80px !important;
-    margin-bottom: 12px !important;
-    background: white !important;
-    border: 1px solid var(--border-color) !important;
+    min-height: 70px !important;
+    margin-bottom: 10px !important;
+    font-weight: 700 !important;
     border-radius: 15px !important;
-    font-size: 1.1rem !important;
-    font-weight: 800 !important;
-}
-
-[data-testid="stMetric"] {
-    background: white;
-    padding: 20px;
-    border-radius: 18px;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    border: 1px solid #dbe4f0 !important;
 }
 
 .week-day-chip {
     background: #edf3ff;
-    border: 1px solid #cfe0ff;
     border-radius: 12px;
-    text-align: center;
     padding: 10px;
     margin-bottom: 15px;
+    text-align: center;
     font-weight: 800;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# 3) Data Layer
+# 3) Helper Functions
 # =========================
 def load_data():
     if os.path.exists(DB_FILE):
-        try:
-            df = pd.read_csv(DB_FILE)
-            for col in ["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"]:
-                if col not in df.columns: df[col] = ""
-            return df.fillna("")
-        except: pass
+        return pd.read_csv(DB_FILE).fillna("")
     return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
 
 def save_data(df):
@@ -145,91 +125,98 @@ def get_daily_status(df_input, target_dt):
     return scheduled
 
 # =========================
-# 4) Flow & Authentication
+# 4) Main Logic
 # =========================
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
 if st.session_state.user_role is None:
-    st.markdown('<div class="hero-wrap"><div style="font-size:3rem; font-weight:900;">אחים כהן • ניהול מחסן</div></div>', unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3, gap="medium")
+    st.markdown('<div class="welcome-banner"><h1>אחים כהן • ניהול מחסן</h1><p>בחר תפקיד לכניסה</p></div>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
     if c1.button("🔑\nמנהל WMS", use_container_width=True): st.session_state.user_role = "מנהל WMS"; st.rerun()
     if c2.button("📦\nצוות מחסן", use_container_width=True): st.session_state.user_role = "צוות מחסן"; st.rerun()
     if c3.button("📊\nסמנכ\"ל", use_container_width=True): st.session_state.user_role = "סמנכ\"ל"; st.rerun()
     st.stop()
 
+# הצגת באנר ברוך הבא עם שם המשתמש
+st.markdown(f'<div class="welcome-banner"><h2>ברוך הבא, {st.session_state.user_role}</h2></div>', unsafe_allow_html=True)
+
 df = load_data()
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# תיקון תפריט סמנכ"ל - עכשיו הוא רואה דשבורד
+# הגדרת תפריט לפי תפקיד
 if st.session_state.user_role == "מנהל WMS":
     menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "סמנכ\"ל":
     menu = [OPT_DASH, OPT_CAL]
-else: # צוות מחסן
+else:
     menu = [OPT_WORK, OPT_CAL]
 
 choice = st.sidebar.radio("ניווט", menu)
-
-if st.sidebar.button("🚪 התנתקות"):
+if st.sidebar.button("יציאה מהמערכת"):
     st.session_state.user_role = None
     st.rerun()
 
-# --- דשבורד בקרה ---
+# --- דשבורד ---
 if choice == OPT_DASH:
-    st.markdown(f"## {OPT_DASH}")
+    st.header(OPT_DASH)
     today_tasks = get_daily_status(df, datetime.now())
-    total, done = len(today_tasks), sum(1 for t in today_tasks if t["is_done"])
+    total = len(today_tasks)
+    done = sum(1 for t in today_tasks if t["is_done"])
     pct = int((done / total) * 100) if total > 0 else 0
     
     m1, m2, m3 = st.columns(3)
-    m1.metric("משימות היום", total)
+    m1.metric("משימות להיום", total)
     m2.metric("בוצעו", done)
-    m3.metric("הספק", f"{pct}%")
-    st.write("<br>", unsafe_allow_html=True)
+    m3.metric("אחוז ביצוע", f"{pct}%")
+    
+    st.divider()
     for t in today_tasks:
         st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
 
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
-    st.markdown(f"## {OPT_WORK}")
+    st.header(OPT_WORK)
     today = datetime.now()
     start = today - timedelta(days=(today.weekday() + 1) % 7)
-    cols = st.columns(5)
     days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
+    cols = st.columns(5)
+    
     for i, name in enumerate(days):
         curr_d = start + timedelta(days=i)
-        d_str = curr_d.strftime("%Y-%m-%d")
         with cols[i]:
-            st.markdown(f'<div class="week-day-chip"><b>{name}</b><br>{curr_d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="week-day-chip">{name}<br>{curr_d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
             for t in get_daily_status(df, curr_d):
                 label = f"✅ {t['name']}" if t['is_done'] else f"⏳ {t['name']}"
                 with st.popover(label, use_container_width=True):
-                    st.subheader(t['name'])
-                    st.write(f"**פירוט:**\n{t['desc'] if t['desc'] else 'אין פירוט'}")
-                    if not t['is_done'] and st.button("סמן כבוצע", key=f"d_{t['id']}_{i}"):
+                    st.write(f"**תיאור:** {t['desc']}")
+                    if not t['is_done'] and st.button("בצע", key=f"btn_{t['id']}_{i}"):
+                        d_str = curr_d.strftime("%Y-%m-%d")
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df)
                         st.rerun()
 
-# --- הגדרות ---
+# --- הגדרות (מחיקה בודדת) ---
 elif choice == OPT_MANAGE:
-    st.markdown(f"## {OPT_MANAGE}")
+    st.header(OPT_MANAGE)
     for idx, row in df.iterrows():
-        c1, c2 = st.columns([4, 1])
-        c1.write(f"**{row['Task_Name']}** | {row['Recurring']}")
-        if c2.button("מחק 🗑️", key=f"del_{row['ID']}"):
-            df = df.drop(idx)
-            save_data(df)
-            st.rerun()
+        with st.container():
+            c1, c2, c3 = st.columns([3, 1, 1])
+            c1.write(f"**{row['Task_Name']}**")
+            c2.write(f"({row['Recurring']})")
+            if c3.button("מחק 🗑️", key=f"del_{row['ID']}"):
+                df = df.drop(idx)
+                save_data(df)
+                st.rerun()
+            st.divider()
 
 # --- הוספה ולוח שנה ---
 elif choice == OPT_ADD:
-    with st.form("add"):
+    with st.form("add_form"):
         name = st.text_input("שם משימה")
         desc = st.text_area("פירוט")
         freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
-        sd = st.date_input("התחלה")
+        sd = st.date_input("תאריך התחלה")
         if st.form_submit_button("שמור"):
             new = pd.DataFrame([{"ID": int(datetime.now().timestamp()), "Task_Name": name, "Description": desc, "Recurring": freq, "Date": sd.strftime("%Y-%m-%d"), "Done_Dates": ""}])
             df = pd.concat([df, new], ignore_index=True); save_data(df); st.rerun()
@@ -242,4 +229,4 @@ elif choice == OPT_CAL:
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
                 events.append({"title": row["Task_Name"], "start": d.strftime("%Y-%m-%d"), "color": "#10b981" if d.strftime("%Y-%m-%d") in str(row["Done_Dates"]) else "#ef4444"})
-    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 550})
+    calendar(events=events, options={"direction": "rtl", "locale": "he"})
