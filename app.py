@@ -273,6 +273,7 @@ elif choice == OPT_WORK:
                         st.rerun()
 
 elif choice == OPT_CAL:
+    st.markdown(f"<h2 style='margin-bottom:0;'>{OPT_CAL}</h2>", unsafe_allow_html=True)
     events = []
     for _, row in df.iterrows():
         try:
@@ -283,7 +284,8 @@ elif choice == OPT_CAL:
                     d_s = d.strftime("%Y-%m-%d")
                     events.append({"title": row["Task_Name"], "start": d_s, "color": "#10b981" if d_s in str(row["Done_Dates"]) else "#ef4444"})
         except: continue
-    calendar(events=events, options={"direction": "rtl", "locale": "he"})
+    # גובה מותאם אישית (550) למניעת גלילה
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "height": 550})
 
 elif choice == OPT_ADD:
     st.markdown(f"## {OPT_ADD}")
