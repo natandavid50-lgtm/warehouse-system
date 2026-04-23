@@ -648,12 +648,82 @@ elif choice == OPT_CAL:
     events = []
     for _, row in df.iterrows():
         base = pd.to_datetime(row["Date"]).date()
+        # יצירת אירועים עתידיים ל-500 ימים
         for i in range(500):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
+                is_done = d.strftime("%Y-%m-%d") in str(row["Done_Dates"])
                 events.append({
                     "title": row["Task_Name"], 
                     "start": d.strftime("%Y-%m-%d"), 
-                    "color": "#10b981" if d.strftime("%Y-%m-%d") in str(row["Done_Dates"]) else "#ef4444"
+                    "color": "#00e5a0" if is_done else "#ff4d6d", # ירוק לבוצע, אדום ללא
+                    "allDay": True
                 })
-    calendar(events=events, options={"direction": "rtl", "locale": "he"})
+
+    # עיצוב CSS מותאם אישית ללוח השנה
+    calendar_custom_css = """
+        .fc { 
+            background: #0d1f3c; 
+            color: #e8f0fe; 
+            font-family: 'Heebo', sans-serif;
+            border-radius: 16px;
+            padding: 10px;
+        }
+        .fc-theme-standard td, .fc-theme-standard th {
+            border: 1px solid rgba(56, 139, 253, 0.15) !important;
+        }
+        .fc-col-header-cell {
+            background: #0a1628;
+            color: #00d4ff !important;
+            padding: 10px 0 !important;
+        }
+        .fc-daygrid-day-number {
+            color: #8eafd4 !important;
+            text-decoration: none !important;
+            padding: 5px !important;
+        }
+        .fc-daygrid-day:hover {
+            background: rgba(56, 139, 253, 0.05) !important;
+        }
+        .fc-button-primary {
+            background-color: #388bfd !important;
+            border-color: #388bfd !important;
+            text-transform: capitalize !important;
+        }
+        .fc-button-primary:hover {
+            background-color: #00d4ff !important;
+            border-color: #00d4ff !important;
+        }
+        .fc-button-active {
+            background-color: #00d4ff !important;
+            border-color: #00d4ff !important;
+        }
+        .fc-toolbar-title {
+            color: #00d4ff !important;
+            font-family: 'Orbitron', sans-serif !important;
+        }
+        /* התאמת צבע המשימות */
+        .fc-event {
+            border: none !important;
+            padding: 2px 5px !important;
+            font-weight: 600 !important;
+            border-radius: 4px !important;
+        }
+    """
+
+    calendar(
+        events=events, 
+        options={
+            "direction": "rtl", 
+            "locale": "he",
+            "headerToolbar": {
+                "left": "prev,next today",
+                "center": "title",
+                "right": "dayGridMonth,dayGridWeek"
+            },
+            "initialView": "dayGridMonth",
+            "editable": False,
+            "selectable": True,
+        },
+        custom_css=calendar_custom_css
+    )
