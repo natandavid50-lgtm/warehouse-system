@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 import os
+import plotly.express as px
 
 # =========================
 # 1) App Config
@@ -51,6 +52,26 @@ html, body, [class*="css"] {
     border-radius: 18px !important;
     border: 1px solid #dbe4f0 !important;
     box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+}
+
+/* עיצוב רשימת משימות מקצועית */
+.task-row {
+    background: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border-right: 5px solid #2563eb;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    font-weight: 700;
+}
+.task-done {
+    border-right: 5px solid #10b981;
+    color: #94a3b8;
+    text-decoration: line-through;
+    font-weight: 400;
 }
 
 /* כפתורי כניסה בדף הבית */
@@ -175,31 +196,45 @@ if choice == OPT_DASH:
     done = sum(1 for t in selected_tasks if t["is_done"])
     pct = int((done / total) * 100) if total > 0 else 0
     
+    # חישוב דלתא (השוואה לאתמול)
+    yesterday = selected_date - timedelta(days=1)
+    y_tasks = get_daily_status(df, yesterday)
+    y_total = len(y_tasks)
+    y_pct = int((sum(1 for t in y_tasks if t["is_done"]) / y_total) * 100) if y_total > 0 else 0
+    delta_val = pct - y_pct
+    
     m1, m2, m3 = st.columns(3)
     date_label = "להיום" if selected_date == datetime.now().date() else f"ל- {selected_date.strftime('%d/%m')}"
     m1.metric(f"משימות {date_label}", total)
     m2.metric("בוצעו", done)
-    m3.metric("אחוז ביצוע", f"{pct}%")
+    m3.metric("אחוז ביצוע", f"{pct}%", delta=f"{delta_val}% מאתמול")
     
-    # 2. גרף ביצועים שבועי (למנהל וסמנכ"ל)
+    # 2. גרף ביצועים שבועי (צבעוני ומקצועי)
     st.write("---")
-    st.write("### מגמת ביצועים - 7 ימים אחרונים")
+    st.write("### מגמת ביצועים שבועית (רמזור)")
     weekly_data = []
     for i in range(6, -1, -1):
         day = datetime.now().date() - timedelta(days=i)
         tasks = get_daily_status(df, day)
         t_total = len(tasks)
-        t_done = sum(1 for t in tasks if t["is_done"])
-        t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
-        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct})
+        t_pct = int((sum(1 for t in tasks if t["is_done"]) / t_total) * 100) if t_total > 0 else 0
+        
+        # לוגיקת צבעים לפי ביצועים
+        color = "#10b981" if t_pct > 90 else ("#f59e0b" if t_pct > 60 else "#ef4444")
+        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct, "צבע": color})
     
     chart_df = pd.DataFrame(weekly_data)
-    st.bar_chart(chart_df, x="תאריך", y="אחוז ביצוע", color="#2563eb")
+    fig = px.bar(chart_df, x="תאריך", y="אחוז ביצוע", color="צבע", 
+                 color_discrete_map={"#10b981": "#10b981", "#f59e0b": "#f59e0b", "#ef4444": "#ef4444"})
+    fig.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=20, b=20))
+    st.plotly_chart(fig, use_container_width=True)
     
     st.write(f"### פירוט משימות {date_label}")
     if total > 0:
         for t in selected_tasks:
-            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+            status_class = "task-row task-done" if t['is_done'] else "task-row"
+            icon = "✅" if t['is_done'] else "⏳"
+            st.markdown(f'<div class="{status_class}"><span>{icon} {t["name"]}</span></div>', unsafe_allow_html=True)
     else:
         st.write("אין משימות מתוכננות לתאריך זה.")
 
