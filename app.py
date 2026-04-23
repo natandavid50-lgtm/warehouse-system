@@ -495,7 +495,7 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    # 1. בורר תאריכים
+    # 1. בורר תאריכים ומדדים
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     
@@ -510,7 +510,15 @@ if choice == OPT_DASH:
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    # 2. מגמת ביצועים - גרף Plotly מעוצב
+    # --- שינוי כאן: הצגת פירוט משימות קודם ---
+    st.write(f"### פירוט משימות {date_label}")
+    if total > 0:
+        for t in selected_tasks:
+            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+    else:
+        st.write("אין משימות מתוכננות לתאריך זה.")
+
+    # --- שינוי כאן: הצגת המגמה בסוף ---
     st.write("---")
     st.write("### 📈 מגמת ביצועים שבועית")
     
@@ -546,13 +554,6 @@ if choice == OPT_DASH:
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    st.write(f"### פירוט משימות {date_label}")
-    if total > 0:
-        for t in selected_tasks:
-            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
-    else:
-        st.write("אין משימות מתוכננות לתאריך זה.")
 
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
