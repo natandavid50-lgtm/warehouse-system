@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 import os
+import plotly.express as px
 
 # =========================
 # 1) App Config
@@ -32,7 +33,6 @@ html, body, [class*="css"] {
     background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 45%, #edf3fa 100%);
 }
 
-/* באנר כותרת דף */
 .page-header-banner {
     background: white;
     padding: 25px;
@@ -44,7 +44,6 @@ html, body, [class*="css"] {
     color: #0f172a;
 }
 
-/* מטריקות דשבורד */
 [data-testid="stMetric"] {
     background: white !important;
     padding: 20px !important;
@@ -53,7 +52,24 @@ html, body, [class*="css"] {
     box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
 }
 
-/* כפתורי כניסה בדף הבית */
+/* עיצוב רשימת משימות מקצועית */
+.task-row {
+    background: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border-right: 5px solid #2563eb;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.task-done {
+    border-right: 5px solid #10b981;
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+
 div[data-testid="stHorizontalBlock"] .stButton > button {
     min-height: 200px !important;
     border-radius: 22px !important;
@@ -67,7 +83,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 8px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 8px solid #f59e0b !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 8px solid #10b981 !important; }
 
-/* פופ-אובר למשימות */
 div[data-testid="stPopover"] > button {
     width: 100% !important;
     min-height: 75px !important;
@@ -110,10 +125,8 @@ def is_scheduled_on(base_date, recurring, target_date):
     return False
 
 def get_daily_status(df_input, target_dt):
-    if isinstance(target_dt, datetime):
-        target_date = target_dt.date()
-    else:
-        target_date = target_dt
+    if isinstance(target_dt, datetime): target_date = target_dt.date()
+    else: target_date = target_dt
     target_str = target_date.strftime("%Y-%m-%d")
     scheduled = []
     for idx, row in df_input.iterrows():
@@ -134,7 +147,6 @@ def get_daily_status(df_input, target_dt):
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
-# דף כניסה
 if st.session_state.user_role is None:
     st.markdown('<div class="page-header-banner"><h1>אחים כהן • ניהול מחסן</h1><p>מערכת ניהול משימות ובקרה</p></div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
@@ -146,62 +158,65 @@ if st.session_state.user_role is None:
 df = load_data()
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# תפריט צד
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
-if st.session_state.user_role == "מנהל WMS":
-    menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
-elif st.session_state.user_role == "סמנכ\"ל":
-    menu = [OPT_DASH, OPT_CAL]
-else:
-    menu = [OPT_WORK, OPT_CAL]
-
+menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE] if st.session_state.user_role == "מנהל WMS" else ([OPT_DASH, OPT_CAL] if st.session_state.user_role == "סמנכ\"ל" else [OPT_WORK, OPT_CAL])
 choice = st.sidebar.radio("תפריט", menu)
-if st.sidebar.button("התנתקות"):
-    st.session_state.user_role = None
-    st.rerun()
+if st.sidebar.button("התנתקות"): st.session_state.user_role = None; st.rerun()
 
-# --- הצגת כותרת הדף בתוך הבאנר המעוצב ---
 st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_allow_html=True)
 
-# --- דשבורד בקרה ---
+# --- דשבורד בקרה (BI Style) ---
 if choice == OPT_DASH:
-    # 1. בורר תאריכים בראש הדף
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     
-    # חישוב נתונים ליום הנבחר
+    # חישוב נתונים להיום/נבחר
     selected_tasks = get_daily_status(df, selected_date)
     total = len(selected_tasks)
     done = sum(1 for t in selected_tasks if t["is_done"])
     pct = int((done / total) * 100) if total > 0 else 0
     
+    # חישוב דלתא (השוואה לאתמול)
+    yesterday = selected_date - timedelta(days=1)
+    y_tasks = get_daily_status(df, yesterday)
+    y_total = len(y_tasks)
+    y_pct = int((sum(1 for t in y_tasks if t["is_done"]) / y_total) * 100) if y_total > 0 else 0
+    delta_val = pct - y_pct
+    
     m1, m2, m3 = st.columns(3)
     date_label = "להיום" if selected_date == datetime.now().date() else f"ל- {selected_date.strftime('%d/%m')}"
     m1.metric(f"משימות {date_label}", total)
     m2.metric("בוצעו", done)
-    m3.metric("אחוז ביצוע", f"{pct}%")
+    m3.metric("אחוז ביצוע", f"{pct}%", delta=f"{delta_val}% מאתמול")
     
-    # 2. גרף ביצועים שבועי (למנהל וסמנכ"ל)
     st.write("---")
-    st.write("### מגמת ביצועים - 7 ימים אחרונים")
+    st.write("### מגמת ביצועים שבועית (רמזור)")
+    
     weekly_data = []
     for i in range(6, -1, -1):
         day = datetime.now().date() - timedelta(days=i)
         tasks = get_daily_status(df, day)
         t_total = len(tasks)
-        t_done = sum(1 for t in tasks if t["is_done"])
-        t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
-        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct})
+        t_pct = int((sum(1 for t in tasks if t["is_done"]) / t_total) * 100) if t_total > 0 else 0
+        
+        # לוגיקת צבעים
+        color = "#10b981" if t_pct > 90 else ("#f59e0b" if t_pct > 60 else "#ef4444")
+        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct, "צבע": color})
     
     chart_df = pd.DataFrame(weekly_data)
-    st.bar_chart(chart_df, x="תאריך", y="אחוז ביצוע", color="#2563eb")
+    fig = px.bar(chart_df, x="תאריך", y="אחוז ביצוע", color="צבע", 
+                 color_discrete_map={"#10b981": "#10b981", "#f59e0b": "#f59e0b", "#ef4444": "#ef4444"})
+    fig.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=20, b=20))
+    st.plotly_chart(fig, use_container_width=True)
     
-    st.write(f"### פירוט משימות {date_label}")
+    st.write(f"### פירוט סטטוס {date_label}")
     if total > 0:
         for t in selected_tasks:
-            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+            status_class = "task-row task-done" if t['is_done'] else "task-row"
+            icon = "✅" if t['is_done'] else "⏳"
+            st.markdown(f'<div class="{status_class}"><span>{icon} {t["name"]}</span></div>', unsafe_allow_html=True)
     else:
-        st.write("אין משימות מתוכננות לתאריך זה.")
+        st.write("אין משימות מתוכננות.")
 
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
@@ -209,7 +224,6 @@ elif choice == OPT_WORK:
     start = today - timedelta(days=(today.weekday() + 1) % 7)
     days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(5)
-    
     for i, name in enumerate(days):
         curr_d = start + timedelta(days=i)
         with cols[i]:
@@ -219,10 +233,8 @@ elif choice == OPT_WORK:
                 with st.popover(label, use_container_width=True):
                     st.write(f"**תיאור:** {t['desc']}")
                     if not t['is_done'] and st.button("סמן כבוצע", key=f"btn_{t['id']}_{i}"):
-                        d_str = curr_d.strftime("%Y-%m-%d")
-                        df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
-                        save_data(df)
-                        st.rerun()
+                        df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{curr_d.strftime('%Y-%m-%d')}".strip(",")
+                        save_data(df); st.rerun()
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
@@ -231,9 +243,7 @@ elif choice == OPT_MANAGE:
         c1.write(f"**{row['Task_Name']}**")
         c2.write(f"({row['Recurring']})")
         if c3.button("מחיקה 🗑️", key=f"del_{row['ID']}"):
-            df = df.drop(idx)
-            save_data(df)
-            st.rerun()
+            df = df.drop(idx); save_data(df); st.rerun()
         st.divider()
 
 # --- הוספת משימה ---
@@ -255,9 +265,5 @@ elif choice == OPT_CAL:
         for i in range(30):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
-                events.append({
-                    "title": row["Task_Name"], 
-                    "start": d.strftime("%Y-%m-%d"), 
-                    "color": "#10b981" if d.strftime("%Y-%m-%d") in str(row["Done_Dates"]) else "#ef4444"
-                })
+                events.append({"title": row["Task_Name"], "start": d.strftime("%Y-%m-%d"), "color": "#10b981" if d.strftime("%Y-%m-%d") in str(row["Done_Dates"]) else "#ef4444"})
     calendar(events=events, options={"direction": "rtl", "locale": "he"})
