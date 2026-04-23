@@ -20,7 +20,32 @@ DB_FILE = "warehouse_management_db.csv"
 # =========================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap');
+
+/* =========================================
+   GLOBAL RESET & VARIABLES
+   ========================================= */
+:root {
+    --bg-deep:        #050c1a;
+    --bg-panel:       #0a1628;
+    --bg-card:        #0d1f3c;
+    --bg-card-hover:  #112347;
+    --border:         rgba(56, 139, 253, 0.18);
+    --border-bright:  rgba(56, 139, 253, 0.45);
+    --accent-blue:    #388bfd;
+    --accent-cyan:    #00d4ff;
+    --accent-green:   #00e5a0;
+    --accent-amber:   #f59e0b;
+    --accent-red:     #ff4d6d;
+    --text-primary:   #e8f0fe;
+    --text-secondary: #8eafd4;
+    --text-muted:     #4a6fa5;
+    --glow-blue:      0 0 20px rgba(56, 139, 253, 0.35);
+    --glow-cyan:      0 0 20px rgba(0, 212, 255, 0.3);
+    --glow-green:     0 0 20px rgba(0, 229, 160, 0.3);
+    --radius-card:    16px;
+    --radius-pill:    50px;
+}
 
 html, body, [class*="css"] {
     font-family: "Heebo", sans-serif !important;
@@ -28,62 +53,366 @@ html, body, [class*="css"] {
     text-align: right;
 }
 
+/* =========================================
+   BACKGROUND — deep space grid
+   ========================================= */
 .stApp {
-    background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 45%, #edf3fa 100%);
+    background-color: var(--bg-deep) !important;
+    background-image:
+        linear-gradient(rgba(56, 139, 253, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 139, 253, 0.04) 1px, transparent 1px),
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56, 139, 253, 0.12) 0%, transparent 70%);
+    background-size: 40px 40px, 40px 40px, 100% 100%;
 }
 
-/* באנר כותרת דף */
+/* =========================================
+   SIDEBAR
+   ========================================= */
+[data-testid="stSidebar"] {
+    background: var(--bg-panel) !important;
+    border-left: 1px solid var(--border) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stSidebar"] .stRadio label {
+    background: transparent !important;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    display: block;
+}
+
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(56, 139, 253, 0.12) !important;
+    border-color: var(--border-bright) !important;
+}
+
+/* =========================================
+   PAGE HEADER BANNER
+   ========================================= */
 .page-header-banner {
-    background: white;
-    padding: 25px;
-    border-radius: 20px;
-    border: 1px solid #dbe4f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    margin-bottom: 30px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, #0b1e40 100%);
+    padding: 28px 36px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-bright);
+    box-shadow: var(--glow-blue), inset 0 1px 0 rgba(255,255,255,0.05);
+    margin-bottom: 28px;
     text-align: center;
-    color: #0f172a;
+    color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
 }
 
-/* מטריקות דשבורד */
+.page-header-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 300px; height: 120px;
+    background: radial-gradient(ellipse, rgba(56, 139, 253, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.page-header-banner h1 {
+    font-family: "Orbitron", monospace !important;
+    font-weight: 700 !important;
+    font-size: 1.8rem !important;
+    letter-spacing: 2px !important;
+    color: var(--accent-cyan) !important;
+    margin: 0 0 6px 0 !important;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5) !important;
+}
+
+.page-header-banner p {
+    color: var(--text-secondary) !important;
+    font-size: 0.95rem !important;
+    margin: 0 !important;
+    letter-spacing: 1px;
+}
+
+/* =========================================
+   METRICS
+   ========================================= */
 [data-testid="stMetric"] {
-    background: white !important;
-    padding: 20px !important;
-    border-radius: 18px !important;
-    border: 1px solid #dbe4f0 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+    background: var(--bg-card) !important;
+    padding: 24px 20px !important;
+    border-radius: var(--radius-card) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-/* כפתורי כניסה בדף הבית */
+[data-testid="stMetric"]:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: var(--glow-blue), 0 8px 32px rgba(0,0,0,0.4) !important;
+    border-color: var(--border-bright) !important;
+}
+
+[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--accent-cyan) !important;
+    font-family: "Orbitron", monospace !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* =========================================
+   HOME PAGE — BIG BUTTONS
+   ========================================= */
 div[data-testid="stHorizontalBlock"] .stButton > button {
     min-height: 200px !important;
-    border-radius: 22px !important;
-    font-size: 1.5rem !important;
-    font-weight: 900 !important;
-    background: white !important;
-    border: 1px solid #dbe4f0 !important;
+    border-radius: var(--radius-card) !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
 }
 
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 8px solid #2563eb !important; }
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 8px solid #f59e0b !important; }
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 8px solid #10b981 !important; }
+div[data-testid="stHorizontalBlock"] .stButton > button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+}
 
-/* פופ-אובר למשימות */
+div[data-testid="stHorizontalBlock"] .stButton > button:hover {
+    transform: translateY(-5px) !important;
+    color: #fff !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
+    border-top: 3px solid var(--accent-blue) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 -1px 0 var(--accent-blue) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button:hover {
+    box-shadow: var(--glow-blue), 0 12px 40px rgba(0,0,0,0.5) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
+    border-top: 3px solid var(--accent-amber) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button:hover {
+    box-shadow: 0 0 20px rgba(245,158,11,0.4), 0 12px 40px rgba(0,0,0,0.5) !important;
+    border-color: var(--accent-amber) !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
+    border-top: 3px solid var(--accent-green) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
+    box-shadow: var(--glow-green), 0 12px 40px rgba(0,0,0,0.5) !important;
+    border-color: var(--accent-green) !important;
+}
+
+/* =========================================
+   GENERAL BUTTONS
+   ========================================= */
+.stButton > button {
+    background: linear-gradient(135deg, rgba(56, 139, 253, 0.15), rgba(56, 139, 253, 0.05)) !important;
+    border: 1px solid var(--border-bright) !important;
+    color: var(--accent-cyan) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.5px;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, rgba(56, 139, 253, 0.3), rgba(56, 139, 253, 0.1)) !important;
+    box-shadow: var(--glow-blue) !important;
+    transform: translateY(-2px) !important;
+    color: #fff !important;
+}
+
+/* =========================================
+   POPOVER (TASK CARDS)
+   ========================================= */
 div[data-testid="stPopover"] > button {
     width: 100% !important;
-    min-height: 75px !important;
-    margin-bottom: 12px !important;
+    min-height: 70px !important;
+    margin-bottom: 10px !important;
     font-weight: 700 !important;
-    border-radius: 15px !important;
-    border: 1px solid #dbe4f0 !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.9rem !important;
+    text-align: right !important;
+    padding: 12px 16px !important;
+    letter-spacing: 0.3px;
 }
 
+div[data-testid="stPopover"] > button:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--border-bright) !important;
+    box-shadow: var(--glow-blue) !important;
+    transform: translateX(-3px) !important;
+}
+
+/* =========================================
+   WEEK DAY CHIP
+   ========================================= */
 .week-day-chip {
-    background: #edf3ff;
+    background: linear-gradient(135deg, var(--bg-card), #0b1e40);
+    border: 1px solid var(--border-bright);
     border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 15px;
+    padding: 12px 10px;
+    margin-bottom: 14px;
     text-align: center;
     font-weight: 800;
+    color: var(--accent-cyan);
+    font-family: "Orbitron", monospace;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    box-shadow: var(--glow-blue);
+}
+
+/* =========================================
+   FORM ELEMENTS
+   ========================================= */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15) !important;
+}
+
+.stDateInput > div > div > input {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+.stSelectbox > div > div {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Labels */
+.stTextInput label, .stTextArea label,
+.stSelectbox label, .stDateInput label,
+.stRadio label {
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+/* =========================================
+   INFO / ALERT BOXES
+   ========================================= */
+[data-testid="stAlert"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    border-right: 3px solid var(--accent-blue) !important;
+}
+
+/* =========================================
+   CHARTS
+   ========================================= */
+[data-testid="stVegaLiteChart"],
+[data-testid="stArrowVegaLiteChart"] {
+    background: var(--bg-card) !important;
+    border-radius: var(--radius-card) !important;
+    border: 1px solid var(--border) !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+}
+
+/* =========================================
+   DIVIDERS & TEXT
+   ========================================= */
+hr {
+    border-color: var(--border) !important;
+    margin: 20px 0 !important;
+}
+
+h1, h2, h3, h4 {
+    color: var(--text-primary) !important;
+    font-family: "Heebo", sans-serif !important;
+}
+
+p, li, span {
+    color: var(--text-secondary) !important;
+}
+
+/* =========================================
+   SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+/* =========================================
+   FORM SUBMIT BUTTON
+   ========================================= */
+[data-testid="stForm"] .stButton > button {
+    background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 700 !important;
+    padding: 12px 28px !important;
+    font-size: 1rem !important;
+    letter-spacing: 1px;
+    box-shadow: var(--glow-blue) !important;
+}
+
+[data-testid="stForm"] .stButton > button:hover {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)) !important;
+    box-shadow: var(--glow-cyan) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Form container */
+[data-testid="stForm"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 24px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
 }
 </style>
 """, unsafe_allow_html=True)
