@@ -252,7 +252,7 @@ elif choice == OPT_CAL:
     events = []
     for _, row in df.iterrows():
         base = pd.to_datetime(row["Date"]).date()
-        for i in range(30):
+        for i in range(200):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
                 events.append({
