@@ -146,14 +146,15 @@ if st.session_state.user_role is None:
 df = load_data()
 OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# תפריט צד
+# תפריט צד - הגדרת הרשאות
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
 if st.session_state.user_role == "מנהל WMS":
     menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "סמנכ\"ל":
     menu = [OPT_DASH, OPT_CAL]
 else:
-    menu = [OPT_WORK, OPT_CAL]
+    # צוות מחסן - הוספת דשבורד כפי שביקשת
+    menu = [OPT_DASH, OPT_WORK, OPT_CAL]
 
 choice = st.sidebar.radio("תפריט", menu)
 if st.sidebar.button("התנתקות"):
@@ -181,7 +182,7 @@ if choice == OPT_DASH:
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    # 2. גרף ביצועים שבועי (למנהל וסמנכ"ל)
+    # 2. גרף ביצועים שבועי
     st.write("---")
     st.write("### מגמת ביצועים - 7 ימים אחרונים")
     weekly_data = []
@@ -252,6 +253,7 @@ elif choice == OPT_CAL:
     events = []
     for _, row in df.iterrows():
         base = pd.to_datetime(row["Date"]).date()
+        # עדכון ל-200 כפי שביקשת
         for i in range(500):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
