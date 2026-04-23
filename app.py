@@ -510,7 +510,7 @@ if choice == OPT_DASH:
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    # --- שינוי כאן: הצגת פירוט משימות קודם ---
+    # --- הצגת פירוט משימות ---
     st.write(f"### פירוט משימות {date_label}")
     if total > 0:
         for t in selected_tasks:
@@ -518,7 +518,7 @@ if choice == OPT_DASH:
     else:
         st.write("אין משימות מתוכננות לתאריך זה.")
 
-    # --- שינוי כאן: הצגת המגמה בסוף ---
+    # --- הצגת המגמה בסוף ---
     st.write("---")
     st.write("### 📈 מגמת ביצועים שבועית")
     
@@ -576,17 +576,61 @@ elif choice == OPT_WORK:
                         save_data(df)
                         st.rerun()
 
-# --- הגדרות ---
+# --- הגדרות (ניהול משימות מעוצב) ---
 elif choice == OPT_MANAGE:
-    for idx, row in df.iterrows():
-        c1, c2, c3 = st.columns([3, 1, 1])
-        c1.write(f"**{row['Task_Name']}**")
-        c2.write(f"({row['Recurring']})")
-        if c3.button("מחיקה 🗑️", key=f"del_{row['ID']}"):
-            df = df.drop(idx)
-            save_data(df)
-            st.rerun()
-        st.divider()
+    st.markdown("### ⚙️ ניהול ועריכת משימות")
+    
+    if df.empty:
+        st.info("אין משימות רשומות במערכת.")
+    else:
+        for idx, row in df.iterrows():
+            # יצירת כרטיס מעוצב לכל משימה
+            st.markdown(f"""
+            <div style="
+                border: 1px solid var(--border); 
+                border-radius: 12px; 
+                padding: 15px; 
+                margin-bottom: 10px; 
+                background: var(--bg-card);
+                border-right: 4px solid var(--accent-cyan);
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-primary); font-weight: bold; font-size: 1.1rem;">{row['Task_Name']}</span>
+                    <span style="color: var(--accent-cyan); font-size: 0.85rem; background: rgba(0, 212, 255, 0.1); padding: 2px 8px; border-radius: 20px;">{row['Recurring']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # כפתורי פעולה בטורים
+            col1, col2, _ = st.columns([1.2, 1, 3])
+            
+            with col1:
+                # כפתור עריכה ב-Popover
+                with st.popover("📝 עריכה", use_container_width=True):
+                    st.markdown(f"**עריכת משימה: {row['Task_Name']}**")
+                    new_name = st.text_input("שם המשימה", value=row['Task_Name'], key=f"edit_name_{row['ID']}")
+                    new_desc = st.text_area("תיאור", value=row['Description'], key=f"edit_desc_{row['ID']}")
+                    
+                    freq_options = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
+                    current_freq_idx = freq_options.index(row['Recurring']) if row['Recurring'] in freq_options else 0
+                    new_freq = st.selectbox("תדירות", freq_options, index=current_freq_idx, key=f"edit_freq_{row['ID']}")
+                    
+                    if st.button("שמור שינויים", key=f"save_{row['ID']}", use_container_width=True):
+                        df.at[idx, 'Task_Name'] = new_name
+                        df.at[idx, 'Description'] = new_desc
+                        df.at[idx, 'Recurring'] = new_freq
+                        save_data(df)
+                        st.success("המשימה עודכנה!")
+                        st.rerun()
+
+            with col2:
+                # כפתור מחיקה
+                if st.button("🗑️ מחיקה", key=f"del_{row['ID']}", use_container_width=True):
+                    df = df.drop(idx)
+                    save_data(df)
+                    st.rerun()
+            
+            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
 
 # --- הוספת משימה ---
 elif choice == OPT_ADD:
