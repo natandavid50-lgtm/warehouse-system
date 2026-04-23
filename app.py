@@ -110,7 +110,10 @@ def is_scheduled_on(base_date, recurring, target_date):
     return False
 
 def get_daily_status(df_input, target_dt):
-    target_date = target_dt.date()
+    if isinstance(target_dt, datetime):
+        target_date = target_dt.date()
+    else:
+        target_date = target_dt
     target_str = target_date.strftime("%Y-%m-%d")
     scheduled = []
     for idx, row in df_input.iterrows():
@@ -162,19 +165,43 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    today_tasks = get_daily_status(df, datetime.now())
-    total = len(today_tasks)
-    done = sum(1 for t in today_tasks if t["is_done"])
+    # 1. בורר תאריכים בראש הדף
+    c_date, _ = st.columns([1, 3])
+    selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
+    
+    # חישוב נתונים ליום הנבחר
+    selected_tasks = get_daily_status(df, selected_date)
+    total = len(selected_tasks)
+    done = sum(1 for t in selected_tasks if t["is_done"])
     pct = int((done / total) * 100) if total > 0 else 0
     
     m1, m2, m3 = st.columns(3)
-    m1.metric("משימות להיום", total)
+    date_label = "להיום" if selected_date == datetime.now().date() else f"ל- {selected_date.strftime('%d/%m')}"
+    m1.metric(f"משימות {date_label}", total)
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    st.write("### פירוט משימות להיום")
-    for t in today_tasks:
-        st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+    # 2. גרף ביצועים שבועי (למנהל וסמנכ"ל)
+    st.write("---")
+    st.write("### מגמת ביצועים - 7 ימים אחרונים")
+    weekly_data = []
+    for i in range(6, -1, -1):
+        day = datetime.now().date() - timedelta(days=i)
+        tasks = get_daily_status(df, day)
+        t_total = len(tasks)
+        t_done = sum(1 for t in tasks if t["is_done"])
+        t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
+        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct})
+    
+    chart_df = pd.DataFrame(weekly_data)
+    st.bar_chart(chart_df, x="תאריך", y="אחוז ביצוע", color="#2563eb")
+    
+    st.write(f"### פירוט משימות {date_label}")
+    if total > 0:
+        for t in selected_tasks:
+            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+    else:
+        st.write("אין משימות מתוכננות לתאריך זה.")
 
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
