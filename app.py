@@ -75,7 +75,6 @@ html, body, [class*="css"] {
     box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
 }
 
-/* התיקון: מסתיר את כל התוכן הפנימי של הסיידבר כשהוא סגור כדי למנוע ריצוד */
 [data-testid="stSidebar"][aria-expanded="false"] div {
     display: none !important;
 }
@@ -185,59 +184,40 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-    HOME PAGE — BIG BUTTONS
+    HOME PAGE — BIG BUTTONS (FIXED SIZES)
    ========================================= */
-div[data-testid="stHorizontalBlock"] .stButton > button {
-    min-height: 200px !important;
+/* הבטחת גובה אחיד לכל כפתורי המשתמשים בדף הבית */
+div[data-testid="stHorizontalBlock"] .stButton > button,
+div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+    min-height: 220px !important;
+    height: 220px !important;
+    width: 100% !important;
     border-radius: var(--radius-card) !important;
     font-size: 1.4rem !important;
     font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: pre-wrap !important;
+}
+
+div[data-testid="stHorizontalBlock"] .stButton > button {
     background: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
     color: var(--text-primary) !important;
     transition: all 0.25s ease !important;
     box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
-    letter-spacing: 1px;
-    position: relative;
-    overflow: hidden;
-}
-
-div[data-testid="stHorizontalBlock"] .stButton > button::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
-    pointer-events: none;
-}
-
-div[data-testid="stHorizontalBlock"] .stButton > button:hover {
-    transform: translateY(-5px) !important;
-    color: #fff !important;
 }
 
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
-    border-top: 3px solid var(--accent-blue) !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 -1px 0 var(--accent-blue) !important;
+    border-top: 4px solid var(--accent-blue) !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button:hover {
-    box-shadow: var(--glow-blue), 0 12px 40px rgba(0,0,0,0.5) !important;
-    border-color: var(--accent-blue) !important;
-}
-
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
-    border-top: 3px solid var(--accent-amber) !important;
+    border-top: 4px solid var(--accent-amber) !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) button:hover {
-    box-shadow: 0 0 20px rgba(245,158,11,0.4), 0 12px 40px rgba(0,0,0,0.5) !important;
-    border-color: var(--accent-amber) !important;
-}
-
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
-    border-top: 3px solid var(--accent-green) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
-    box-shadow: var(--glow-green), 0 12px 40px rgba(0,0,0,0.5) !important;
-    border-color: var(--accent-green) !important;
+    border-top: 4px solid var(--accent-green) !important;
 }
 
 /* =========================================
@@ -250,14 +230,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
     border-radius: 10px !important;
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
-    letter-spacing: 0.5px;
-}
-
-.stButton > button:hover {
-    background: linear-gradient(135deg, rgba(56, 139, 253, 0.3), rgba(56, 139, 253, 0.1)) !important;
-    box-shadow: var(--glow-blue) !important;
-    transform: translateY(-2px) !important;
-    color: #fff !important;
 }
 
 /* =========================================
@@ -265,25 +237,14 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
    ========================================= */
 div[data-testid="stPopover"] > button {
     width: 100% !important;
-    min-height: 70px !important;
+    min-height: 70px;
     margin-bottom: 10px !important;
     font-weight: 700 !important;
     border-radius: 12px !important;
     border: 1px solid var(--border) !important;
     background: var(--bg-card) !important;
     color: var(--text-primary) !important;
-    transition: all 0.2s ease !important;
-    font-size: 0.9rem !important;
     text-align: right !important;
-    padding: 12px 16px !important;
-    letter-spacing: 0.3px;
-}
-
-div[data-testid="stPopover"] > button:hover {
-    background: var(--bg-card-hover) !important;
-    border-color: var(--border-bright) !important;
-    box-shadow: var(--glow-blue) !important;
-    transform: translateX(-3px) !important;
 }
 
 /* =========================================
@@ -300,7 +261,6 @@ div[data-testid="stPopover"] > button:hover {
     color: var(--accent-cyan);
     font-family: "Orbitron", monospace;
     font-size: 0.85rem;
-    letter-spacing: 1px;
     box-shadow: var(--glow-blue);
 }
 
@@ -314,74 +274,6 @@ div[data-testid="stPopover"] > button:hover {
     border: 1px solid var(--border) !important;
     border-radius: 10px !important;
     color: var(--text-primary) !important;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-}
-
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: var(--accent-blue) !important;
-    box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15) !important;
-}
-
-.stDateInput > div > div > input {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
-}
-
-.stSelectbox > div > div {
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-}
-
-/* Labels */
-.stTextInput label, .stTextArea label,
-.stSelectbox label, .stDateInput label,
-.stRadio label {
-    color: var(--text-secondary) !important;
-    font-weight: 600 !important;
-    font-size: 0.9rem !important;
-}
-
-/* =========================================
-    INFO / ALERT BOXES
-   ========================================= */
-[data-testid="stAlert"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
-    color: var(--text-primary) !important;
-    border-right: 3px solid var(--accent-blue) !important;
-}
-
-/* =========================================
-    CHARTS
-   ========================================= */
-[data-testid="stVegaLiteChart"],
-[data-testid="stArrowVegaLiteChart"] {
-    background: var(--bg-card) !important;
-    border-radius: var(--radius-card) !important;
-    border: 1px solid var(--border) !important;
-    padding: 16px !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
-}
-
-/* =========================================
-    DIVIDERS & TEXT
-   ========================================= */
-hr {
-    border-color: var(--border) !important;
-    margin: 20px 0 !important;
-}
-
-h1, h2, h3, h4 {
-    color: var(--text-primary) !important;
-    font-family: "Heebo", sans-serif !important;
-}
-
-p, li, span {
-    color: var(--text-secondary) !important;
 }
 
 /* =========================================
@@ -390,7 +282,6 @@ p, li, span {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-panel); }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
 
 /* =========================================
     FORM SUBMIT BUTTON
@@ -399,26 +290,14 @@ p, li, span {
     background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
     color: #fff !important;
     border: none !important;
-    font-weight: 700 !important;
     padding: 12px 28px !important;
-    font-size: 1rem !important;
-    letter-spacing: 1px;
-    box-shadow: var(--glow-blue) !important;
 }
 
-[data-testid="stForm"] .stButton > button:hover {
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)) !important;
-    box-shadow: var(--glow-cyan) !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Form container */
 [data-testid="stForm"] {
     background: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-card) !important;
     padding: 24px !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -475,7 +354,7 @@ if st.session_state.user_role is None:
     c1, c2, c3 = st.columns(3)
     
     with c1:
-        # כניסת מנהל עם סיסמה בתוך Popover
+        # כניסת מנהל
         with st.popover("🔑\nמנהל WMS", use_container_width=True):
             entered_pwd = st.text_input("הזן סיסמת ניהול", type="password")
             if st.button("אישור כניסה", use_container_width=True):
@@ -485,8 +364,16 @@ if st.session_state.user_role is None:
                 else:
                     st.error("סיסמה שגויה")
                     
-    if c2.button("📦\nצוות מחסן", use_container_width=True): st.session_state.user_role = "צוות מחסן"; st.rerun()
-    if c3.button("📊\nסמנכ\"ל", use_container_width=True): st.session_state.user_role = "סמנכ\"ל"; st.rerun()
+    with c2:
+        if st.button("📦\nצוות מחסן", use_container_width=True): 
+            st.session_state.user_role = "צוות מחסן"
+            st.rerun()
+            
+    with c3:
+        if st.button("📊\nהנהלה", use_container_width=True): 
+            st.session_state.user_role = "הנהלה"
+            st.rerun()
+            
     st.stop()
 
 df = load_data()
@@ -496,7 +383,7 @@ OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה",
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
 if st.session_state.user_role == "מנהל WMS":
     menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
-elif st.session_state.user_role == "סמנכ\"ל":
+elif st.session_state.user_role == "הנהלה":
     menu = [OPT_DASH, OPT_CAL]
 else:
     # צוות מחסן
@@ -507,12 +394,10 @@ if st.sidebar.button("התנתקות"):
     st.session_state.user_role = None
     st.rerun()
 
-# --- הצגת כותרת הדף בתוך הבאנר המעוצב ---
 st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_allow_html=True)
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    # 1. בורר תאריכים ומדדים
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     
@@ -527,7 +412,6 @@ if choice == OPT_DASH:
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    # --- הצגת פירוט משימות ---
     st.write(f"### פירוט משימות {date_label}")
     if total > 0:
         for t in selected_tasks:
@@ -535,7 +419,6 @@ if choice == OPT_DASH:
     else:
         st.write("אין משימות מתוכננות לתאריך זה.")
 
-    # --- הצגת המגמה בסוף ---
     st.write("---")
     st.write("### 📈 מגמת ביצועים שבועית")
     
@@ -551,9 +434,7 @@ if choice == OPT_DASH:
         weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז": t_pct})
     
     chart_df = pd.DataFrame(weekly_data)
-
     fig = px.area(chart_df, x="תאריך", y="אחוז", markers=True)
-
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
@@ -563,13 +444,6 @@ if choice == OPT_DASH:
         xaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', title=""),
         yaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', range=[0, 105], title="אחוז ביצוע")
     )
-    
-    fig.update_traces(
-        line=dict(width=3, color='#00d4ff'),
-        marker=dict(size=8, color='#388bfd', line=dict(width=2, color='#00d4ff')),
-        fillcolor='rgba(0, 212, 255, 0.1)'
-    )
-
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # --- סידור עבודה ---
@@ -593,24 +467,15 @@ elif choice == OPT_WORK:
                         save_data(df)
                         st.rerun()
 
-# --- הגדרות (ניהול משימות מעוצב) ---
+# --- הגדרות ---
 elif choice == OPT_MANAGE:
     st.markdown("### ⚙️ ניהול ועריכת משימות")
-    
     if df.empty:
         st.info("אין משימות רשומות במערכת.")
     else:
         for idx, row in df.iterrows():
-            # יצירת כרטיס מעוצב לכל משימה
             st.markdown(f"""
-            <div style="
-                border: 1px solid var(--border); 
-                border-radius: 12px; 
-                padding: 15px; 
-                margin-bottom: 10px; 
-                background: var(--bg-card);
-                border-right: 4px solid var(--accent-cyan);
-            ">
+            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid var(--accent-cyan);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: var(--text-primary); font-weight: bold; font-size: 1.1rem;">{row['Task_Name']}</span>
                     <span style="color: var(--accent-cyan); font-size: 0.85rem; background: rgba(0, 212, 255, 0.1); padding: 2px 8px; border-radius: 20px;">{row['Recurring']}</span>
@@ -618,35 +483,25 @@ elif choice == OPT_MANAGE:
             </div>
             """, unsafe_allow_html=True)
             
-            # כפתורי פעולה בטורים
             col1, col2, _ = st.columns([1.2, 1, 3])
-            
             with col1:
-                # כפתור עריכה ב-Popover
                 with st.popover("📝 עריכה", use_container_width=True):
-                    st.markdown(f"**עריכת משימה: {row['Task_Name']}**")
                     new_name = st.text_input("שם המשימה", value=row['Task_Name'], key=f"edit_name_{row['ID']}")
                     new_desc = st.text_area("תיאור", value=row['Description'], key=f"edit_desc_{row['ID']}")
-                    
                     freq_options = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
                     current_freq_idx = freq_options.index(row['Recurring']) if row['Recurring'] in freq_options else 0
                     new_freq = st.selectbox("תדירות", freq_options, index=current_freq_idx, key=f"edit_freq_{row['ID']}")
-                    
                     if st.button("שמור שינויים", key=f"save_{row['ID']}", use_container_width=True):
                         df.at[idx, 'Task_Name'] = new_name
                         df.at[idx, 'Description'] = new_desc
                         df.at[idx, 'Recurring'] = new_freq
                         save_data(df)
-                        st.success("המשימה עודכנה!")
                         st.rerun()
-
             with col2:
-                # כפתור מחיקה
                 if st.button("🗑️ מחיקה", key=f"del_{row['ID']}", use_container_width=True):
                     df = df.drop(idx)
                     save_data(df)
                     st.rerun()
-            
             st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
 
 # --- הוספת משימה ---
@@ -665,7 +520,6 @@ elif choice == OPT_CAL:
     events = []
     for _, row in df.iterrows():
         base = pd.to_datetime(row["Date"]).date()
-        # יצירת אירועים עתידיים ל-500 ימים
         for i in range(500):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
@@ -673,74 +527,19 @@ elif choice == OPT_CAL:
                 events.append({
                     "title": row["Task_Name"], 
                     "start": d.strftime("%Y-%m-%d"), 
-                    "color": "#00e5a0" if is_done else "#ff4d6d", # ירוק לבוצע, אדום ללא
+                    "color": "#00e5a0" if is_done else "#ff4d6d",
                     "allDay": True
                 })
 
-    # עיצוב CSS מותאם אישית ללוח השנה
-    calendar_custom_css = """
-        .fc { 
-            background: #0d1f3c; 
-            color: #e8f0fe; 
-            font-family: 'Heebo', sans-serif;
-            border-radius: 16px;
-            padding: 10px;
-        }
-        .fc-theme-standard td, .fc-theme-standard th {
-            border: 1px solid rgba(56, 139, 253, 0.15) !important;
-        }
-        .fc-col-header-cell {
-            background: #0a1628;
-            color: #00d4ff !important;
-            padding: 10px 0 !important;
-        }
-        .fc-daygrid-day-number {
-            color: #8eafd4 !important;
-            text-decoration: none !important;
-            padding: 5px !important;
-        }
-        .fc-daygrid-day:hover {
-            background: rgba(56, 139, 253, 0.05) !important;
-        }
-        .fc-button-primary {
-            background-color: #388bfd !important;
-            border-color: #388bfd !important;
-            text-transform: capitalize !important;
-        }
-        .fc-button-primary:hover {
-            background-color: #00d4ff !important;
-            border-color: #00d4ff !important;
-        }
-        .fc-button-active {
-            background-color: #00d4ff !important;
-            border-color: #00d4ff !important;
-        }
-        .fc-toolbar-title {
-            color: #00d4ff !important;
-            font-family: 'Orbitron', sans-serif !important;
-        }
-        /* התאמת צבע המשימות */
-        .fc-event {
-            border: none !important;
-            padding: 2px 5px !important;
-            font-weight: 600 !important;
-            border-radius: 4px !important;
-        }
-    """
+    calendar_custom_css = ".fc { background: #0d1f3c; color: #e8f0fe; border-radius: 16px; padding: 10px; }"
 
     calendar(
         events=events, 
         options={
             "direction": "rtl", 
             "locale": "he",
-            "headerToolbar": {
-                "left": "prev,next today",
-                "center": "title",
-                "right": "dayGridMonth,dayGridWeek"
-            },
+            "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,dayGridWeek"},
             "initialView": "dayGridMonth",
-            "editable": False,
-            "selectable": True,
         },
         custom_css=calendar_custom_css
     )
