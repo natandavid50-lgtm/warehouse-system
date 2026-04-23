@@ -30,16 +30,16 @@ st.markdown("""
     --bg-panel:       #0a1628;
     --bg-card:        #0d1f3c;
     --bg-card-hover:  #112347;
-    --border:         rgba(56, 139, 253, 0.18);
+    --border:          rgba(56, 139, 253, 0.18);
     --border-bright:  rgba(56, 139, 253, 0.45);
     --accent-blue:    #388bfd;
     --accent-cyan:    #00d4ff;
     --accent-green:   #00e5a0;
     --accent-amber:   #f59e0b;
-    --accent-red:     #ff4d6d;
-    --text-primary:   #e8f0fe;
+    --accent-red:      #ff4d6d;
+    --text-primary:    #e8f0fe;
     --text-secondary: #8eafd4;
-    --text-muted:     #4a6fa5;
+    --text-muted:      #4a6fa5;
     --glow-blue:      0 0 20px rgba(56, 139, 253, 0.35);
     --glow-cyan:      0 0 20px rgba(0, 212, 255, 0.3);
     --glow-green:     0 0 20px rgba(0, 229, 160, 0.3);
@@ -482,7 +482,7 @@ if st.session_state.user_role == "מנהל WMS":
 elif st.session_state.user_role == "סמנכ\"ל":
     menu = [OPT_DASH, OPT_CAL]
 else:
-    # צוות מחסן - הוספת דשבורד כפי שביקשת
+    # צוות מחסן
     menu = [OPT_DASH, OPT_WORK, OPT_CAL]
 
 choice = st.sidebar.radio("תפריט", menu)
@@ -495,11 +495,10 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    # 1. בורר תאריכים בראש הדף
+    # 1. בורר תאריכים
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     
-    # חישוב נתונים ליום הנבחר
     selected_tasks = get_daily_status(df, selected_date)
     total = len(selected_tasks)
     done = sum(1 for t in selected_tasks if t["is_done"])
@@ -511,9 +510,12 @@ if choice == OPT_DASH:
     m2.metric("בוצעו", done)
     m3.metric("אחוז ביצוע", f"{pct}%")
     
-    # 2. גרף ביצועים שבועי
+    # 2. מגמת ביצועים - גרף Plotly מעוצב
     st.write("---")
-    st.write("### מגמת ביצועים - 7 ימים אחרונים")
+    st.write("### 📈 מגמת ביצועים שבועית")
+    
+    import plotly.express as px
+    
     weekly_data = []
     for i in range(6, -1, -1):
         day = datetime.now().date() - timedelta(days=i)
@@ -521,10 +523,29 @@ if choice == OPT_DASH:
         t_total = len(tasks)
         t_done = sum(1 for t in tasks if t["is_done"])
         t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
-        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז ביצוע": t_pct})
+        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז": t_pct})
     
     chart_df = pd.DataFrame(weekly_data)
-    st.bar_chart(chart_df, x="תאריך", y="אחוז ביצוע", color="#2563eb")
+
+    fig = px.area(chart_df, x="תאריך", y="אחוז", markers=True)
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font_color="#8eafd4",
+        margin=dict(l=0, r=0, t=20, b=0),
+        height=300,
+        xaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', title=""),
+        yaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', range=[0, 105], title="אחוז ביצוע")
+    )
+    
+    fig.update_traces(
+        line=dict(width=3, color='#00d4ff'),
+        marker=dict(size=8, color='#388bfd', line=dict(width=2, color='#00d4ff')),
+        fillcolor='rgba(0, 212, 255, 0.1)'
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     
     st.write(f"### פירוט משימות {date_label}")
     if total > 0:
@@ -582,7 +603,6 @@ elif choice == OPT_CAL:
     events = []
     for _, row in df.iterrows():
         base = pd.to_datetime(row["Date"]).date()
-        # עדכון ל-200 כפי שביקשת
         for i in range(500):
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
