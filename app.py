@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 DB_FILE = "warehouse_management_db.csv"
+ADMIN_PASSWORD = "1234" # תוכל לשנות את הסיסמה כאן
 
 # =========================
 # 2) Theme / CSS
@@ -23,7 +24,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap');
 
 /* =========================================
-   GLOBAL RESET & VARIABLES
+    GLOBAL RESET & VARIABLES
    ========================================= */
 :root {
     --bg-deep:        #050c1a;
@@ -54,7 +55,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-   BACKGROUND — deep space grid
+    BACKGROUND — deep space grid
    ========================================= */
 .stApp {
     background-color: var(--bg-deep) !important;
@@ -66,7 +67,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-   SIDEBAR
+    SIDEBAR
    ========================================= */
 [data-testid="stSidebar"] {
     background: var(--bg-panel) !important;
@@ -93,7 +94,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-   PAGE HEADER BANNER
+    PAGE HEADER BANNER
    ========================================= */
 .page-header-banner {
     background: linear-gradient(135deg, var(--bg-card) 0%, #0b1e40 100%);
@@ -136,7 +137,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-   METRICS
+    METRICS
    ========================================= */
 [data-testid="stMetric"] {
     background: var(--bg-card) !important;
@@ -179,7 +180,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-   HOME PAGE — BIG BUTTONS
+    HOME PAGE — BIG BUTTONS
    ========================================= */
 div[data-testid="stHorizontalBlock"] .stButton > button {
     min-height: 200px !important;
@@ -235,7 +236,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
 }
 
 /* =========================================
-   GENERAL BUTTONS
+    GENERAL BUTTONS
    ========================================= */
 .stButton > button {
     background: linear-gradient(135deg, rgba(56, 139, 253, 0.15), rgba(56, 139, 253, 0.05)) !important;
@@ -255,7 +256,7 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button:hover {
 }
 
 /* =========================================
-   POPOVER (TASK CARDS)
+    POPOVER (TASK CARDS)
    ========================================= */
 div[data-testid="stPopover"] > button {
     width: 100% !important;
@@ -281,7 +282,7 @@ div[data-testid="stPopover"] > button:hover {
 }
 
 /* =========================================
-   WEEK DAY CHIP
+    WEEK DAY CHIP
    ========================================= */
 .week-day-chip {
     background: linear-gradient(135deg, var(--bg-card), #0b1e40);
@@ -299,7 +300,7 @@ div[data-testid="stPopover"] > button:hover {
 }
 
 /* =========================================
-   FORM ELEMENTS
+    FORM ELEMENTS
    ========================================= */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
@@ -339,7 +340,7 @@ div[data-testid="stPopover"] > button:hover {
 }
 
 /* =========================================
-   INFO / ALERT BOXES
+    INFO / ALERT BOXES
    ========================================= */
 [data-testid="stAlert"] {
     background: var(--bg-card) !important;
@@ -350,7 +351,7 @@ div[data-testid="stPopover"] > button:hover {
 }
 
 /* =========================================
-   CHARTS
+    CHARTS
    ========================================= */
 [data-testid="stVegaLiteChart"],
 [data-testid="stArrowVegaLiteChart"] {
@@ -362,7 +363,7 @@ div[data-testid="stPopover"] > button:hover {
 }
 
 /* =========================================
-   DIVIDERS & TEXT
+    DIVIDERS & TEXT
    ========================================= */
 hr {
     border-color: var(--border) !important;
@@ -379,7 +380,7 @@ p, li, span {
 }
 
 /* =========================================
-   SCROLLBAR
+    SCROLLBAR
    ========================================= */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-panel); }
@@ -387,7 +388,7 @@ p, li, span {
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
 
 /* =========================================
-   FORM SUBMIT BUTTON
+    FORM SUBMIT BUTTON
    ========================================= */
 [data-testid="stForm"] .stButton > button {
     background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
@@ -467,7 +468,18 @@ if "user_role" not in st.session_state:
 if st.session_state.user_role is None:
     st.markdown('<div class="page-header-banner"><h1>אחים כהן • ניהול מחסן</h1><p>מערכת ניהול משימות ובקרה</p></div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    if c1.button("🔑\nמנהל WMS", use_container_width=True): st.session_state.user_role = "מנהל WMS"; st.rerun()
+    
+    with c1:
+        # כניסת מנהל עם סיסמה בתוך Popover
+        with st.popover("🔑\nמנהל WMS", use_container_width=True):
+            entered_pwd = st.text_input("הזן סיסמת ניהול", type="password")
+            if st.button("אישור כניסה", use_container_width=True):
+                if entered_pwd == ADMIN_PASSWORD:
+                    st.session_state.user_role = "מנהל WMS"
+                    st.rerun()
+                else:
+                    st.error("סיסמה שגויה")
+                    
     if c2.button("📦\nצוות מחסן", use_container_width=True): st.session_state.user_role = "צוות מחסן"; st.rerun()
     if c3.button("📊\nסמנכ\"ל", use_container_width=True): st.session_state.user_role = "סמנכ\"ל"; st.rerun()
     st.stop()
