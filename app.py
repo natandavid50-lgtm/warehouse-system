@@ -67,12 +67,17 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-    SIDEBAR
+    SIDEBAR FIX - תיקון לבעיית הטקסט בסגירה
    ========================================= */
 [data-testid="stSidebar"] {
     background: var(--bg-panel) !important;
     border-left: 1px solid var(--border) !important;
     box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
+}
+
+/* התיקון: מסתיר את כל התוכן הפנימי של הסיידבר כשהוא סגור כדי למנוע ריצוד */
+[data-testid="stSidebar"][aria-expanded="false"] div {
+    display: none !important;
 }
 
 [data-testid="stSidebar"] * {
