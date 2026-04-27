@@ -14,6 +14,7 @@ st.set_page_config(
 )
 
 DB_FILE = "warehouse_management_db.csv"
+INV_FILE = "inventory_counts_db.csv" # קובץ נפרד לספירות
 ADMIN_PASSWORD = "1234" # תוכל לשנות את הסיסמה כאן
 
 # =========================
@@ -186,7 +187,6 @@ html, body, [class*="css"] {
 /* =========================================
     HOME PAGE — BIG BUTTONS (FIXED SIZES)
    ========================================= */
-/* הבטחת גובה אחיד לכל כפתורי המשתמשים בדף הבית */
 div[data-testid="stHorizontalBlock"] .stButton > button,
 div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
     min-height: 220px !important;
@@ -313,6 +313,17 @@ def load_data():
 def save_data(df):
     df.to_csv(DB_FILE, index=False)
 
+# פונקציות חדשות לספירת מלאי
+def load_inv_data():
+    if os.path.exists(INV_FILE):
+        df = pd.read_csv(INV_FILE).fillna("")
+        if "Is_Done" not in df.columns: df["Is_Done"] = False
+        return df
+    return pd.DataFrame(columns=["ID", "Location", "Expected_Qty", "Actual_Qty", "Date", "Is_Done"])
+
+def save_inv_data(df):
+    df.to_csv(INV_FILE, index=False)
+
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
     diff = (target_date - base_date).days
@@ -377,17 +388,19 @@ if st.session_state.user_role is None:
     st.stop()
 
 df = load_data()
-OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
+df_inv = load_inv_data()
+
+OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
 # תפריט צד - הגדרת הרשאות
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
 if st.session_state.user_role == "מנהל WMS":
-    menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "הנהלה":
-    menu = [OPT_DASH, OPT_CAL]
+    menu = [OPT_DASH, OPT_INV, OPT_CAL]
 else:
     # צוות מחסן
-    menu = [OPT_DASH, OPT_WORK, OPT_CAL]
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL]
 
 choice = st.sidebar.radio("תפריט", menu)
 if st.sidebar.button("התנתקות"):
@@ -466,6 +479,43 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df)
                         st.rerun()
+
+# --- ספירות מלאי ---
+elif choice == OPT_INV:
+    st.markdown("### 📦 ניהול ספירות מלאי")
+    
+    if st.session_state.user_role == "מנהל WMS":
+        with st.form("add_inv_form"):
+            col1, col2 = st.columns(2)
+            loc = col1.text_input("איתור (לדוגמה A-10-1)")
+            qty = col2.number_input("כמות מצופה במערכת", min_value=0)
+            if st.form_submit_button("הוסף דרישת ספירה"):
+                new_row = pd.DataFrame([{"ID": int(datetime.now().timestamp()), "Location": loc, "Expected_Qty": qty, "Actual_Qty": 0, "Date": datetime.now().strftime("%Y-%m-%d"), "Is_Done": False}])
+                df_inv = pd.concat([df_inv, new_row], ignore_index=True)
+                save_inv_data(df_inv); st.rerun()
+
+    st.write("---")
+    if df_inv.empty:
+        st.info("אין דרישות ספירה פתוחות.")
+    else:
+        for idx, row in df_inv.iterrows():
+            status_color = "var(--accent-green)" if row["Is_Done"] else "var(--accent-amber)"
+            st.markdown(f"""
+            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid {status_color};">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="font-weight: bold;">איתור: {row['Location']}</span>
+                    <span>צפי: {int(row['Expected_Qty'])} | בפועל: {int(row['Actual_Qty'])}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if not row["Is_Done"] and st.session_state.user_role != "הנהלה":
+                with st.popover(f"בצע ספירה לאיתור {row['Location']}", use_container_width=True):
+                    actual = st.number_input("כמות שנספרה בפועל", min_value=0, key=f"inv_{row['ID']}")
+                    if st.button("עדכן ספירה", key=f"save_inv_{row['ID']}"):
+                        df_inv.at[idx, "Actual_Qty"] = actual
+                        df_inv.at[idx, "Is_Done"] = True
+                        save_inv_data(df_inv); st.rerun()
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
