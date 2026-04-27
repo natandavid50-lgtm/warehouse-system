@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 import os
 import plotly.express as px
+import calendar as cal_lib
 
 # =========================
 # 1) App Config
@@ -314,7 +315,6 @@ def load_data():
 def save_data(df):
     df.to_csv(DB_FILE, index=False)
 
-# לוגיקת ספירת מלאי חדשה
 def load_inv_target():
     if os.path.exists(INV_TARGET_FILE):
         return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
@@ -441,6 +441,39 @@ if choice == OPT_DASH:
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
+    # --- תוספת: דוח חודשי למנהלים (חדש!) ---
+    st.write("---")
+    st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
+    
+    month_col, year_col = st.columns(2)
+    selected_month = month_col.selectbox("בחר חודש", range(1, 13), index=datetime.now().month - 1)
+    selected_year = year_col.selectbox("בחר שנה", [2025, 2026], index=1)
+
+    monthly_stats = []
+    _, num_days = cal_lib.monthrange(selected_year, selected_month)
+
+    for day in range(1, num_days + 1):
+        check_date = datetime(selected_year, selected_month, day).date()
+        tasks = get_daily_status(df, check_date)
+        if tasks:
+            t_total = len(tasks)
+            t_done = sum(1 for t in tasks if t["is_done"])
+            monthly_stats.append({"יום": day, "בוצע": t_done, "מתוכנן": t_total, "אחוז": int((t_done / t_total) * 100)})
+
+    if monthly_stats:
+        df_monthly = pd.DataFrame(monthly_stats)
+        avg_pct = int(df_monthly["אחוז"].mean())
+        st.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
+        
+        fig_month = px.bar(df_monthly, x="יום", y=["מתוכנן", "בוצע"], 
+                           title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
+                           barmode="group",
+                           color_discrete_map={"מתוכנן": "#112347", "בוצע": "#00e5a0"})
+        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4")
+        st.plotly_chart(fig_month, use_container_width=True)
+    else:
+        st.warning("אין נתוני משימות לחודש הנבחר.")
+
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
     today = datetime.now()
@@ -460,11 +493,9 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df); st.rerun()
 
-# --- ספירות מלאי (השינוי המבוקש) ---
+# --- ספירות מלאי ---
 elif choice == OPT_INV:
     st.markdown("### 📦 סטטוס ספירת מלאי")
-    
-    # חלק המנהל - מילוי נתונים
     if st.session_state.user_role == "מנהל WMS":
         with st.form("inv_management"):
             st.write("#### 🛠️ ניהול יעדי ספירה (רק אתה רואה)")
@@ -475,26 +506,13 @@ elif choice == OPT_INV:
                 save_inv_target(new_target, new_current)
                 st.rerun()
     
-    # תצוגת העיגול (לכולם)
     st.write("---")
-    target = inv_data['Target']
-    current = inv_data['Current']
-    
+    target, current = inv_data['Target'], inv_data['Current']
     if target > 0:
         pct_inv = min(100, int((current / target) * 100))
-        remaining = max(0, target - current)
-        
-        fig = px.pie(
-            values=[current, remaining], 
-            names=["בוצע", "נותר"], 
-            hole=0.7,
-            color_discrete_sequence=["#00e5a0", "#112347"]
-        )
-        fig.update_layout(
-            showlegend=False, paper_bgcolor='rgba(0,0,0,0)', 
-            height=350, margin=dict(t=0, b=0, l=0, r=0),
-            annotations=[dict(text=f"{pct_inv}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)]
-        )
+        fig = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
+        fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=0, b=0, l=0, r=0),
+                          annotations=[dict(text=f"{pct_inv}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
         st.plotly_chart(fig, use_container_width=True)
         st.markdown(f"<h3 style='text-align: center; color: var(--text-secondary);'>נספרו {int(current)} מתוך {int(target)} איתורים</h3>", unsafe_allow_html=True)
     else:
