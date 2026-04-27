@@ -356,7 +356,7 @@ def get_daily_status(df_input, target_dt):
 def get_overdue_tasks(df_input):
     today = datetime.now().date()
     overdue = []
-    for i in range(1, 8):
+    for i in range(1, 4):
         check_date = today - timedelta(days=i)
         tasks = get_daily_status(df_input, check_date)
         for t in tasks:
