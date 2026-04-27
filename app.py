@@ -362,7 +362,7 @@ def get_daily_status(df_input, target_dt, filter_weekends=True):
 def get_overdue_tasks(df_input):
     today = datetime.now().date()
     overdue = []
-    for i in range(1, 5):
+    for i in range(1, 8):
         check_date = today - timedelta(days=i)
         # שולחים filter_weekends=True כדי שלא יספור פיגור על ימי שישי-שבת
         tasks = get_daily_status(df_input, check_date, filter_weekends=True)
