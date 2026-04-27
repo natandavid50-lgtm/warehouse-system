@@ -34,7 +34,7 @@ st.markdown("""
     --bg-panel:        #0a1628;
     --bg-card:         #0d1f3c;
     --bg-card-hover:   #112347;
-    --border:           rgba(56, 139, 253, 0.18);
+    --border:            rgba(56, 139, 253, 0.18);
     --border-bright:   rgba(56, 139, 253, 0.45);
     --accent-blue:     #388bfd;
     --accent-cyan:     #00d4ff;
@@ -333,14 +333,14 @@ def is_scheduled_on(base_date, recurring, target_date):
     if recurring == "חודשי": return target_date.day == base_date.day
     return False
 
-def get_daily_status(df_input, target_dt):
+def get_daily_status(df_input, target_dt, filter_weekends=True):
     if isinstance(target_dt, datetime):
         target_date = target_dt.date()
     else:
         target_date = target_dt
 
-    # --- עדכון: ביטול הצגת משימות בדשבורד ובסידור העבודה בימי שישי ושבת ---
-    if target_date.weekday() in [4, 5]:
+    # בסידור עבודה ובדשבורד הרגיל נסנן שישי-שבת
+    if filter_weekends and target_date.weekday() in [4, 5]:
         return []
 
     target_str = target_date.strftime("%Y-%m-%d")
@@ -352,18 +352,20 @@ def get_daily_status(df_input, target_dt):
                 done_list = str(row["Done_Dates"]).split(",")
                 scheduled.append({
                     "idx": idx, "id": row["ID"], "name": row["Task_Name"],
-                    "desc": row["Description"], "is_done": target_str in done_list
+                    "desc": row["Description"], "is_done": target_str in done_list,
+                    "date": target_str
                 })
         except: continue
     return scheduled
 
-# פונקציה לחישוב פיגורי משימות
+# פונקציה לחישוב פיגורי משימות - בודקת 4 ימים אחורה
 def get_overdue_tasks(df_input):
     today = datetime.now().date()
     overdue = []
-    for i in range(1, 4):
+    for i in range(1, 5):
         check_date = today - timedelta(days=i)
-        tasks = get_daily_status(df_input, check_date)
+        # שולחים filter_weekends=True כדי שלא יספור פיגור על ימי שישי-שבת
+        tasks = get_daily_status(df_input, check_date, filter_weekends=True)
         for t in tasks:
             if not t["is_done"]:
                 overdue.append(t)
@@ -423,14 +425,22 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    # הצגת התראת פיגורים
+    # הצגת התראת פיגורים עם אפשרות סגירה
     overdue_list = get_overdue_tasks(df)
     if len(overdue_list) > 0:
         st.markdown(f"""
             <div style="background: rgba(255, 77, 109, 0.15); border: 1px solid var(--accent-red); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
-                <h4 style="color: var(--accent-red); margin: 0;">⚠️ שים לב: ישנן {len(overdue_list)} משימות שלא בוצעו מהשבוע האחרון</h4>
+                <h4 style="color: var(--accent-red); margin: 0;">⚠️ שים לב: ישנן {len(overdue_list)} משימות שלא בוצעו בימים האחרונים</h4>
             </div>
         """, unsafe_allow_html=True)
+        
+        with st.expander("🔍 לצפייה וסגירת פיגורים"):
+            for t in overdue_list:
+                col_t, col_b = st.columns([3, 1])
+                col_t.warning(f"**{t['name']}** (מתאריך {t['date']})")
+                if col_b.button("סמן כבוצע", key=f"fix_ov_{t['id']}_{t['date']}"):
+                    df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{t['date']}".strip(",")
+                    save_data(df); st.rerun()
 
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
@@ -467,7 +477,6 @@ if choice == OPT_DASH:
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- תוספת: דוח חודשי למנהלים (חדש!) ---
     st.write("---")
     st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
     
