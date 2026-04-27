@@ -30,25 +30,25 @@ st.markdown("""
     GLOBAL RESET & VARIABLES
    ========================================= */
 :root {
-    --bg-deep:        #050c1a;
-    --bg-panel:       #0a1628;
-    --bg-card:        #0d1f3c;
-    --bg-card-hover:  #112347;
-    --border:          rgba(56, 139, 253, 0.18);
-    --border-bright:  rgba(56, 139, 253, 0.45);
-    --accent-blue:    #388bfd;
-    --accent-cyan:    #00d4ff;
-    --accent-green:   #00e5a0;
-    --accent-amber:   #f59e0b;
-    --accent-red:      #ff4d6d;
-    --text-primary:    #e8f0fe;
+    --bg-deep:         #050c1a;
+    --bg-panel:        #0a1628;
+    --bg-card:         #0d1f3c;
+    --bg-card-hover:   #112347;
+    --border:           rgba(56, 139, 253, 0.18);
+    --border-bright:   rgba(56, 139, 253, 0.45);
+    --accent-blue:     #388bfd;
+    --accent-cyan:     #00d4ff;
+    --accent-green:    #00e5a0;
+    --accent-amber:    #f59e0b;
+    --accent-red:       #ff4d6d;
+    --text-primary:     #e8f0fe;
     --text-secondary: #8eafd4;
-    --text-muted:      #4a6fa5;
-    --glow-blue:      0 0 20px rgba(56, 139, 253, 0.35);
-    --glow-cyan:      0 0 20px rgba(0, 212, 255, 0.3);
-    --glow-green:     0 0 209px rgba(0, 229, 160, 0.3);
-    --radius-card:    16px;
-    --radius-pill:    50px;
+    --text-muted:       #4a6fa5;
+    --glow-blue:       0 0 20px rgba(56, 139, 253, 0.35);
+    --glow-cyan:       0 0 20px rgba(0, 212, 255, 0.3);
+    --glow-green:      0 0 209px rgba(0, 229, 160, 0.3);
+    --radius-card:     16px;
+    --radius-pill:     50px;
 }
 
 html, body, [class*="css"] {
@@ -338,6 +338,11 @@ def get_daily_status(df_input, target_dt):
         target_date = target_dt.date()
     else:
         target_date = target_dt
+
+    # --- עדכון: ביטול הצגת משימות בדשבורד ובסידור העבודה בימי שישי ושבת ---
+    if target_date.weekday() in [4, 5]:
+        return []
+
     target_str = target_date.strftime("%Y-%m-%d")
     scheduled = []
     for idx, row in df_input.iterrows():
