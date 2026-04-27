@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 import os
+import plotly.express as px
 
 # =========================
 # 1) App Config
@@ -14,8 +15,8 @@ st.set_page_config(
 )
 
 DB_FILE = "warehouse_management_db.csv"
-INV_FILE = "inventory_counts_db.csv" # קובץ נפרד לספירות
-ADMIN_PASSWORD = "1234" # תוכל לשנות את הסיסמה כאן
+INV_TARGET_FILE = "inventory_target.csv" # קובץ לשמירת יעדי הספירה
+ADMIN_PASSWORD = "1234" 
 
 # =========================
 # 2) Theme / CSS
@@ -44,7 +45,7 @@ st.markdown("""
     --text-muted:      #4a6fa5;
     --glow-blue:      0 0 20px rgba(56, 139, 253, 0.35);
     --glow-cyan:      0 0 20px rgba(0, 212, 255, 0.3);
-    --glow-green:     0 0 20px rgba(0, 229, 160, 0.3);
+    --glow-green:     0 0 209px rgba(0, 229, 160, 0.3);
     --radius-card:    16px;
     --radius-pill:    50px;
 }
@@ -313,16 +314,14 @@ def load_data():
 def save_data(df):
     df.to_csv(DB_FILE, index=False)
 
-# פונקציות חדשות לספירת מלאי
-def load_inv_data():
-    if os.path.exists(INV_FILE):
-        df = pd.read_csv(INV_FILE).fillna("")
-        if "Is_Done" not in df.columns: df["Is_Done"] = False
-        return df
-    return pd.DataFrame(columns=["ID", "Location", "Expected_Qty", "Actual_Qty", "Date", "Is_Done"])
+# לוגיקת ספירת מלאי חדשה
+def load_inv_target():
+    if os.path.exists(INV_TARGET_FILE):
+        return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
+    return {"Target": 0, "Current": 0}
 
-def save_inv_data(df):
-    df.to_csv(INV_FILE, index=False)
+def save_inv_target(target, current):
+    pd.DataFrame([{"Target": target, "Current": current}]).to_csv(INV_TARGET_FILE, index=False)
 
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
@@ -359,13 +358,11 @@ def get_daily_status(df_input, target_dt):
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 
-# דף כניסה
 if st.session_state.user_role is None:
     st.markdown('<div class="page-header-banner"><h1>אחים כהן • ניהול מחסן</h1><p>מערכת ניהול משימות ובקרה</p></div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     
     with c1:
-        # כניסת מנהל
         with st.popover("🔑\nמנהל WMS", use_container_width=True):
             entered_pwd = st.text_input("הזן סיסמת ניהול", type="password")
             if st.button("אישור כניסה", use_container_width=True):
@@ -388,18 +385,16 @@ if st.session_state.user_role is None:
     st.stop()
 
 df = load_data()
-df_inv = load_inv_data()
+inv_data = load_inv_target()
 
 OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-# תפריט צד - הגדרת הרשאות
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
 if st.session_state.user_role == "מנהל WMS":
     menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "הנהלה":
     menu = [OPT_DASH, OPT_INV, OPT_CAL]
 else:
-    # צוות מחסן
     menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL]
 
 choice = st.sidebar.radio("תפריט", menu)
@@ -413,7 +408,6 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 if choice == OPT_DASH:
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
-    
     selected_tasks = get_daily_status(df, selected_date)
     total = len(selected_tasks)
     done = sum(1 for t in selected_tasks if t["is_done"])
@@ -434,9 +428,6 @@ if choice == OPT_DASH:
 
     st.write("---")
     st.write("### 📈 מגמת ביצועים שבועית")
-    
-    import plotly.express as px
-    
     weekly_data = []
     for i in range(6, -1, -1):
         day = datetime.now().date() - timedelta(days=i)
@@ -446,18 +437,9 @@ if choice == OPT_DASH:
         t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
         weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז": t_pct})
     
-    chart_df = pd.DataFrame(weekly_data)
-    fig = px.area(chart_df, x="תאריך", y="אחוז", markers=True)
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font_color="#8eafd4",
-        margin=dict(l=0, r=0, t=20, b=0),
-        height=300,
-        xaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', title=""),
-        yaxis=dict(showgrid=True, gridcolor='rgba(56, 139, 253, 0.1)', range=[0, 105], title="אחוז ביצוע")
-    )
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    fig = px.area(pd.DataFrame(weekly_data), x="תאריך", y="אחוז", markers=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
+    st.plotly_chart(fig, use_container_width=True)
 
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
@@ -465,7 +447,6 @@ elif choice == OPT_WORK:
     start = today - timedelta(days=(today.weekday() + 1) % 7)
     days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(5)
-    
     for i, name in enumerate(days):
         curr_d = start + timedelta(days=i)
         with cols[i]:
@@ -477,82 +458,69 @@ elif choice == OPT_WORK:
                     if not t['is_done'] and st.button("סמן כבוצע", key=f"btn_{t['id']}_{i}"):
                         d_str = curr_d.strftime("%Y-%m-%d")
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
-                        save_data(df)
-                        st.rerun()
+                        save_data(df); st.rerun()
 
-# --- ספירות מלאי ---
+# --- ספירות מלאי (השינוי המבוקש) ---
 elif choice == OPT_INV:
-    st.markdown("### 📦 ניהול ספירות מלאי")
+    st.markdown("### 📦 סטטוס ספירת מלאי")
     
+    # חלק המנהל - מילוי נתונים
     if st.session_state.user_role == "מנהל WMS":
-        with st.form("add_inv_form"):
-            col1, col2 = st.columns(2)
-            loc = col1.text_input("איתור (לדוגמה A-10-1)")
-            qty = col2.number_input("כמות מצופה במערכת", min_value=0)
-            if st.form_submit_button("הוסף דרישת ספירה"):
-                new_row = pd.DataFrame([{"ID": int(datetime.now().timestamp()), "Location": loc, "Expected_Qty": qty, "Actual_Qty": 0, "Date": datetime.now().strftime("%Y-%m-%d"), "Is_Done": False}])
-                df_inv = pd.concat([df_inv, new_row], ignore_index=True)
-                save_inv_data(df_inv); st.rerun()
-
+        with st.form("inv_management"):
+            st.write("#### 🛠️ ניהול יעדי ספירה (רק אתה רואה)")
+            c1, c2 = st.columns(2)
+            new_target = c1.number_input("כמה איתורים יש לספור סה\"כ?", min_value=0, value=int(inv_data['Target']))
+            new_current = c2.number_input("כמה איתורים נספרו עד כה?", min_value=0, value=int(inv_data['Current']))
+            if st.form_submit_button("עדכן נתונים"):
+                save_inv_target(new_target, new_current)
+                st.rerun()
+    
+    # תצוגת העיגול (לכולם)
     st.write("---")
-    if df_inv.empty:
-        st.info("אין דרישות ספירה פתוחות.")
+    target = inv_data['Target']
+    current = inv_data['Current']
+    
+    if target > 0:
+        pct_inv = min(100, int((current / target) * 100))
+        remaining = max(0, target - current)
+        
+        fig = px.pie(
+            values=[current, remaining], 
+            names=["בוצע", "נותר"], 
+            hole=0.7,
+            color_discrete_sequence=["#00e5a0", "#112347"]
+        )
+        fig.update_layout(
+            showlegend=False, paper_bgcolor='rgba(0,0,0,0)', 
+            height=350, margin=dict(t=0, b=0, l=0, r=0),
+            annotations=[dict(text=f"{pct_inv}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)]
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown(f"<h3 style='text-align: center; color: var(--text-secondary);'>נספרו {int(current)} מתוך {int(target)} איתורים</h3>", unsafe_allow_html=True)
     else:
-        for idx, row in df_inv.iterrows():
-            status_color = "var(--accent-green)" if row["Is_Done"] else "var(--accent-amber)"
-            st.markdown(f"""
-            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid {status_color};">
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="font-weight: bold;">איתור: {row['Location']}</span>
-                    <span>צפי: {int(row['Expected_Qty'])} | בפועל: {int(row['Actual_Qty'])}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if not row["Is_Done"] and st.session_state.user_role != "הנהלה":
-                with st.popover(f"בצע ספירה לאיתור {row['Location']}", use_container_width=True):
-                    actual = st.number_input("כמות שנספרה בפועל", min_value=0, key=f"inv_{row['ID']}")
-                    if st.button("עדכן ספירה", key=f"save_inv_{row['ID']}"):
-                        df_inv.at[idx, "Actual_Qty"] = actual
-                        df_inv.at[idx, "Is_Done"] = True
-                        save_inv_data(df_inv); st.rerun()
+        st.info("טרם הוגדרו יעדי ספירה על ידי המנהל.")
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
     st.markdown("### ⚙️ ניהול ועריכת משימות")
-    if df.empty:
-        st.info("אין משימות רשומות במערכת.")
-    else:
-        for idx, row in df.iterrows():
-            st.markdown(f"""
-            <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid var(--accent-cyan);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text-primary); font-weight: bold; font-size: 1.1rem;">{row['Task_Name']}</span>
-                    <span style="color: var(--accent-cyan); font-size: 0.85rem; background: rgba(0, 212, 255, 0.1); padding: 2px 8px; border-radius: 20px;">{row['Recurring']}</span>
-                </div>
+    for idx, row in df.iterrows():
+        st.markdown(f"""<div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid var(--accent-cyan);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-primary); font-weight: bold; font-size: 1.1rem;">{row['Task_Name']}</span>
+                <span style="color: var(--accent-cyan); font-size: 0.85rem; background: rgba(0, 212, 255, 0.1); padding: 2px 8px; border-radius: 20px;">{row['Recurring']}</span>
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2, _ = st.columns([1.2, 1, 3])
-            with col1:
-                with st.popover("📝 עריכה", use_container_width=True):
-                    new_name = st.text_input("שם המשימה", value=row['Task_Name'], key=f"edit_name_{row['ID']}")
-                    new_desc = st.text_area("תיאור", value=row['Description'], key=f"edit_desc_{row['ID']}")
-                    freq_options = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
-                    current_freq_idx = freq_options.index(row['Recurring']) if row['Recurring'] in freq_options else 0
-                    new_freq = st.selectbox("תדירות", freq_options, index=current_freq_idx, key=f"edit_freq_{row['ID']}")
-                    if st.button("שמור שינויים", key=f"save_{row['ID']}", use_container_width=True):
-                        df.at[idx, 'Task_Name'] = new_name
-                        df.at[idx, 'Description'] = new_desc
-                        df.at[idx, 'Recurring'] = new_freq
-                        save_data(df)
-                        st.rerun()
-            with col2:
-                if st.button("🗑️ מחיקה", key=f"del_{row['ID']}", use_container_width=True):
-                    df = df.drop(idx)
-                    save_data(df)
-                    st.rerun()
-            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
+        col1, col2, _ = st.columns([1.2, 1, 3])
+        with col1:
+            with st.popover("📝 עריכה", use_container_width=True):
+                n_n = st.text_input("שם", value=row['Task_Name'], key=f"e_n_{row['ID']}")
+                n_d = st.text_area("תיאור", value=row['Description'], key=f"e_d_{row['ID']}")
+                if st.button("שמור", key=f"s_{row['ID']}"):
+                    df.at[idx, 'Task_Name'], df.at[idx, 'Description'] = n_n, n_d
+                    save_data(df); st.rerun()
+        with col2:
+            if st.button("🗑️ מחיקה", key=f"d_{row['ID']}"):
+                df = df.drop(idx); save_data(df); st.rerun()
 
 # --- הוספת משימה ---
 elif choice == OPT_ADD:
@@ -574,22 +542,5 @@ elif choice == OPT_CAL:
             d = base + timedelta(days=i)
             if is_scheduled_on(base, row["Recurring"], d):
                 is_done = d.strftime("%Y-%m-%d") in str(row["Done_Dates"])
-                events.append({
-                    "title": row["Task_Name"], 
-                    "start": d.strftime("%Y-%m-%d"), 
-                    "color": "#00e5a0" if is_done else "#ff4d6d",
-                    "allDay": True
-                })
-
-    calendar_custom_css = ".fc { background: #0d1f3c; color: #e8f0fe; border-radius: 16px; padding: 10px; }"
-
-    calendar(
-        events=events, 
-        options={
-            "direction": "rtl", 
-            "locale": "he",
-            "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,dayGridWeek"},
-            "initialView": "dayGridMonth",
-        },
-        custom_css=calendar_custom_css
-    )
+                events.append({"title": row["Task_Name"], "start": d.strftime("%Y-%m-%d"), "color": "#00e5a0" if is_done else "#ff4d6d", "allDay": True})
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "initialView": "dayGridMonth"}, custom_css=".fc { background: #0d1f3c; color: #e8f0fe; border-radius: 16px; }")
