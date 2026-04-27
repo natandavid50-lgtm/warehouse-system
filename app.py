@@ -5,6 +5,7 @@ from streamlit_calendar import calendar
 import os
 import plotly.express as px
 import calendar as cal_lib
+import io  # לצורך ייצוא הקובץ
 
 # =========================
 # 1) App Config
@@ -352,6 +353,20 @@ def get_daily_status(df_input, target_dt):
         except: continue
     return scheduled
 
+# פונקציה חדשה: בדיקת פיגורים במשימות
+def get_overdue_tasks(df_input):
+    today = datetime.now().date()
+    overdue = []
+    # נבדוק שבוע אחורה למניעת עומס
+    for i in range(1, 8):
+        check_date = today - timedelta(days=i)
+        tasks = get_daily_status(df_input, check_date)
+        for t in tasks:
+            if not t["is_done"]:
+                t["overdue_date"] = check_date.strftime("%d/%m")
+                overdue.append(t)
+    return overdue
+
 # =========================
 # 4) Main Flow
 # =========================
@@ -406,6 +421,16 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
+    # רכיב התראות פיגורים חדש
+    overdue_list = get_overdue_tasks(df)
+    if overdue_list:
+        with st.container():
+            st.markdown(f"""
+                <div style="background: rgba(255, 77, 109, 0.15); border: 1px solid var(--accent-red); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                    <h4 style="color: var(--accent-red); margin: 0;">⚠️ שים לב: ישנן {len(overdue_list)} משימות בפיגור מהשבוע האחרון</h4>
+                </div>
+            """, unsafe_allow_html=True)
+
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     selected_tasks = get_daily_status(df, selected_date)
@@ -441,7 +466,7 @@ if choice == OPT_DASH:
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- תוספת: דוח חודשי למנהלים (חדש!) ---
+    # --- תוספת: דוח חודשי למנהלים ---
     st.write("---")
     st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
     
@@ -458,12 +483,33 @@ if choice == OPT_DASH:
         if tasks:
             t_total = len(tasks)
             t_done = sum(1 for t in tasks if t["is_done"])
-            monthly_stats.append({"יום": day, "בוצע": t_done, "מתוכנן": t_total, "אחוז": int((t_done / t_total) * 100)})
+            monthly_stats.append({
+                "תאריך": check_date.strftime("%d/%m/%Y"),
+                "יום": day, 
+                "בוצע": t_done, 
+                "מתוכנן": t_total, 
+                "אחוז": int((t_done / t_total) * 100)
+            })
 
     if monthly_stats:
         df_monthly = pd.DataFrame(monthly_stats)
         avg_pct = int(df_monthly["אחוז"].mean())
-        st.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
+        
+        col_m1, col_m2 = st.columns([3, 1])
+        col_m1.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
+        
+        # כפתור ייצוא ל-Excel חדש
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df_monthly.to_excel(writer, index=False, sheet_name='Monthly_Report')
+        excel_data = output.getvalue()
+        
+        col_m2.download_button(
+            label="📥 הורד דוח ל-Excel",
+            data=excel_data,
+            file_name=f"report_{selected_month}_{selected_year}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         
         fig_month = px.bar(df_monthly, x="יום", y=["מתוכנן", "בוצע"], 
                            title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
