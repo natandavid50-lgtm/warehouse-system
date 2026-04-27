@@ -14,7 +14,8 @@ st.set_page_config(
 )
 
 DB_FILE = "warehouse_management_db.csv"
-ADMIN_PASSWORD = "1234" # תוכל לשנות את הסיסמה כאן
+INV_FILE = "inventory_counts_db.csv"
+ADMIN_PASSWORD = "1234" 
 
 # =========================
 # 2) Theme / CSS
@@ -67,7 +68,7 @@ html, body, [class*="css"] {
 }
 
 /* =========================================
-    SIDEBAR FIX - תיקון לבעיית הטקסט בסגירה
+    SIDEBAR FIX 
    ========================================= */
 [data-testid="stSidebar"] {
     background: var(--bg-panel) !important;
@@ -186,7 +187,6 @@ html, body, [class*="css"] {
 /* =========================================
     HOME PAGE — BIG BUTTONS (FIXED SIZES)
    ========================================= */
-/* הבטחת גובה אחיד לכל כפתורי המשתמשים בדף הבית */
 div[data-testid="stHorizontalBlock"] .stButton > button,
 div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
     min-height: 220px !important;
@@ -313,6 +313,15 @@ def load_data():
 def save_data(df):
     df.to_csv(DB_FILE, index=False)
 
+# Inventory Data Helpers
+def load_inv_data():
+    if os.path.exists(INV_FILE):
+        return pd.read_csv(INV_FILE).fillna("")
+    return pd.DataFrame(columns=["ID", "Location", "Expected_Qty", "Actual_Qty", "Date"])
+
+def save_inv_data(df):
+    df.to_csv(INV_FILE, index=False)
+
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
     diff = (target_date - base_date).days
@@ -354,7 +363,6 @@ if st.session_state.user_role is None:
     c1, c2, c3 = st.columns(3)
     
     with c1:
-        # כניסת מנהל
         with st.popover("🔑\nמנהל WMS", use_container_width=True):
             entered_pwd = st.text_input("הזן סיסמת ניהול", type="password")
             if st.button("אישור כניסה", use_container_width=True):
@@ -377,17 +385,19 @@ if st.session_state.user_role is None:
     st.stop()
 
 df = load_data()
-OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
+df_inv = load_inv_data() # Load inventory data
+
+OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
 # תפריט צד - הגדרת הרשאות
 st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
 if st.session_state.user_role == "מנהל WMS":
-    menu = [OPT_DASH, OPT_WORK, OPT_CAL, OPT_ADD, OPT_MANAGE]
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE]
 elif st.session_state.user_role == "הנהלה":
-    menu = [OPT_DASH, OPT_CAL]
+    menu = [OPT_DASH, OPT_INV, OPT_CAL]
 else:
     # צוות מחסן
-    menu = [OPT_DASH, OPT_WORK, OPT_CAL]
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL]
 
 choice = st.sidebar.radio("תפריט", menu)
 if st.sidebar.button("התנתקות"):
@@ -466,6 +476,43 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df)
                         st.rerun()
+
+# --- ספירות מלאי ---
+elif choice == OPT_INV:
+    st.write("### ניהול ספירות מלאי")
+    
+    # חלון הגדרה (רק למנהל)
+    if st.session_state.user_role == "מנהל WMS":
+        with st.expander("➕ הוסף איתור לספירה"):
+            with st.form("inv_form"):
+                loc_name = st.text_input("שם איתור")
+                expected_q = st.number_input("כמות מצופה (מערכת)", min_value=0)
+                if st.form_submit_button("הוסף איתור"):
+                    new_entry = pd.DataFrame([{"ID": int(datetime.now().timestamp()), "Location": loc_name, "Expected_Qty": expected_q, "Actual_Qty": 0, "Date": datetime.now().strftime("%Y-%m-%d")}])
+                    df_inv = pd.concat([df_inv, new_entry], ignore_index=True)
+                    save_inv_data(df_inv)
+                    st.rerun()
+
+    # תצוגת ספירות
+    if df_inv.empty:
+        st.info("אין ספירות כרגע.")
+    else:
+        for idx, row in df_inv.iterrows():
+            st.markdown(f"""
+            <div style="background: var(--bg-card); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 10px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <strong>📍 איתור: {row['Location']}</strong>
+                    <span>מצופה: {row['Expected_Qty']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # הזנת כמות נספרת
+            new_val = st.number_input(f"כמות נספרת לאיתור {row['Location']}", value=int(row['Actual_Qty']), key=f"inv_count_{idx}")
+            if st.button("עדכן ספירה", key=f"save_inv_{idx}"):
+                df_inv.at[idx, 'Actual_Qty'] = new_val
+                save_inv_data(df_inv)
+                st.rerun()
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
