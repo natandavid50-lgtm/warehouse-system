@@ -352,6 +352,18 @@ def get_daily_status(df_input, target_dt):
         except: continue
     return scheduled
 
+# פונקציה לחישוב פיגורי משימות
+def get_overdue_tasks(df_input):
+    today = datetime.now().date()
+    overdue = []
+    for i in range(1, 8):
+        check_date = today - timedelta(days=i)
+        tasks = get_daily_status(df_input, check_date)
+        for t in tasks:
+            if not t["is_done"]:
+                overdue.append(t)
+    return overdue
+
 # =========================
 # 4) Main Flow
 # =========================
@@ -406,6 +418,15 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
+    # הצגת התראת פיגורים
+    overdue_list = get_overdue_tasks(df)
+    if len(overdue_list) > 0:
+        st.markdown(f"""
+            <div style="background: rgba(255, 77, 109, 0.15); border: 1px solid var(--accent-red); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                <h4 style="color: var(--accent-red); margin: 0;">⚠️ שים לב: ישנן {len(overdue_list)} משימות שלא בוצעו מהשבוע האחרון</h4>
+            </div>
+        """, unsafe_allow_html=True)
+
     c_date, _ = st.columns([1, 3])
     selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
     selected_tasks = get_daily_status(df, selected_date)
