@@ -566,16 +566,16 @@ elif choice == OPT_INV:
     sku_current = inv_data.get('SKU_Current', 0)
     no_disc = inv_data.get('No_Discrepancy', 0)
     
-    # חישובי אחוזים
-    pct_loc = min(100, int((current / target) * 100)) if target > 0 else 0
-    pct_sku = min(100, int((sku_current / sku_target) * 100)) if sku_target > 0 else 0
-    pct_acc = min(100, int((no_disc / current) * 100)) if current > 0 else 0
+    # חישובי אחוזים - ללא הגבלת 100
+    pct_loc = int((current / target) * 100) if target > 0 else 0
+    pct_sku = int((sku_current / sku_target) * 100) if sku_target > 0 else 0
+    pct_acc = int((no_disc / current) * 100) if current > 0 else 0
     
     g_sku, g_loc, g_acc = st.columns(3)
     
     with g_sku:
         st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מספר ספירות</h4>", unsafe_allow_html=True)
-        fig_sku = px.pie(values=[sku_current, max(0, sku_target-sku_current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
+        fig_sku = px.pie(values=[sku_current, 0 if sku_current >= sku_target else sku_target - sku_current], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
         fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_sku, use_container_width=True)
@@ -583,7 +583,7 @@ elif choice == OPT_INV:
 
     with g_loc:
         st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר מק\"טים</h4>", unsafe_allow_html=True)
-        fig_loc = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
+        fig_loc = px.pie(values=[current, 0 if current >= target else target - current], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
         fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
         st.plotly_chart(fig_loc, use_container_width=True)
