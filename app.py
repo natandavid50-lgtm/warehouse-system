@@ -26,6 +26,9 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap');
 
+/* =========================================
+    GLOBAL RESET & VARIABLES
+   ========================================= */
 :root {
     --bg-deep:         #050c1a;
     --bg-panel:        #0a1628;
@@ -54,6 +57,9 @@ html, body, [class*="css"] {
     text-align: right;
 }
 
+/* =========================================
+    BACKGROUND — deep space grid
+   ========================================= */
 .stApp {
     background-color: var(--bg-deep) !important;
     background-image:
@@ -63,12 +69,40 @@ html, body, [class*="css"] {
     background-size: 40px 40px, 40px 40px, 100% 100%;
 }
 
+/* =========================================
+    SIDEBAR FIX - תיקון לבעיית הטקסט בסגירה
+   ========================================= */
 [data-testid="stSidebar"] {
     background: var(--bg-panel) !important;
     border-left: 1px solid var(--border) !important;
     box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
 }
 
+[data-testid="stSidebar"][aria-expanded="false"] div {
+    display: none !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stSidebar"] .stRadio label {
+    background: transparent !important;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    display: block;
+}
+
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(56, 139, 253, 0.12) !important;
+    border-color: var(--border-bright) !important;
+}
+
+/* =========================================
+    PAGE HEADER BANNER
+   ========================================= */
 .page-header-banner {
     background: linear-gradient(135deg, var(--bg-card) 0%, #0b1e40 100%);
     padding: 28px 36px;
@@ -82,6 +116,16 @@ html, body, [class*="css"] {
     overflow: hidden;
 }
 
+.page-header-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 300px; height: 120px;
+    background: radial-gradient(ellipse, rgba(56, 139, 253, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+}
+
 .page-header-banner h1 {
     font-family: "Orbitron", monospace !important;
     font-weight: 700 !important;
@@ -92,21 +136,122 @@ html, body, [class*="css"] {
     text-shadow: 0 0 30px rgba(0, 212, 255, 0.5) !important;
 }
 
+.page-header-banner p {
+    color: var(--text-secondary) !important;
+    font-size: 0.95rem !important;
+    margin: 0 !important;
+    letter-spacing: 1px;
+}
+
+/* =========================================
+    METRICS
+   ========================================= */
 [data-testid="stMetric"] {
     background: var(--bg-card) !important;
     padding: 24px 20px !important;
     border-radius: var(--radius-card) !important;
     border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-div[data-testid="stHorizontalBlock"] .stButton > button {
+[data-testid="stMetric"]:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: var(--glow-blue), 0 8px 32px rgba(0,0,0,0.4) !important;
+    border-color: var(--border-bright) !important;
+}
+
+[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--accent-cyan) !important;
+    font-family: "Orbitron", monospace !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* =========================================
+    HOME PAGE — BIG BUTTONS (FIXED SIZES)
+   ========================================= */
+div[data-testid="stHorizontalBlock"] .stButton > button,
+div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
     min-height: 220px !important;
+    height: 220px !important;
     width: 100% !important;
     border-radius: var(--radius-card) !important;
     font-size: 1.4rem !important;
     font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: pre-wrap !important;
 }
 
+div[data-testid="stHorizontalBlock"] .stButton > button {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
+    border-top: 4px solid var(--accent-blue) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
+    border-top: 4px solid var(--accent-amber) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
+    border-top: 4px solid var(--accent-green) !important;
+}
+
+/* =========================================
+    GENERAL BUTTONS
+   ========================================= */
+.stButton > button {
+    background: linear-gradient(135deg, rgba(56, 139, 253, 0.15), rgba(56, 139, 253, 0.05)) !important;
+    border: 1px solid var(--border-bright) !important;
+    color: var(--accent-cyan) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+/* =========================================
+    POPOVER (TASK CARDS)
+   ========================================= */
+div[data-testid="stPopover"] > button {
+    width: 100% !important;
+    min-height: 70px;
+    margin-bottom: 10px !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    text-align: right !important;
+}
+
+/* =========================================
+    WEEK DAY CHIP
+   ========================================= */
 .week-day-chip {
     background: linear-gradient(135deg, var(--bg-card), #0b1e40);
     border: 1px solid var(--border-bright);
@@ -117,6 +262,44 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
     font-weight: 800;
     color: var(--accent-cyan);
     font-family: "Orbitron", monospace;
+    font-size: 0.85rem;
+    box-shadow: var(--glow-blue);
+}
+
+/* =========================================
+    FORM ELEMENTS
+   ========================================= */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+/* =========================================
+    SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* =========================================
+    FORM SUBMIT BUTTON
+   ========================================= */
+[data-testid="stForm"] .stButton > button {
+    background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 12px 28px !important;
+}
+
+[data-testid="stForm"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 24px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -135,16 +318,10 @@ def save_data(df):
 def load_inv_target():
     if os.path.exists(INV_TARGET_FILE):
         return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
-    return {"Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
+    return {"Target": 0, "Current": 0}
 
-def save_inv_target(target, current, sku_target, sku_current, no_discrepancy):
-    pd.DataFrame([{
-        "Target": target, 
-        "Current": current, 
-        "SKU_Target": sku_target, 
-        "SKU_Current": sku_current, 
-        "No_Discrepancy": no_discrepancy
-    }]).to_csv(INV_TARGET_FILE, index=False)
+def save_inv_target(target, current):
+    pd.DataFrame([{"Target": target, "Current": current}]).to_csv(INV_TARGET_FILE, index=False)
 
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
@@ -162,6 +339,7 @@ def get_daily_status(df_input, target_dt, filter_weekends=True):
     else:
         target_date = target_dt
 
+    # בסידור עבודה ובדשבורד הרגיל נסנן שישי-שבת
     if filter_weekends and target_date.weekday() in [4, 5]:
         return []
 
@@ -180,11 +358,13 @@ def get_daily_status(df_input, target_dt, filter_weekends=True):
         except: continue
     return scheduled
 
+# פונקציה לחישוב פיגורי משימות - בודקת 4 ימים אחורה
 def get_overdue_tasks(df_input):
     today = datetime.now().date()
     overdue = []
     for i in range(1, 8):
         check_date = today - timedelta(days=i)
+        # שולחים filter_weekends=True כדי שלא יספור פיגור על ימי שישי-שבת
         tasks = get_daily_status(df_input, check_date, filter_weekends=True)
         for t in tasks:
             if not t["is_done"]:
@@ -210,7 +390,7 @@ if st.session_state.user_role is None:
                     st.rerun()
                 else:
                     st.error("סיסמה שגויה")
-                        
+                    
     with c2:
         if st.button("📦\nצוות מחסן", use_container_width=True): 
             st.session_state.user_role = "צוות מחסן"
@@ -245,6 +425,7 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
+    # הצגת התראת פיגורים עם אפשרות סגירה
     overdue_list = get_overdue_tasks(df)
     if len(overdue_list) > 0:
         st.markdown(f"""
@@ -296,6 +477,38 @@ if choice == OPT_DASH:
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
+    st.write("---")
+    st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
+    
+    month_col, year_col = st.columns(2)
+    selected_month = month_col.selectbox("בחר חודש", range(1, 13), index=datetime.now().month - 1)
+    selected_year = year_col.selectbox("בחר שנה", [2025, 2026], index=1)
+
+    monthly_stats = []
+    _, num_days = cal_lib.monthrange(selected_year, selected_month)
+
+    for day in range(1, num_days + 1):
+        check_date = datetime(selected_year, selected_month, day).date()
+        tasks = get_daily_status(df, check_date)
+        if tasks:
+            t_total = len(tasks)
+            t_done = sum(1 for t in tasks if t["is_done"])
+            monthly_stats.append({"יום": day, "בוצע": t_done, "מתוכנן": t_total, "אחוז": int((t_done / t_total) * 100)})
+
+    if monthly_stats:
+        df_monthly = pd.DataFrame(monthly_stats)
+        avg_pct = int(df_monthly["אחוז"].mean())
+        st.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
+        
+        fig_month = px.bar(df_monthly, x="יום", y=["מתוכנן", "בוצע"], 
+                           title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
+                           barmode="group",
+                           color_discrete_map={"מתוכנן": "#112347", "בוצע": "#00e5a0"})
+        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4")
+        st.plotly_chart(fig_month, use_container_width=True)
+    else:
+        st.warning("אין נתוני משימות לחודש הנבחר.")
+
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
     today = datetime.now()
@@ -317,62 +530,28 @@ elif choice == OPT_WORK:
 
 # --- ספירות מלאי ---
 elif choice == OPT_INV:
-    st.markdown("### 📦 סטטוס ספירת מלאי מורחב")
-    
+    st.markdown("### 📦 סטטוס ספירת מלאי")
     if st.session_state.user_role == "מנהל WMS":
         with st.form("inv_management"):
-            st.write("#### 🛠️ ניהול יעדי ספירה")
+            st.write("#### 🛠️ ניהול יעדי ספירה (רק אתה רואה)")
             c1, c2 = st.columns(2)
-            new_target = c1.number_input("איתורים לספירה (יעד)", min_value=0, value=int(inv_data.get('Target', 0)))
-            new_current = c2.number_input("איתורים שנספרו בפועל", min_value=0, value=int(inv_data.get('Current', 0)))
-            
-            c3, c4 = st.columns(2)
-            new_sku_target = c3.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('SKU_Target', 0)))
-            new_sku_current = c4.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('SKU_Current', 0)))
-            
-            new_no_discrepancy = st.number_input("איתורים ללא פער (לחישוב דיוק)", min_value=0, value=int(inv_data.get('No_Discrepancy', 0)))
-            
+            new_target = c1.number_input("כמה איתורים יש לספור סה\"כ?", min_value=0, value=int(inv_data['Target']))
+            new_current = c2.number_input("כמה איתורים נספרו עד כה?", min_value=0, value=int(inv_data['Current']))
             if st.form_submit_button("עדכן נתונים"):
-                save_inv_target(new_target, new_current, new_sku_target, new_sku_current, new_no_discrepancy)
+                save_inv_target(new_target, new_current)
                 st.rerun()
     
     st.write("---")
-    
-    target = inv_data.get('Target', 1)
-    current = inv_data.get('Current', 0)
-    sku_target = inv_data.get('SKU_Target', 1)
-    sku_current = inv_data.get('SKU_Current', 0)
-    no_disc = inv_data.get('No_Discrepancy', 0)
-    
-    pct_loc = min(100, int((current / target) * 100)) if target > 0 else 0
-    pct_sku = min(100, int((sku_current / sku_target) * 100)) if sku_target > 0 else 0
-    pct_acc = min(100, int((no_disc / current) * 100)) if current > 0 else 0
-    
-    g_sku, g_loc, g_acc = st.columns(3)
-    
-    with g_sku:
-        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מגוון מק\"טים</h4>", unsafe_allow_html=True)
-        fig_sku = px.pie(values=[sku_current, max(0, sku_target-sku_current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
-        fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
-                               annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
-        st.plotly_chart(fig_sku, use_container_width=True)
-        st.markdown(f"<p style='text-align: center;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
-
-    with g_loc:
-        st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>התקדמות איתורים</h4>", unsafe_allow_html=True)
-        fig_loc = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
-        fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
-                               annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
-        st.plotly_chart(fig_loc, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-weight: bold;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
-
-    with g_acc:
-        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
-        fig_acc = px.pie(values=[no_disc, max(0, current-no_disc)], names=["תקין", "פער"], hole=0.7, color_discrete_sequence=["#f59e0b", "#112347"])
-        fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
-                               annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
-        st.plotly_chart(fig_acc, use_container_width=True)
-        st.markdown(f"<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
+    target, current = inv_data['Target'], inv_data['Current']
+    if target > 0:
+        pct_inv = min(100, int((current / target) * 100))
+        fig = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
+        fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=0, b=0, l=0, r=0),
+                          annotations=[dict(text=f"{pct_inv}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown(f"<h3 style='text-align: center; color: var(--text-secondary);'>נספרו {int(current)} מתוך {int(target)} איתורים</h3>", unsafe_allow_html=True)
+    else:
+        st.info("טרם הוגדרו יעדי ספירה על ידי המנהל.")
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
