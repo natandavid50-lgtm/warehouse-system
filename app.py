@@ -318,10 +318,17 @@ def save_data(df):
 def load_inv_target():
     if os.path.exists(INV_TARGET_FILE):
         return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
-    return {"Target": 0, "Current": 0}
+    # הוספת שדות חדשים למק"טים ודיוק
+    return {"Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
 
-def save_inv_target(target, current):
-    pd.DataFrame([{"Target": target, "Current": current}]).to_csv(INV_TARGET_FILE, index=False)
+def save_inv_target(target, current, sku_target, sku_current, no_discrepancy):
+    pd.DataFrame([{
+        "Target": target, 
+        "Current": current, 
+        "SKU_Target": sku_target, 
+        "SKU_Current": sku_current, 
+        "No_Discrepancy": no_discrepancy
+    }]).to_csv(INV_TARGET_FILE, index=False)
 
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
@@ -339,7 +346,6 @@ def get_daily_status(df_input, target_dt, filter_weekends=True):
     else:
         target_date = target_dt
 
-    # בסידור עבודה ובדשבורד הרגיל נסנן שישי-שבת
     if filter_weekends and target_date.weekday() in [4, 5]:
         return []
 
@@ -358,13 +364,11 @@ def get_daily_status(df_input, target_dt, filter_weekends=True):
         except: continue
     return scheduled
 
-# פונקציה לחישוב פיגורי משימות - בודקת 4 ימים אחורה
 def get_overdue_tasks(df_input):
     today = datetime.now().date()
     overdue = []
     for i in range(1, 8):
         check_date = today - timedelta(days=i)
-        # שולחים filter_weekends=True כדי שלא יספור פיגור על ימי שישי-שבת
         tasks = get_daily_status(df_input, check_date, filter_weekends=True)
         for t in tasks:
             if not t["is_done"]:
@@ -425,7 +429,6 @@ st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_a
 
 # --- דשבורד בקרה ---
 if choice == OPT_DASH:
-    # הצגת התראת פיגורים עם אפשרות סגירה
     overdue_list = get_overdue_tasks(df)
     if len(overdue_list) > 0:
         st.markdown(f"""
@@ -477,38 +480,6 @@ if choice == OPT_DASH:
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("---")
-    st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
-    
-    month_col, year_col = st.columns(2)
-    selected_month = month_col.selectbox("בחר חודש", range(1, 13), index=datetime.now().month - 1)
-    selected_year = year_col.selectbox("בחר שנה", [2025, 2026], index=1)
-
-    monthly_stats = []
-    _, num_days = cal_lib.monthrange(selected_year, selected_month)
-
-    for day in range(1, num_days + 1):
-        check_date = datetime(selected_year, selected_month, day).date()
-        tasks = get_daily_status(df, check_date)
-        if tasks:
-            t_total = len(tasks)
-            t_done = sum(1 for t in tasks if t["is_done"])
-            monthly_stats.append({"יום": day, "בוצע": t_done, "מתוכנן": t_total, "אחוז": int((t_done / t_total) * 100)})
-
-    if monthly_stats:
-        df_monthly = pd.DataFrame(monthly_stats)
-        avg_pct = int(df_monthly["אחוז"].mean())
-        st.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
-        
-        fig_month = px.bar(df_monthly, x="יום", y=["מתוכנן", "בוצע"], 
-                           title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
-                           barmode="group",
-                           color_discrete_map={"מתוכנן": "#112347", "בוצע": "#00e5a0"})
-        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4")
-        st.plotly_chart(fig_month, use_container_width=True)
-    else:
-        st.warning("אין נתוני משימות לחודש הנבחר.")
-
 # --- סידור עבודה ---
 elif choice == OPT_WORK:
     today = datetime.now()
@@ -528,30 +499,68 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df); st.rerun()
 
-# --- ספירות מלאי ---
+# --- ספירות מלאי (מעודכן עם 3 גלגלים) ---
 elif choice == OPT_INV:
-    st.markdown("### 📦 סטטוס ספירת מלאי")
+    st.markdown("### 📦 סטטוס ספירת מלאי מורחב")
+    
     if st.session_state.user_role == "מנהל WMS":
         with st.form("inv_management"):
-            st.write("#### 🛠️ ניהול יעדי ספירה (רק אתה רואה)")
+            st.write("#### 🛠️ ניהול יעדי ספירה")
             c1, c2 = st.columns(2)
-            new_target = c1.number_input("כמה איתורים יש לספור סה\"כ?", min_value=0, value=int(inv_data['Target']))
-            new_current = c2.number_input("כמה איתורים נספרו עד כה?", min_value=0, value=int(inv_data['Current']))
+            new_target = c1.number_input("איתורים לספירה (יעד)", min_value=0, value=int(inv_data.get('Target', 0)))
+            new_current = c2.number_input("איתורים שנספרו בפועל", min_value=0, value=int(inv_data.get('Current', 0)))
+            
+            c3, c4 = st.columns(2)
+            new_sku_target = c3.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('SKU_Target', 0)))
+            new_sku_current = c4.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('SKU_Current', 0)))
+            
+            new_no_discrepancy = st.number_input("איתורים ללא פער (לחישוב דיוק)", min_value=0, value=int(inv_data.get('No_Discrepancy', 0)))
+            
             if st.form_submit_button("עדכן נתונים"):
-                save_inv_target(new_target, new_current)
+                save_inv_target(new_target, new_current, new_sku_target, new_sku_current, new_no_discrepancy)
                 st.rerun()
     
     st.write("---")
-    target, current = inv_data['Target'], inv_data['Current']
-    if target > 0:
-        pct_inv = min(100, int((current / target) * 100))
-        fig = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
-        fig.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=0, b=0, l=0, r=0),
-                          annotations=[dict(text=f"{pct_inv}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown(f"<h3 style='text-align: center; color: var(--text-secondary);'>נספרו {int(current)} מתוך {int(target)} איתורים</h3>", unsafe_allow_html=True)
-    else:
-        st.info("טרם הוגדרו יעדי ספירה על ידי המנהל.")
+    
+    # שליפת נתונים
+    target = inv_data.get('Target', 1)
+    current = inv_data.get('Current', 0)
+    sku_target = inv_data.get('SKU_Target', 1)
+    sku_current = inv_data.get('SKU_Current', 0)
+    no_disc = inv_data.get('No_Discrepancy', 0)
+    
+    # חישוב אחוזים
+    pct_loc = min(100, int((current / target) * 100)) if target > 0 else 0
+    pct_sku = min(100, int((sku_current / sku_target) * 100)) if sku_target > 0 else 0
+    pct_acc = min(100, int((no_disc / current) * 100)) if current > 0 else 0
+    
+    # תצוגת 3 גלגלים
+    g_sku, g_loc, g_acc = st.columns(3)
+    
+    with g_sku:
+        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מגוון מק\"טים</h4>", unsafe_allow_html=True)
+        fig_sku = px.pie(values=[sku_current, max(0, sku_target-sku_current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
+        fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
+                             annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+        st.plotly_chart(fig_sku, use_container_width=True)
+        st.markdown(f"<p style='text-align: center;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
+
+    with g_loc:
+        st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>התקדמות איתורים</h4>", unsafe_allow_html=True)
+        fig_loc = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
+        fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
+                             annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
+        st.plotly_chart(fig_loc, use_container_width=True)
+        st.markdown(f"<p style='text-align: center; font-weight: bold;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
+
+    with g_acc:
+        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
+        # גלגל דיוק מציג כמה מתוך מה שנספר היה ללא פער
+        fig_acc = px.pie(values=[no_disc, max(0, current-no_disc)], names=["תקין", "פער"], hole=0.7, color_discrete_sequence=["#f59e0b", "#112347"])
+        fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
+                             annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+        st.plotly_chart(fig_acc, use_container_width=True)
+        st.markdown(f<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
