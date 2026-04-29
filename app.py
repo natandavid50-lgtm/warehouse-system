@@ -320,20 +320,39 @@ def load_data():
 def save_data(df):
     df.to_csv(DB_FILE, index=False)
 
-def load_inv_target():
+def load_inv_target_history():
     if os.path.exists(INV_TARGET_FILE):
-        return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
-    # ברירת מחדל כולל שדות חדשים
-    return {"Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
+        df = pd.read_csv(INV_TARGET_FILE)
+        # וידוא עמודת חודש למניעת קריסה בגרסאות ישנות
+        if 'Month' not in df.columns:
+            df['Month'] = datetime.now().strftime("%Y-%m")
+        return df
+    return pd.DataFrame(columns=["Month", "Target", "Current", "SKU_Target", "SKU_Current", "No_Discrepancy"])
 
-def save_inv_target(target, current, sku_target, sku_current, no_discrepancy):
-    pd.DataFrame([{
+def get_inv_data_for_month(month_str):
+    history = load_inv_target_history()
+    row = history[history['Month'] == month_str]
+    if not row.empty:
+        return row.iloc[0].to_dict()
+    return {"Month": month_str, "Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
+
+def save_inv_target(month_str, target, current, sku_target, sku_current, no_discrepancy):
+    history = load_inv_target_history()
+    # עדכון שורה קיימת או הוספת חדשה
+    new_data = {
+        "Month": month_str,
         "Target": target, 
         "Current": current, 
         "SKU_Target": sku_target, 
         "SKU_Current": sku_current, 
         "No_Discrepancy": no_discrepancy
-    }]).to_csv(INV_TARGET_FILE, index=False)
+    }
+    if month_str in history['Month'].values:
+        history.loc[history['Month'] == month_str, ["Target", "Current", "SKU_Target", "SKU_Current", "No_Discrepancy"]] = \
+            [target, current, sku_target, sku_current, no_discrepancy]
+    else:
+        history = pd.concat([history, pd.DataFrame([new_data])], ignore_index=True)
+    history.to_csv(INV_TARGET_FILE, index=False)
 
 def is_scheduled_on(base_date, recurring, target_date):
     if target_date < base_date: return False
@@ -413,7 +432,8 @@ if st.session_state.user_role is None:
     st.stop()
 
 df = load_data()
-inv_data = load_inv_target()
+# טעינת היסטוריה לצורך בחירת חודשים
+inv_history = load_inv_target_history()
 
 OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
@@ -538,11 +558,21 @@ elif choice == OPT_WORK:
 
 # --- ספירות מלאי ---
 elif choice == OPT_INV:
-    st.markdown("### 📦 סטטוס ספירת מלאי מורחב")
+    # בחירת חודש לצפייה/עריכה
+    current_month_str = datetime.now().strftime("%Y-%m")
+    all_months = sorted(list(set([current_month_str] + inv_history['Month'].tolist())), reverse=True)
+    
+    c_sel, _ = st.columns([2, 2])
+    selected_month_view = c_sel.selectbox("בחר חודש לספירה", all_months, index=0)
+    
+    st.markdown(f"### 📦 סטטוס ספירת מלאי - {selected_month_view}")
+    
+    # טעינת נתונים לחודש הנבחר
+    inv_data = get_inv_data_for_month(selected_month_view)
     
     if st.session_state.user_role == "מנהל WMS":
         with st.form("inv_management"):
-            st.write("#### 🛠️ ניהול יעדי ספירה")
+            st.write(f"#### 🛠️ ניהול יעדי ספירה לחודש {selected_month_view}")
             c1, c2 = st.columns(2)
             new_target = c1.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('Target', 0)))
             new_current = c2.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('Current', 0)))
@@ -554,15 +584,15 @@ elif choice == OPT_INV:
             new_no_discrepancy = st.number_input("איתורים ללא פער (לחישוב דיוק)", min_value=0, value=int(inv_data.get('No_Discrepancy', 0)))
             
             if st.form_submit_button("עדכן נתונים"):
-                save_inv_target(new_target, new_current, new_sku_target, new_sku_current, new_no_discrepancy)
+                save_inv_target(selected_month_view, new_target, new_current, new_sku_target, new_sku_current, new_no_discrepancy)
                 st.rerun()
     
     st.write("---")
     
     # שליפת נתונים
-    target = inv_data.get('Target', 1)
+    target = inv_data.get('Target', 1) if inv_data.get('Target', 0) > 0 else 1
     current = inv_data.get('Current', 0)
-    sku_target = inv_data.get('SKU_Target', 1)
+    sku_target = inv_data.get('SKU_Target', 1) if inv_data.get('SKU_Target', 0) > 0 else 1
     sku_current = inv_data.get('SKU_Current', 0)
     no_disc = inv_data.get('No_Discrepancy', 0)
     
