@@ -579,7 +579,7 @@ elif choice == OPT_INV:
         fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_sku, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; color: white;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: white;'>{int(sku_current)} / {int(sku_target)} איתורים</p>", unsafe_allow_html=True)
 
     with g_loc:
         st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר ספירות</h4>", unsafe_allow_html=True)
@@ -587,7 +587,7 @@ elif choice == OPT_INV:
         fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
         st.plotly_chart(fig_loc, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-weight: bold; color: white;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-weight: bold; color: white;'>{int(current)} / {int(target)} מק\"טים</p>", unsafe_allow_html=True)
 
     with g_acc:
         st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
