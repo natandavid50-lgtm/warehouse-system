@@ -574,7 +574,7 @@ elif choice == OPT_INV:
     g_sku, g_loc, g_acc = st.columns(3)
     
     with g_sku:
-        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מספר מק\"טים</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מספר ספירות</h4>", unsafe_allow_html=True)
         fig_sku = px.pie(values=[sku_current, max(0, sku_target-sku_current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
         fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
@@ -582,7 +582,7 @@ elif choice == OPT_INV:
         st.markdown(f"<p style='text-align: center; color: white;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
 
     with g_loc:
-        st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר ספירות</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר מק\"טים</h4>", unsafe_allow_html=True)
         fig_loc = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
         fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
