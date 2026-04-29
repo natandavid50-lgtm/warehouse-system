@@ -26,9 +26,6 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap');
 
-/* =========================================
-    GLOBAL RESET & VARIABLES
-   ========================================= */
 :root {
     --bg-deep:         #050c1a;
     --bg-panel:        #0a1628;
@@ -57,9 +54,6 @@ html, body, [class*="css"] {
     text-align: right;
 }
 
-/* =========================================
-    BACKGROUND — deep space grid
-   ========================================= */
 .stApp {
     background-color: var(--bg-deep) !important;
     background-image:
@@ -69,40 +63,12 @@ html, body, [class*="css"] {
     background-size: 40px 40px, 40px 40px, 100% 100%;
 }
 
-/* =========================================
-    SIDEBAR FIX - תיקון לבעיית הטקסט בסגירה
-   ========================================= */
 [data-testid="stSidebar"] {
     background: var(--bg-panel) !important;
     border-left: 1px solid var(--border) !important;
     box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
 }
 
-[data-testid="stSidebar"][aria-expanded="false"] div {
-    display: none !important;
-}
-
-[data-testid="stSidebar"] * {
-    color: var(--text-primary) !important;
-}
-
-[data-testid="stSidebar"] .stRadio label {
-    background: transparent !important;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 8px 12px;
-    transition: all 0.2s ease;
-    display: block;
-}
-
-[data-testid="stSidebar"] .stRadio label:hover {
-    background: rgba(56, 139, 253, 0.12) !important;
-    border-color: var(--border-bright) !important;
-}
-
-/* =========================================
-    PAGE HEADER BANNER
-   ========================================= */
 .page-header-banner {
     background: linear-gradient(135deg, var(--bg-card) 0%, #0b1e40 100%);
     padding: 28px 36px;
@@ -116,16 +82,6 @@ html, body, [class*="css"] {
     overflow: hidden;
 }
 
-.page-header-banner::before {
-    content: '';
-    position: absolute;
-    top: -60px; left: 50%;
-    transform: translateX(-50%);
-    width: 300px; height: 120px;
-    background: radial-gradient(ellipse, rgba(56, 139, 253, 0.25) 0%, transparent 70%);
-    pointer-events: none;
-}
-
 .page-header-banner h1 {
     font-family: "Orbitron", monospace !important;
     font-weight: 700 !important;
@@ -136,122 +92,21 @@ html, body, [class*="css"] {
     text-shadow: 0 0 30px rgba(0, 212, 255, 0.5) !important;
 }
 
-.page-header-banner p {
-    color: var(--text-secondary) !important;
-    font-size: 0.95rem !important;
-    margin: 0 !important;
-    letter-spacing: 1px;
-}
-
-/* =========================================
-    METRICS
-   ========================================= */
 [data-testid="stMetric"] {
     background: var(--bg-card) !important;
     padding: 24px 20px !important;
     border-radius: var(--radius-card) !important;
     border: 1px solid var(--border) !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04) !important;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-[data-testid="stMetric"]:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: var(--glow-blue), 0 8px 32px rgba(0,0,0,0.4) !important;
-    border-color: var(--border-bright) !important;
-}
-
-[data-testid="stMetric"]::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 100%; height: 3px;
-    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
-}
-
-[data-testid="stMetricLabel"] {
-    color: var(--text-secondary) !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px;
-}
-
-[data-testid="stMetricValue"] {
-    color: var(--accent-cyan) !important;
-    font-family: "Orbitron", monospace !important;
-    font-weight: 700 !important;
-    font-size: 2rem !important;
-    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-}
-
-/* =========================================
-    HOME PAGE — BIG BUTTONS (FIXED SIZES)
-   ========================================= */
-div[data-testid="stHorizontalBlock"] .stButton > button,
-div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+div[data-testid="stHorizontalBlock"] .stButton > button {
     min-height: 220px !important;
-    height: 220px !important;
     width: 100% !important;
     border-radius: var(--radius-card) !important;
     font-size: 1.4rem !important;
     font-weight: 800 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    white-space: pre-wrap !important;
 }
 
-div[data-testid="stHorizontalBlock"] .stButton > button {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text-primary) !important;
-    transition: all 0.25s ease !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
-}
-
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
-    border-top: 4px solid var(--accent-blue) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
-    border-top: 4px solid var(--accent-amber) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
-    border-top: 4px solid var(--accent-green) !important;
-}
-
-/* =========================================
-    GENERAL BUTTONS
-   ========================================= */
-.stButton > button {
-    background: linear-gradient(135deg, rgba(56, 139, 253, 0.15), rgba(56, 139, 253, 0.05)) !important;
-    border: 1px solid var(--border-bright) !important;
-    color: var(--accent-cyan) !important;
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease !important;
-}
-
-/* =========================================
-    POPOVER (TASK CARDS)
-   ========================================= */
-div[data-testid="stPopover"] > button {
-    width: 100% !important;
-    min-height: 70px;
-    margin-bottom: 10px !important;
-    font-weight: 700 !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--border) !important;
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-    text-align: right !important;
-}
-
-/* =========================================
-    WEEK DAY CHIP
-   ========================================= */
 .week-day-chip {
     background: linear-gradient(135deg, var(--bg-card), #0b1e40);
     border: 1px solid var(--border-bright);
@@ -262,44 +117,6 @@ div[data-testid="stPopover"] > button {
     font-weight: 800;
     color: var(--accent-cyan);
     font-family: "Orbitron", monospace;
-    font-size: 0.85rem;
-    box-shadow: var(--glow-blue);
-}
-
-/* =========================================
-    FORM ELEMENTS
-   ========================================= */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
-}
-
-/* =========================================
-    SCROLLBAR
-   ========================================= */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-panel); }
-::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
-
-/* =========================================
-    FORM SUBMIT BUTTON
-   ========================================= */
-[data-testid="stForm"] .stButton > button {
-    background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
-    color: #fff !important;
-    border: none !important;
-    padding: 12px 28px !important;
-}
-
-[data-testid="stForm"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-card) !important;
-    padding: 24px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -318,7 +135,6 @@ def save_data(df):
 def load_inv_target():
     if os.path.exists(INV_TARGET_FILE):
         return pd.read_csv(INV_TARGET_FILE).iloc[0].to_dict()
-    # הוספת שדות חדשים למק"טים ודיוק
     return {"Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
 
 def save_inv_target(target, current, sku_target, sku_current, no_discrepancy):
@@ -394,7 +210,7 @@ if st.session_state.user_role is None:
                     st.rerun()
                 else:
                     st.error("סיסמה שגויה")
-                    
+                        
     with c2:
         if st.button("📦\nצוות מחסן", use_container_width=True): 
             st.session_state.user_role = "צוות מחסן"
@@ -499,7 +315,7 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df); st.rerun()
 
-# --- ספירות מלאי (מעודכן עם 3 גלגלים) ---
+# --- ספירות מלאי ---
 elif choice == OPT_INV:
     st.markdown("### 📦 סטטוס ספירת מלאי מורחב")
     
@@ -522,26 +338,23 @@ elif choice == OPT_INV:
     
     st.write("---")
     
-    # שליפת נתונים
     target = inv_data.get('Target', 1)
     current = inv_data.get('Current', 0)
     sku_target = inv_data.get('SKU_Target', 1)
     sku_current = inv_data.get('SKU_Current', 0)
     no_disc = inv_data.get('No_Discrepancy', 0)
     
-    # חישוב אחוזים
     pct_loc = min(100, int((current / target) * 100)) if target > 0 else 0
     pct_sku = min(100, int((sku_current / sku_target) * 100)) if sku_target > 0 else 0
     pct_acc = min(100, int((no_disc / current) * 100)) if current > 0 else 0
     
-    # תצוגת 3 גלגלים
     g_sku, g_loc, g_acc = st.columns(3)
     
     with g_sku:
         st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מגוון מק\"טים</h4>", unsafe_allow_html=True)
         fig_sku = px.pie(values=[sku_current, max(0, sku_target-sku_current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
         fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
-                             annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+                               annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_sku, use_container_width=True)
         st.markdown(f"<p style='text-align: center;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
 
@@ -549,18 +362,18 @@ elif choice == OPT_INV:
         st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>התקדמות איתורים</h4>", unsafe_allow_html=True)
         fig_loc = px.pie(values=[current, max(0, target-current)], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
         fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
-                             annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
+                               annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
         st.plotly_chart(fig_loc, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-weight: bold;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
 
     with g_acc:
         st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
-        # גלגל דיוק מציג כמה מתוך מה שנספר היה ללא פער
         fig_acc = px.pie(values=[no_disc, max(0, current-no_disc)], names=["תקין", "פער"], hole=0.7, color_discrete_sequence=["#f59e0b", "#112347"])
         fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
-                             annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+                               annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_acc, use_container_width=True)
-st.markdown(f"<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
+
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
     st.markdown("### ⚙️ ניהול ועריכת משימות")
