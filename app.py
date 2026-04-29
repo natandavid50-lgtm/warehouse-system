@@ -544,12 +544,12 @@ elif choice == OPT_INV:
         with st.form("inv_management"):
             st.write("#### 🛠️ ניהול יעדי ספירה")
             c1, c2 = st.columns(2)
-            new_target = c1.number_input("איתורים לספירה (יעד)", min_value=0, value=int(inv_data.get('Target', 0)))
-            new_current = c2.number_input("איתורים שנספרו בפועל", min_value=0, value=int(inv_data.get('Current', 0)))
+            new_target = c1.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('Target', 0)))
+            new_current = c2.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('Current', 0)))
             
             c3, c4 = st.columns(2)
-            new_sku_target = c3.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('SKU_Target', 0)))
-            new_sku_current = c4.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('SKU_Current', 0)))
+            new_sku_target = c3.number_input("איתורים לספירה (יעד)", min_value=0, value=int(inv_data.get('SKU_Target', 0)))
+            new_sku_current = c4.number_input("איתורים שנספרו בפועל", min_value=0, value=int(inv_data.get('SKU_Current', 0)))
             
             new_no_discrepancy = st.number_input("איתורים ללא פער (לחישוב דיוק)", min_value=0, value=int(inv_data.get('No_Discrepancy', 0)))
             
