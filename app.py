@@ -30,25 +30,25 @@ st.markdown("""
     GLOBAL RESET & VARIABLES
    ========================================= */
 :root {
-    --bg-deep:         #050c1a;
-    --bg-panel:        #0a1628;
-    --bg-card:         #0d1f3c;
-    --bg-card-hover:   #112347;
+    --bg-deep:          #050c1a;
+    --bg-panel:         #0a1628;
+    --bg-card:          #0d1f3c;
+    --bg-card-hover:    #112347;
     --border:            rgba(56, 139, 253, 0.18);
     --border-bright:   rgba(56, 139, 253, 0.45);
-    --accent-blue:     #388bfd;
-    --accent-cyan:     #00d4ff;
-    --accent-green:    #00e5a0;
-    --accent-amber:    #f59e0b;
-    --accent-red:       #ff4d6d;
-    --text-primary:     #ffffff;
-    --text-secondary:   #ffffff;
-    --text-muted:       #ffffff;
-    --glow-blue:       0 0 20px rgba(56, 139, 253, 0.35);
-    --glow-cyan:       0 0 20px rgba(0, 212, 255, 0.3);
-    --glow-green:      0 0 209px rgba(0, 229, 160, 0.3);
-    --radius-card:     16px;
-    --radius-pill:     50px;
+    --accent-blue:      #388bfd;
+    --accent-cyan:      #00d4ff;
+    --accent-green:     #00e5a0;
+    --accent-amber:     #f59e0b;
+    --accent-red:        #ff4d6d;
+    --text-primary:      #ffffff;
+    --text-secondary:    #ffffff;
+    --text-muted:        #ffffff;
+    --glow-blue:        0 0 20px rgba(56, 139, 253, 0.35);
+    --glow-cyan:        0 0 20px rgba(0, 212, 255, 0.3);
+    --glow-green:       0 0 209px rgba(0, 229, 160, 0.3);
+    --radius-card:      16px;
+    --radius-pill:      50px;
 }
 
 html, body, [class*="css"] {
@@ -278,6 +278,11 @@ div[data-testid="stPopover"] > button {
     color: var(--text-primary) !important;
 }
 
+/* כותרות שדות הקלט - דריסה ללבן */
+label[data-testid="stWidgetLabel"] p {
+    color: #ffffff !important;
+}
+
 /* =========================================
     SCROLLBAR
    ========================================= */
@@ -477,7 +482,7 @@ if choice == OPT_DASH:
         weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז": t_pct})
     
     fig = px.area(pd.DataFrame(weekly_data), x="תאריך", y="אחוז", markers=True)
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4", height=300)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#ffffff", height=300)
     st.plotly_chart(fig, use_container_width=True)
 
     st.write("---")
@@ -507,7 +512,7 @@ if choice == OPT_DASH:
                            title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
                            barmode="group",
                            color_discrete_map={"מתוכנן": "#112347", "בוצע": "#00e5a0"})
-        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#8eafd4")
+        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#ffffff")
         st.plotly_chart(fig_month, use_container_width=True)
     else:
         st.warning("אין נתוני משימות לחודש הנבחר.")
@@ -531,7 +536,7 @@ elif choice == OPT_WORK:
                         df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
                         save_data(df); st.rerun()
 
-# --- ספירות מלאי (החלק המתוקן) ---
+# --- ספירות מלאי ---
 elif choice == OPT_INV:
     st.markdown("### 📦 סטטוס ספירת מלאי מורחב")
     
@@ -554,7 +559,7 @@ elif choice == OPT_INV:
     
     st.write("---")
     
-    # שליפת נתונים עם ערכי ברירת מחדל למניעת שגיאות
+    # שליפת נתונים
     target = inv_data.get('Target', 1)
     current = inv_data.get('Current', 0)
     sku_target = inv_data.get('SKU_Target', 1)
@@ -574,7 +579,7 @@ elif choice == OPT_INV:
         fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_sku, use_container_width=True)
-        st.markdown(f"<p style='text-align: center;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: white;'>{int(sku_current)} / {int(sku_target)} מק\"טים</p>", unsafe_allow_html=True)
 
     with g_loc:
         st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר ספירות</h4>", unsafe_allow_html=True)
@@ -582,7 +587,7 @@ elif choice == OPT_INV:
         fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
         st.plotly_chart(fig_loc, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-weight: bold;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-weight: bold; color: white;'>{int(current)} / {int(target)} איתורים</p>", unsafe_allow_html=True)
 
     with g_acc:
         st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
@@ -590,7 +595,7 @@ elif choice == OPT_INV:
         fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                                annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_acc, use_container_width=True)
-        st.markdown(f"<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: white;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
 
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
