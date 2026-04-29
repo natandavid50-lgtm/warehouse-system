@@ -560,8 +560,7 @@ elif choice == OPT_INV:
         fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
                              annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
         st.plotly_chart(fig_acc, use_container_width=True)
-        st.markdown(f<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
-
+st.markdown(f"<p style='text-align: center;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
 # --- הגדרות ---
 elif choice == OPT_MANAGE:
     st.markdown("### ⚙️ ניהול ועריכת משימות")
