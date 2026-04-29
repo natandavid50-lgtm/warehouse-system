@@ -43,7 +43,7 @@ st.markdown("""
     --accent-red:       #ff4d6d;
     --text-primary:     #e8f0fe;
     --text-secondary: #ffffff;
-    --text-muted:       #4a6fa5;
+    --text-muted:       #ffffff;
     --glow-blue:       0 0 20px rgba(56, 139, 253, 0.35);
     --glow-cyan:       0 0 20px rgba(0, 212, 255, 0.3);
     --glow-green:      0 0 209px rgba(0, 229, 160, 0.3);
