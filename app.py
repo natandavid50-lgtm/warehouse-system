@@ -35,11 +35,11 @@ st.markdown("""
     --bg-card:          #0d1f3c;
     --bg-card-hover:    #112347;
     --border:            rgba(56, 139, 253, 0.18);
-    --border-bright:   rgba(56, 139, 253, 0.45);
+    --border-bright:    rgba(56, 139, 253, 0.45);
     --accent-blue:      #388bfd;
     --accent-cyan:      #00d4ff;
-    --accent-green:     #00e5a0;
-    --accent-amber:     #f59e0b;
+    --accent-green:      #00e5a0;
+    --accent-amber:      #f59e0b;
     --accent-red:        #ff4d6d;
     --text-primary:      #ffffff;
     --text-secondary:    #ffffff;
@@ -323,9 +323,9 @@ def save_data(df):
 def load_inv_target_history():
     if os.path.exists(INV_TARGET_FILE):
         df = pd.read_csv(INV_TARGET_FILE)
-        # וידוא עמודת חודש למניעת קריסה בגרסאות ישנות
+        # תיקון קריטי: אם הנתונים קיימים אך ללא עמודת חודש, נשייך אותם לאפריל
         if 'Month' not in df.columns:
-            df['Month'] = datetime.now().strftime("%Y-%m")
+            df['Month'] = "2026-04"
         return df
     return pd.DataFrame(columns=["Month", "Target", "Current", "SKU_Target", "SKU_Current", "No_Discrepancy"])
 
@@ -560,7 +560,9 @@ elif choice == OPT_WORK:
 elif choice == OPT_INV:
     # בחירת חודש לצפייה/עריכה
     current_month_str = datetime.now().strftime("%Y-%m")
-    all_months = sorted(list(set([current_month_str] + inv_history['Month'].tolist())), reverse=True)
+    # תיקון: הבטחת הצגת אפריל ומאי תמיד ברשימה
+    base_months = ["2026-05", "2026-04"]
+    all_months = sorted(list(set(base_months + inv_history['Month'].tolist())), reverse=True)
     
     c_sel, _ = st.columns([2, 2])
     selected_month_view = c_sel.selectbox("בחר חודש לספירה", all_months, index=0)
