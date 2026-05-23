@@ -1,5 +1,5 @@
-streamlit
-pandas
-supabase
-streamlit-calendar
-plotly
+streamlit>=1.32.0
+pandas>=2.0.0
+plotly>=5.18.0
+openpyxl>=3.1.0
+streamlit-calendar>=1.0.0
