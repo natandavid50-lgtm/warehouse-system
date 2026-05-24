@@ -1018,17 +1018,17 @@ if HAS_PLOTLY:
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_c, use_container_width=True)
 
-# Excel export
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as w:
-        mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
-        wdf.to_excel(w, index=False, sheet_name="ביצועים שבועי")
-    st.download_button(
-        "📥 ייצוא דוח Excel מלא", buf.getvalue(),
-        f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-else:
-    st.markdown('<div class="al al-amber">⚠️ <b>אין נתוני משימות לחודש הנבחר</b></div>', unsafe_allow_html=True)
+                # Excel export
+                    buf = io.BytesIO()
+            with pd.ExcelWriter(buf, engine="openpyxl") as w:
+                    mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
+                    wdf.to_excel(w, index=False, sheet_name="ביצועים שבועי")
+                    st.download_button(
+                    "📥 ייצוא דוח Excel מלא", buf.getvalue(),
+                    f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    else:
+                    st.markdown('<div class="al al-amber">⚠️ <b>אין נתוני משימות לחודש הנבחר</b></div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE: WORK ORDER — weekly board
