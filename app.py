@@ -1,1737 +1,675 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from streamlit_calendar import calendar
+import os
+import plotly.express as px
 import calendar as cal_lib
-import io
-import hashlib
-import random
 
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    HAS_PLOTLY = True
-except ImportError:
-    HAS_PLOTLY = False
-
-try:
-    from streamlit_calendar import calendar as st_calendar
-    HAS_CAL = True
-except ImportError:
-    HAS_CAL = False
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  CONFIG
-# ═══════════════════════════════════════════════════════════════════════════════
+# =========================
+# 1) App Config
+# =========================
 st.set_page_config(
-    page_title="WMS • אחים כהן",
+    page_title="אחים כהן | ניהול מחסן",
     layout="wide",
     initial_sidebar_state="expanded",
-    page_icon="📦",
 )
 
-ADMIN_HASH = hashlib.sha256(b"1234").hexdigest()
-SESSION_MINS = 60
-PRIS  = ["רגיל", "דחוף", "גבוה", "נמוך"]
-CATS  = ["כללי", "בטיחות", "לוגיסטיקה", "ניקיון", "תחזוקה", "ספירה"]
-RECUR = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
-MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
-             "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
+DB_FILE = "warehouse_management_db.csv"
+INV_TARGET_FILE = "inventory_target.csv" # קובץ לשמירת יעדי הספירה
+ADMIN_PASSWORD = "1234" 
 
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  CSS — Industrial Dark + Neon
-# ═══════════════════════════════════════════════════════════════════════════════
+# =========================
+# 2) Theme / CSS
+# =========================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap');
 
+/* =========================================
+    GLOBAL RESET & VARIABLES
+   ========================================= */
 :root {
-  --bg0:     #020810;
-  --bg1:     #040d1c;
-  --bg2:     #071526;
-  --card:    #0a1c35;
-  --card2:   #0d2240;
-  --card3:   #102850;
-  --b0:      rgba(0,212,255,.08);
-  --b1:      rgba(0,212,255,.2);
-  --b2:      rgba(0,212,255,.45);
-  --b3:      rgba(0,212,255,.7);
-  --cyan:    #00d4ff;
-  --green:   #00ff88;
-  --red:     #ff2d55;
-  --amber:   #ffb800;
-  --purple:  #bf5af2;
-  --txt:     #e2eeff;
-  --txt2:    #6b8aaa;
-  --txt3:    #3d5a75;
-  --mono:    'JetBrains Mono', monospace;
-  --orb:     'Orbitron', monospace;
-  --heb:     'Heebo', sans-serif;
-  --r:       14px;
-  --r2:      20px;
-  --shadow:  0 8px 32px rgba(0,0,0,.6);
-  --glow-c:  0 0 30px rgba(0,212,255,.25);
-  --glow-g:  0 0 30px rgba(0,255,136,.2);
-  --glow-r:  0 0 30px rgba(255,45,85,.25);
+    --bg-deep:          #050c1a;
+    --bg-panel:         #0a1628;
+    --bg-card:          #0d1f3c;
+    --bg-card-hover:    #112347;
+    --border:            rgba(56, 139, 253, 0.18);
+    --border-bright:    rgba(56, 139, 253, 0.45);
+    --accent-blue:      #388bfd;
+    --accent-cyan:      #00d4ff;
+    --accent-green:      #00e5a0;
+    --accent-amber:      #f59e0b;
+    --accent-red:        #ff4d6d;
+    --text-primary:      #ffffff;
+    --text-secondary:    #ffffff;
+    --text-muted:        #ffffff;
+    --glow-blue:        0 0 20px rgba(56, 139, 253, 0.35);
+    --glow-cyan:        0 0 20px rgba(0, 212, 255, 0.3);
+    --glow-green:       0 0 209px rgba(0, 229, 160, 0.3);
+    --radius-card:      16px;
+    --radius-pill:      50px;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
 html, body, [class*="css"] {
-  font-family: var(--heb) !important;
-  direction: rtl !important;
-  text-align: right !important;
+    font-family: "Heebo", sans-serif !important;
+    direction: rtl;
+    text-align: right;
 }
 
+/* =========================================
+    BACKGROUND — deep space grid
+   ========================================= */
 .stApp {
-  background-color: var(--bg0) !important;
-  background-image:
-    linear-gradient(rgba(0,212,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,.03) 1px, transparent 1px),
-    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0,212,255,.07) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,255,136,.04) 0%, transparent 60%);
-  background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
+    background-color: var(--bg-deep) !important;
+    background-image:
+        linear-gradient(rgba(56, 139, 253, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 139, 253, 0.04) 1px, transparent 1px),
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56, 139, 253, 0.12) 0%, transparent 70%);
+    background-size: 40px 40px, 40px 40px, 100% 100%;
 }
 
+/* =========================================
+    SIDEBAR FIX - תיקון לבעיית הטקסט בסגירה
+   ========================================= */
 [data-testid="stSidebar"] {
-  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%) !important;
-  border-left: 1px solid var(--b1) !important;
-  box-shadow: 4px 0 40px rgba(0,0,0,.5) !important;
+    background: var(--bg-panel) !important;
+    border-left: 1px solid var(--border) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
 }
-[data-testid="stSidebar"] * { color: var(--txt) !important; }
+
+[data-testid="stSidebar"][aria-expanded="false"] div {
+    display: none !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--text-primary) !important;
+}
+
 [data-testid="stSidebar"] .stRadio label {
-  background: transparent !important;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin: 3px 0;
-  transition: all .2s;
-  display: block;
-  font-weight: 600;
+    background: transparent !important;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    display: block;
 }
+
 [data-testid="stSidebar"] .stRadio label:hover {
-  background: rgba(0,212,255,.08) !important;
-  border-color: var(--b2) !important;
-  transform: translateX(-3px);
+    background: rgba(56, 139, 253, 0.12) !important;
+    border-color: var(--border-bright) !important;
 }
 
+/* =========================================
+    PAGE HEADER BANNER
+   ========================================= */
+.page-header-banner {
+    background: linear-gradient(135deg, var(--bg-card) 0%, #0b1e40 100%);
+    padding: 28px 36px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-bright);
+    box-shadow: var(--glow-blue), inset 0 1px 0 rgba(255,255,255,0.05);
+    margin-bottom: 28px;
+    text-align: center;
+    color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 300px; height: 120px;
+    background: radial-gradient(ellipse, rgba(56, 139, 253, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.page-header-banner h1 {
+    font-family: "Orbitron", monospace !important;
+    font-weight: 700 !important;
+    font-size: 1.8rem !important;
+    letter-spacing: 2px !important;
+    color: var(--accent-cyan) !important;
+    margin: 0 0 6px 0 !important;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5) !important;
+}
+
+.page-header-banner p {
+    color: var(--text-secondary) !important;
+    font-size: 0.95rem !important;
+    margin: 0 !important;
+    letter-spacing: 1px;
+}
+
+/* =========================================
+    METRICS
+   ========================================= */
 [data-testid="stMetric"] {
-  background: var(--card) !important;
-  padding: 22px 20px !important;
-  border-radius: var(--r) !important;
-  border: 1px solid var(--b1) !important;
-  box-shadow: var(--shadow) !important;
-  transition: all .25s !important;
-  position: relative;
-  overflow: hidden;
-}
-[data-testid="stMetric"]::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
-  width: 100%; height: 2px;
-  background: linear-gradient(90deg, var(--cyan), var(--green));
-}
-[data-testid="stMetric"]:hover {
-  transform: translateY(-4px) !important;
-  border-color: var(--b2) !important;
-  box-shadow: var(--glow-c), var(--shadow) !important;
-}
-[data-testid="stMetricLabel"] {
-  color: var(--txt2) !important;
-  font-size: .78rem !important;
-  font-weight: 600 !important;
-  letter-spacing: 1px !important;
-  text-transform: uppercase !important;
-}
-[data-testid="stMetricValue"] {
-  color: var(--cyan) !important;
-  font-family: var(--orb) !important;
-  font-weight: 800 !important;
-  font-size: 2.1rem !important;
-  text-shadow: 0 0 20px rgba(0,212,255,.4);
+    background: var(--bg-card) !important;
+    padding: 24px 20px !important;
+    border-radius: var(--radius-card) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-.stButton > button {
-  background: rgba(0,212,255,.08) !important;
-  border: 1px solid var(--b2) !important;
-  color: var(--cyan) !important;
-  border-radius: 10px !important;
-  font-weight: 700 !important;
-  font-family: var(--heb) !important;
-  transition: all .2s !important;
+[data-testid="stMetric"]:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: var(--glow-blue), 0 8px 32px rgba(0,0,0,0.4) !important;
+    border-color: var(--border-bright) !important;
 }
-.stButton > button:hover {
-  background: rgba(0,212,255,.18) !important;
-  box-shadow: var(--glow-c) !important;
-  transform: translateY(-1px);
+
+[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+}
+
+[data-testid="stMetricLabel"] {
+    color: var(--text-secondary) !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--accent-cyan) !important;
+    font-family: "Orbitron", monospace !important;
+    font-weight: 700 !important;
+    font-size: 2rem !important;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* =========================================
+    HOME PAGE — BIG BUTTONS (FIXED SIZES)
+   ========================================= */
+div[data-testid="stHorizontalBlock"] .stButton > button,
+div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+    min-height: 220px !important;
+    height: 220px !important;
+    width: 100% !important;
+    border-radius: var(--radius-card) !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: pre-wrap !important;
+}
+
+div[data-testid="stHorizontalBlock"] .stButton > button {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3) !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
+    border-top: 4px solid var(--accent-blue) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
+    border-top: 4px solid var(--accent-amber) !important;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
+    border-top: 4px solid var(--accent-green) !important;
+}
+
+/* =========================================
+    GENERAL BUTTONS
+   ========================================= */
+.stButton > button {
+    background: linear-gradient(135deg, rgba(56, 139, 253, 0.15), rgba(56, 139, 253, 0.05)) !important;
+    border: 1px solid var(--border-bright) !important;
+    color: var(--accent-cyan) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+/* =========================================
+    POPOVER (TASK CARDS)
+   ========================================= */
+div[data-testid="stPopover"] > button {
+    width: 100% !important;
+    min-height: 70px;
+    margin-bottom: 10px !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    text-align: right !important;
+}
+
+/* =========================================
+    WEEK DAY CHIP
+   ========================================= */
+.week-day-chip {
+    background: linear-gradient(135deg, var(--bg-card), #0b1e40);
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    padding: 12px 10px;
+    margin-bottom: 14px;
+    text-align: center;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    font-family: "Orbitron", monospace;
+    font-size: 0.85rem;
+    box-shadow: var(--glow-blue);
+}
+
+/* =========================================
+    FORM ELEMENTS
+   ========================================= */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+/* כותרות שדות הקלט - דריסה ללבן */
+label[data-testid="stWidgetLabel"] p {
+    color: #ffffff !important;
+}
+
+/* =========================================
+    SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* =========================================
+    FORM SUBMIT BUTTON
+   ========================================= */
+[data-testid="stForm"] .stButton > button {
+    background: linear-gradient(135deg, var(--accent-blue), #1a6fd4) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 12px 28px !important;
 }
 
 [data-testid="stForm"] {
-  background: var(--card) !important;
-  border: 1px solid var(--b1) !important;
-  border-radius: var(--r2) !important;
-  padding: 28px !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 24px !important;
 }
-[data-testid="stForm"] .stButton > button {
-  background: linear-gradient(135deg, #0088cc, #005fa3) !important;
-  color: #fff !important;
-  border: none !important;
-  box-shadow: 0 4px 20px rgba(0,136,204,.4) !important;
-}
-[data-testid="stForm"] .stButton > button:hover {
-  background: linear-gradient(135deg, #00a8ff, #0077cc) !important;
-  box-shadow: 0 6px 28px rgba(0,168,255,.5) !important;
-}
-
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div,
-.stNumberInput > div > div > input,
-.stDateInput > div > div > input {
-  background: var(--bg2) !important;
-  border: 1px solid var(--b1) !important;
-  border-radius: 10px !important;
-  color: var(--txt) !important;
-  font-family: var(--heb) !important;
-  transition: border-color .2s !important;
-}
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-  border-color: var(--b3) !important;
-  box-shadow: 0 0 0 2px rgba(0,212,255,.12) !important;
-}
-label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; font-weight: 600 !important; }
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg0); }
-::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
-
-div[data-testid="stPopover"] > button {
-  width: 100% !important;
-  min-height: 58px !important;
-  margin-bottom: 6px !important;
-  font-weight: 700 !important;
-  border-radius: 10px !important;
-  border: 1px solid var(--b1) !important;
-  background: var(--card) !important;
-  color: var(--txt) !important;
-  text-align: right !important;
-  transition: all .2s !important;
-}
-div[data-testid="stPopover"] > button:hover {
-  border-color: var(--b2) !important;
-  background: var(--card2) !important;
-}
-
-details > summary { color: var(--cyan) !important; font-weight: 700 !important; }
-[data-testid="stExpander"] {
-  background: var(--card) !important;
-  border: 1px solid var(--b1) !important;
-  border-radius: var(--r) !important;
-}
-
-[data-testid="stTabs"] [role="tab"] {
-  color: var(--txt2) !important;
-  font-weight: 700 !important;
-  transition: all .2s !important;
-}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-  color: var(--cyan) !important;
-  border-bottom: 2px solid var(--cyan) !important;
-}
-
-[data-testid="stDownloadButton"] > button {
-  background: linear-gradient(135deg, rgba(0,255,136,.15), rgba(0,255,136,.05)) !important;
-  border: 1px solid rgba(0,255,136,.4) !important;
-  color: var(--green) !important;
-}
-[data-testid="stDownloadButton"] > button:hover {
-  background: rgba(0,255,136,.25) !important;
-  box-shadow: var(--glow-g) !important;
-}
-
-[data-testid="stDataFrame"] {
-  border: 1px solid var(--b1) !important;
-  border-radius: var(--r) !important;
-}
-
-/* ── CUSTOM COMPONENTS ── */
-
-.mega-banner {
-  background: linear-gradient(135deg, var(--card) 0%, var(--card2) 50%, var(--card) 100%);
-  border: 1px solid var(--b2);
-  border-radius: var(--r2);
-  padding: 32px 40px;
-  margin-bottom: 28px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--glow-c), var(--shadow);
-}
-.mega-banner::before {
-  content: '';
-  position: absolute;
-  top: -80px; left: 50%;
-  transform: translateX(-50%);
-  width: 400px; height: 160px;
-  background: radial-gradient(ellipse, rgba(0,212,255,.15) 0%, transparent 70%);
-  pointer-events: none;
-}
-.mega-banner::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.mega-banner h1 {
-  font-family: var(--orb) !important;
-  font-size: 2rem !important;
-  font-weight: 900 !important;
-  color: var(--cyan) !important;
-  letter-spacing: 4px !important;
-  margin: 0 0 8px !important;
-  text-shadow: 0 0 40px rgba(0,212,255,.5) !important;
-}
-.mega-banner .sub {
-  color: var(--txt2);
-  font-size: .85rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.mega-banner .live-dot {
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 12px var(--green);
-  margin-left: 8px;
-  animation: pulse-dot 2s ease infinite;
-}
-@keyframes pulse-dot {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.5; transform:scale(.7); }
-}
-
-.kpi {
-  background: var(--card);
-  border: 1px solid var(--b1);
-  border-radius: var(--r2);
-  padding: 24px 20px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  transition: all .3s;
-  cursor: default;
-}
-.kpi:hover { transform: translateY(-5px); border-color: var(--b2); }
-.kpi::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; width: 100%; height: 3px;
-}
-.kpi-blue::before   { background: linear-gradient(90deg, var(--cyan), #005fa3); }
-.kpi-green::before  { background: linear-gradient(90deg, var(--green), #005f35); }
-.kpi-red::before    { background: linear-gradient(90deg, var(--red), #6b001e); }
-.kpi-amber::before  { background: linear-gradient(90deg, var(--amber), #6b4a00); }
-.kpi-purple::before { background: linear-gradient(90deg, var(--purple), #3d0070); }
-.kpi:hover.kpi-blue  { box-shadow: var(--glow-c); }
-.kpi:hover.kpi-green { box-shadow: var(--glow-g); }
-.kpi:hover.kpi-red   { box-shadow: var(--glow-r); }
-.kpi-icon {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  display: block;
-  filter: drop-shadow(0 0 12px currentColor);
-}
-.kpi-val {
-  font-family: var(--orb);
-  font-size: 2.8rem;
-  font-weight: 900;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.kpi-lbl {
-  font-size: .72rem;
-  color: var(--txt2);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.kpi-sub {
-  font-size: .75rem;
-  margin-top: 6px;
-  font-weight: 700;
-  font-family: var(--mono);
-}
-
-.prog {
-  background: rgba(255,255,255,.06);
-  border-radius: 20px;
-  height: 8px;
-  overflow: hidden;
-  margin: 6px 0;
-  position: relative;
-}
-.prog::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.06) 50%, transparent 100%);
-  animation: shimmer 2s ease infinite;
-}
-@keyframes shimmer { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
-.pfill {
-  height: 100%;
-  border-radius: 20px;
-  transition: width .8s cubic-bezier(.4,0,.2,1);
-}
-
-.tc {
-  background: var(--card);
-  border: 1px solid var(--b0);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 7px;
-  border-right: 4px solid var(--cyan);
-  transition: all .2s;
-  position: relative;
-  overflow: hidden;
-}
-.tc:hover { background: var(--card2); border-color: var(--b2); transform: translateX(-3px); }
-.tc.done   { border-right-color: var(--green) !important; opacity: .65; }
-.tc.urgent { border-right-color: var(--red)   !important; }
-.tc.high   { border-right-color: var(--amber) !important; }
-
-.b {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: .67rem;
-  font-weight: 800;
-  margin: 1px;
-  letter-spacing: .3px;
-}
-.b-blue   { background: rgba(0,212,255,.14);  color: #5dd8ff; border: 1px solid rgba(0,212,255,.25); }
-.b-green  { background: rgba(0,255,136,.12);  color: #00ff88; border: 1px solid rgba(0,255,136,.2); }
-.b-red    { background: rgba(255,45,85,.14);  color: #ff5577; border: 1px solid rgba(255,45,85,.25); }
-.b-amber  { background: rgba(255,184,0,.14);  color: #ffd040; border: 1px solid rgba(255,184,0,.25); }
-.b-purple { background: rgba(191,90,242,.14); color: #d070ff; border: 1px solid rgba(191,90,242,.25); }
-.b-gray   { background: rgba(255,255,255,.07);color: var(--txt2); border: 1px solid var(--b1); }
-
-.wchip {
-  background: linear-gradient(135deg, var(--card), var(--card2));
-  border: 1px solid var(--b2);
-  border-radius: 12px;
-  padding: 12px 8px;
-  margin-bottom: 10px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--glow-c);
-}
-.wchip .day-name {
-  font-family: var(--orb);
-  font-size: .72rem;
-  font-weight: 700;
-  color: var(--cyan);
-  letter-spacing: 1px;
-}
-.wchip .day-date { font-size: .68rem; color: var(--txt2); font-family: var(--mono); margin-top: 2px; }
-.wchip .day-count { font-size: .62rem; color: var(--green); font-weight: 700; margin-top: 4px; }
-
-.al { border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: .9rem; display: flex; align-items: flex-start; gap: 10px; }
-.al-red    { background: rgba(255,45,85,.1);   border: 1px solid rgba(255,45,85,.4); }
-.al-green  { background: rgba(0,255,136,.07);  border: 1px solid rgba(0,255,136,.25); }
-.al-amber  { background: rgba(255,184,0,.08);  border: 1px solid rgba(255,184,0,.3); }
-.al-cyan   { background: rgba(0,212,255,.07);  border: 1px solid rgba(0,212,255,.25); }
-
-.stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--b0); }
-.stat-row:last-child { border-bottom: none; }
-.stat-label { color: var(--txt2); font-size: .82rem; flex: 1; }
-.stat-val   { color: var(--txt);  font-size: .85rem; font-weight: 700; font-family: var(--mono); }
-
-.sec-h {
-  font-family: var(--orb);
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--cyan);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin: 24px 0 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--b1);
-  position: relative;
-}
-.sec-h::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; right: 0;
-  width: 60px; height: 2px;
-  background: var(--cyan);
-  box-shadow: var(--glow-c);
-}
-
-.mm { background: var(--card); border: 1px solid var(--b1); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: all .2s; }
-.mm:hover { border-color: var(--b2); transform: translateY(-2px); }
-.mm-icon { font-size: 1.5rem; }
-.mm-val  { font-family: var(--orb); font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
-.mm-lbl  { font-size: .72rem; color: var(--txt2); letter-spacing: .5px; }
-
-.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
-
-div[data-testid="stHorizontalBlock"] .stButton > button {
-  min-height: 220px !important;
-  height: 220px !important;
-  width: 100% !important;
-  border-radius: var(--r2) !important;
-  font-size: 1.5rem !important;
-  font-weight: 900 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  white-space: pre-wrap !important;
-  text-align: center !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# =========================
+# 3) Data Logic
+# =========================
+def load_data():
+    if os.path.exists(DB_FILE):
+        return pd.read_csv(DB_FILE).fillna("")
+    return pd.DataFrame(columns=["ID", "Task_Name", "Description", "Recurring", "Date", "Done_Dates"])
 
+def save_data(df):
+    df.to_csv(DB_FILE, index=False)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  SESSION STATE INIT
-# ═══════════════════════════════════════════════════════════════════════════════
-APP_VERSION = "2.0"   # bump this to wipe stale session data on redeploy
+def load_inv_target_history():
+    if os.path.exists(INV_TARGET_FILE):
+        df = pd.read_csv(INV_TARGET_FILE)
+        # תיקון קריטי: אם הנתונים קיימים אך ללא עמודת חודש, נשייך אותם לאפריל
+        if 'Month' not in df.columns:
+            df['Month'] = "2026-04"
+        return df
+    return pd.DataFrame(columns=["Month", "Target", "Current", "SKU_Target", "SKU_Current", "No_Discrepancy"])
 
-def init_state():
-    # Wipe session if it's from an old version (has tasks from previous seed)
-    if st.session_state.get("_version") != APP_VERSION:
-        keys_to_clear = [k for k in st.session_state.keys()]
-        for k in keys_to_clear:
-            del st.session_state[k]
-        st.session_state._version = APP_VERSION
+def get_inv_data_for_month(month_str):
+    history = load_inv_target_history()
+    row = history[history['Month'] == month_str]
+    if not row.empty:
+        return row.iloc[0].to_dict()
+    return {"Month": month_str, "Target": 0, "Current": 0, "SKU_Target": 0, "SKU_Current": 0, "No_Discrepancy": 0}
 
-    if "tasks" not in st.session_state:
-        st.session_state.tasks = pd.DataFrame(columns=[
-            "ID", "Task_Name", "Description", "Recurring", "Date",
-            "Done_Dates", "Priority", "Category"])
-        st.session_state.next_id = 1
-    if "inventory" not in st.session_state:
-        st.session_state.inventory = []
-    if "user_role"   not in st.session_state: st.session_state.user_role   = None
-    if "login_time"  not in st.session_state: st.session_state.login_time  = None
-    if "active_page" not in st.session_state: st.session_state.active_page = None
+def save_inv_target(month_str, target, current, sku_target, sku_current, no_discrepancy):
+    history = load_inv_target_history()
+    # עדכון שורה קיימת או הוספת חדשה
+    new_data = {
+        "Month": month_str,
+        "Target": target, 
+        "Current": current, 
+        "SKU_Target": sku_target, 
+        "SKU_Current": sku_current, 
+        "No_Discrepancy": no_discrepancy
+    }
+    if month_str in history['Month'].values:
+        history.loc[history['Month'] == month_str, ["Target", "Current", "SKU_Target", "SKU_Current", "No_Discrepancy"]] = \
+            [target, current, sku_target, sku_current, no_discrepancy]
+    else:
+        history = pd.concat([history, pd.DataFrame([new_data])], ignore_index=True)
+    history.to_csv(INV_TARGET_FILE, index=False)
 
-init_state()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  TASK LOGIC
-# ═══════════════════════════════════════════════════════════════════════════════
-def is_scheduled(base, rec, target):
-    if target < base: return False
-    diff = (target - base).days
-    if rec == "לא":        return diff == 0
-    if rec == "יומי":      return diff < 365
-    if rec == "שבועי":     return diff % 7 == 0
-    if rec == "דו-שבועי":  return diff % 14 == 0
-    if rec == "חודשי":     return target.day == base.day
+def is_scheduled_on(base_date, recurring, target_date):
+    if target_date < base_date: return False
+    diff = (target_date - base_date).days
+    if recurring == "לא": return diff == 0
+    if recurring == "יומי": return diff < 365
+    if recurring == "שבועי": return diff % 7 == 0
+    if recurring == "דו-שבועי": return diff % 14 == 0
+    if recurring == "חודשי": return target_date.day == base_date.day
     return False
 
-def tasks_for_date(df, dt, skip_weekend=True):
-    d = dt.date() if isinstance(dt, datetime) else dt
-    if skip_weekend and d.weekday() in [4, 5]: return []
-    dstr = d.strftime("%Y-%m-%d")
-    out = []
-    for idx, row in df.iterrows():
+def get_daily_status(df_input, target_dt, filter_weekends=True):
+    if isinstance(target_dt, datetime):
+        target_date = target_dt.date()
+    else:
+        target_date = target_dt
+
+    if filter_weekends and target_date.weekday() in [4, 5]:
+        return []
+
+    target_str = target_date.strftime("%Y-%m-%d")
+    scheduled = []
+    for idx, row in df_input.iterrows():
         try:
-            base = pd.to_datetime(row["Date"]).date()
-            if is_scheduled(base, row["Recurring"], d):
-                done = [x for x in str(row["Done_Dates"]).split(",") if x]
-                out.append({
+            base_date = pd.to_datetime(row["Date"]).date()
+            if is_scheduled_on(base_date, row["Recurring"], target_date):
+                done_list = str(row["Done_Dates"]).split(",")
+                scheduled.append({
                     "idx": idx, "id": row["ID"], "name": row["Task_Name"],
-                    "desc": str(row.get("Description", "")),
-                    "priority": str(row.get("Priority", "רגיל")),
-                    "category": str(row.get("Category", "כללי")),
-                    "is_done": dstr in done, "date": dstr,
-                    "rec": str(row.get("Recurring", "")),
+                    "desc": row["Description"], "is_done": target_str in done_list,
+                    "date": target_str
                 })
         except: continue
-    return out
+    return scheduled
 
-def mark_done(idx, dstr):
-    existing = [x for x in str(st.session_state.tasks.at[idx, "Done_Dates"]).split(",") if x]
-    if dstr not in existing: existing.append(dstr)
-    st.session_state.tasks.at[idx, "Done_Dates"] = ",".join(existing)
-
-def get_overdue(days=7):
+def get_overdue_tasks(df_input):
     today = datetime.now().date()
-    out = []
-    for i in range(1, days + 1):
-        d = today - timedelta(days=i)
-        for t in tasks_for_date(st.session_state.tasks, d):
-            if not t["is_done"]: out.append(t)
-    return out
+    overdue = []
+    for i in range(1, 8):
+        check_date = today - timedelta(days=i)
+        tasks = get_daily_status(df_input, check_date, filter_weekends=True)
+        for t in tasks:
+            if not t["is_done"]:
+                overdue.append(t)
+    return overdue
 
-def week_stats(days=14):
-    today = datetime.now().date()
-    rows = []
-    for i in range(days - 1, -1, -1):
-        d = today - timedelta(days=i)
-        ts = tasks_for_date(st.session_state.tasks, d)
-        tot = len(ts); don = sum(1 for t in ts if t["is_done"])
-        rows.append({
-            "date": d, "תאריך": d.strftime("%d/%m"),
-            "בוצע": don, "מתוכנן": tot,
-            "אחוז": round(don / tot * 100) if tot else 0
-        })
-    return pd.DataFrame(rows)
+# =========================
+# 4) Main Flow
+# =========================
+if "user_role" not in st.session_state:
+    st.session_state.user_role = None
 
-def monthly_stats(year, month):
-    _, nd = cal_lib.monthrange(year, month)
-    rows = []
-    for day in range(1, nd + 1):
-        d = datetime(year, month, day).date()
-        ts = tasks_for_date(st.session_state.tasks, d)
-        if ts:
-            don = sum(1 for t in ts if t["is_done"])
-            rows.append({"יום": day, "בוצע": don, "מתוכנן": len(ts),
-                         "אחוז": round(don / len(ts) * 100)})
-    return pd.DataFrame(rows) if rows else pd.DataFrame()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  UI HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
-def pbar(pct, color=None, height=8):
-    c = color or ("#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55")
-    glow = f"0 0 10px {c}66"
-    return (f'<div class="prog" style="height:{height}px">'
-            f'<div class="pfill" style="width:{min(pct,100)}%;background:{c};box-shadow:{glow}"></div>'
-            f'</div>')
-
-def badge(text, kind="blue"):
-    return f'<span class="b b-{kind}">{text}</span>'
-
-def pri_badge(p):
-    return badge(p, {"דחוף":"red","גבוה":"amber","רגיל":"blue","נמוך":"gray"}.get(p,"blue"))
-
-def cat_badge(c):
-    return badge(c, {"בטיחות":"red","ספירה":"blue","תחזוקה":"amber",
-                     "לוגיסטיקה":"purple","ניקיון":"green","כללי":"gray"}.get(c,"gray"))
-
-def task_card_html(t):
-    cls = "tc" + (" done" if t["is_done"] else
-                  " urgent" if t["priority"] == "דחוף" else
-                  " high"   if t["priority"] == "גבוה" else "")
-    icon = "✅" if t["is_done"] else ("🚨" if t["priority"] == "דחוף" else "⏳")
-    rec  = f' {badge(t["rec"],"gray")}' if t.get("rec") else ""
-    desc = (f'<div style="color:var(--txt2);font-size:.78rem;margin-top:5px;'
-            f'font-family:var(--mono)">{t["desc"]}</div>') if t.get("desc") else ""
-    return (f'<div class="{cls}">'
-            f'{icon} <b style="font-size:.95rem">{t["name"]}</b>'
-            f' {pri_badge(t["priority"])} {cat_badge(t["category"])}{rec}'
-            f'{desc}</div>')
-
-def kpi_card(val, label, sub="", color="var(--cyan)", icon="📊", kind="blue"):
-    glow = {"blue":"var(--glow-c)","green":"var(--glow-g)","red":"var(--glow-r)"}.get(kind,"")
-    return (f'<div class="kpi kpi-{kind}" style="box-shadow:{glow}">'
-            f'<span class="kpi-icon" style="color:{color}">{icon}</span>'
-            f'<div class="kpi-val" style="color:{color};text-shadow:0 0 20px {color}66">{val}</div>'
-            f'<div class="kpi-lbl">{label}</div>'
-            f'{"<div class=kpi-sub style=color:"+color+";opacity:.7>"+sub+"</div>" if sub else ""}'
-            f'</div>')
-
-def sec_header(title):
-    st.markdown(f'<div class="sec-h">{title}</div>', unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  AUTH
-# ═══════════════════════════════════════════════════════════════════════════════
-def check_timeout():
-    lt = st.session_state.get("login_time")
-    if lt and (datetime.now() - lt).total_seconds() > SESSION_MINS * 60:
-        st.session_state.user_role = None
-        st.session_state.login_time = None
-        st.rerun()
-
-def login_screen():
-    st.markdown("""
-    <div class="mega-banner">
-      <h1>⬡ אחים כהן · WMS ⬡</h1>
-      <div class="sub">
-        <span class="live-dot"></span>
-        מערכת ניהול מחסן מתקדמת
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+if st.session_state.user_role is None:
+    st.markdown('<div class="page-header-banner"><h1>אחים כהן • ניהול מחסן</h1><p>מערכת ניהול משימות ובקרה</p></div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
+    
     with c1:
         with st.popover("🔑\nמנהל WMS", use_container_width=True):
-            st.markdown("#### 🔐 כניסת מנהל מערכת")
-            st.markdown('<div style="color:var(--txt2);font-size:.82rem;margin-bottom:12px">גישה מלאה לכל מודולי המערכת</div>', unsafe_allow_html=True)
-            pwd = st.text_input("סיסמה", type="password", key="lpwd")
-            if st.button("🚀 כניסה למערכת", use_container_width=True):
-                if hashlib.sha256(pwd.encode()).hexdigest() == ADMIN_HASH:
+            entered_pwd = st.text_input("הזן סיסמת ניהול", type="password")
+            if st.button("אישור כניסה", use_container_width=True):
+                if entered_pwd == ADMIN_PASSWORD:
                     st.session_state.user_role = "מנהל WMS"
-                    st.session_state.login_time = datetime.now()
                     st.rerun()
                 else:
-                    st.error("❌ סיסמה שגויה")
+                    st.error("סיסמה שגויה")
+                        
     with c2:
-        if st.button("📦\nצוות מחסן", use_container_width=True):
+        if st.button("📦\nצוות מחסן", use_container_width=True): 
             st.session_state.user_role = "צוות מחסן"
-            st.session_state.login_time = datetime.now()
             st.rerun()
+            
     with c3:
-        if st.button("📊\nהנהלה", use_container_width=True):
+        if st.button("📊\nהנהלה", use_container_width=True): 
             st.session_state.user_role = "הנהלה"
-            st.session_state.login_time = datetime.now()
             st.rerun()
-
-    st.markdown("---")
-    df = st.session_state.tasks
-    inv_count = len(st.session_state.get("inventory", []))
-    c1, c2, c3 = st.columns(3)
-    c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", kind="blue"), unsafe_allow_html=True)
-    c2.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="⚠️", kind="red", color="var(--red)"), unsafe_allow_html=True)
-    c3.markdown(kpi_card(inv_count, "חודשי ספירה", icon="📦", kind="blue"), unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: DASHBOARD
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_dashboard():
-    df = st.session_state.tasks
-    today = datetime.now()
-    today_str = today.strftime("%Y-%m-%d")
-
-    # ── Overdue Alert ──
-    overdue = get_overdue()
-    if overdue:
-        st.markdown(
-            f'<div class="al al-red">🚨 <div><b style="color:var(--red);font-size:1rem">'
-            f'{len(overdue)} משימות שלא בוצעו בשבוע האחרון</b>'
-            f'<div style="color:var(--txt2);font-size:.8rem;margin-top:2px">'
-            f'לחץ להצגה וסגירה</div></div></div>',
-            unsafe_allow_html=True)
-        with st.expander("📋 פירוט פיגורים וסגירתם"):
-            for t in overdue:
-                c1, c2 = st.columns([5, 1])
-                c1.markdown(task_card_html(t), unsafe_allow_html=True)
-                if c2.button("✓", key=f"ov_{t['id']}_{t['date']}"):
-                    mark_done(t["idx"], t["date"]); st.rerun()
-
-    # ── Date selector ──
-    dc, _ = st.columns([1, 3])
-    sel = dc.date_input("📅 תאריך", today)
-    dstr = sel.strftime("%Y-%m-%d")
-
-    ts = tasks_for_date(df, sel)
-    tot = len(ts); don = sum(1 for t in ts if t["is_done"])
-    pct = round(don / tot * 100) if tot else 0
-    pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
-    lbl = "היום" if sel == today.date() else sel.strftime("%d/%m")
-
-    # ── Big KPI row ──
-    k1, k2, k3, k4, k5 = st.columns(5)
-    pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
-    k1.markdown(kpi_card(tot,     f"משימות {lbl}", icon="📋", kind="blue"), unsafe_allow_html=True)
-    k2.markdown(kpi_card(don,     "בוצעו",         icon="✅", kind="green", color="var(--green)"), unsafe_allow_html=True)
-    k3.markdown(kpi_card(tot-don, "נותרו",          icon="⏳",
-                         kind="red" if tot-don > 3 else "blue",
-                         color="var(--red)" if tot-don > 3 else "var(--cyan)"), unsafe_allow_html=True)
-    k4.markdown(kpi_card(f"{pct}%","ביצוע",
-                         sub=f"{'🔥 מצוין' if pct>=80 else '⚠️ בינוני' if pct>=50 else '❌ נמוך'}",
-                         icon="📈", kind="green" if pct>=80 else "red", color=pct_color), unsafe_allow_html=True)
-    k5.markdown(kpi_card(len(overdue),"פיגורים",   icon="🚨", kind="red",  color="var(--red)"), unsafe_allow_html=True)
-
-    st.markdown(f'<div style="margin:8px 0 20px">{pbar(pct, pct_color, 10)}</div>', unsafe_allow_html=True)
-
-
-    # ── Main content: tasks list + charts side by side ──
-    col_l, col_r = st.columns([5, 4])
-
-    with col_l:
-        sec_header(f"📋 משימות ל-{lbl}")
-        if ts:
-            # group by category
-            by_cat = {}
-            for t in sorted(ts, key=lambda x: (x["is_done"], x["priority"] != "דחוף")):
-                by_cat.setdefault(t["category"], []).append(t)
-            for cat, cat_tasks in by_cat.items():
-                don_c = sum(1 for t in cat_tasks if t["is_done"])
-                p = round(don_c / len(cat_tasks) * 100)
-                st.markdown(f'<div style="margin:14px 0 6px;display:flex;align-items:center;gap:8px">'
-                            f'{cat_badge(cat)} '
-                            f'<span style="color:var(--txt2);font-size:.75rem">{don_c}/{len(cat_tasks)}</span>'
-                            f'{pbar(p)}</div>', unsafe_allow_html=True)
-                for t in cat_tasks:
-                    ca, cb = st.columns([7, 1])
-                    ca.markdown(task_card_html(t), unsafe_allow_html=True)
-                    if not t["is_done"] and cb.button("✓", key=f"d_{t['id']}_{dstr}_{cat}"):
-                        mark_done(t["idx"], dstr); st.rerun()
-        else:
-            st.markdown('<div class="al alert alert-gold">ℹ️ <b>אין משימות לתאריך זה</b></div>', unsafe_allow_html=True)
-
-    with col_r:
-        sec_header("📊 מבט מהיר")
-
-        # Category breakdown pie
-        if HAS_PLOTLY and ts:
-            cat_done = {}; cat_tot = {}
-            for t in ts:
-                c = t["category"]
-                cat_tot[c] = cat_tot.get(c, 0) + 1
-                if t["is_done"]: cat_done[c] = cat_done.get(c, 0) + 1
-            cat_names = list(cat_tot.keys())
-            cat_vals  = [cat_tot[c] for c in cat_names]
-            CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
-                    "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
-            colors = [CMAP.get(c, "#8899aa") for c in cat_names]
-            fig_pie = go.Figure(go.Pie(
-                labels=cat_names, values=cat_vals,
-                hole=.6, marker_colors=colors,
-                textinfo="label+percent",
-                textfont=dict(size=11, color="#e2eeff"),
-                hovertemplate="<b>%{label}</b><br>%{value} משימות<extra></extra>",
-            ))
-            fig_pie.add_annotation(
-                text=f"<b>{tot}</b><br><span style='font-size:10'>סה\"כ</span>",
-                x=.5, y=.5, font_size=18, font_color="#c9a84c", showarrow=False)
-            fig_pie.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", height=260,
-                margin=dict(t=10, b=0, l=0, r=0),
-                showlegend=True,
-                legend=dict(bgcolor="rgba(0,0,0,0)", font_color="#e2eeff", font_size=11),
-                font=dict(family="Heebo"))
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-        # Priority breakdown
-        st.markdown("**עדיפות:**")
-        for pri, clr in [("דחוף","#ff2d55"),("גבוה","#ffb800"),("רגיל","#c9a84c"),("נמוך","#8899aa")]:
-            cnt = sum(1 for t in ts if t["priority"] == pri)
-            don_c = sum(1 for t in ts if t["priority"] == pri and t["is_done"])
-            if cnt:
-                p = round(don_c / cnt * 100)
-                st.markdown(
-                    f'<div class="stat-row"><div class="tl-dot" style="background:{clr};box-shadow:0 0 8px {clr}66"></div>'
-                    f'<span class="stat-label">{pri}</span>'
-                    f'<span class="stat-val" style="color:{clr}">{don_c}/{cnt}</span></div>'
-                    f'{pbar(p, clr, 5)}', unsafe_allow_html=True)
-
-    # ── Weekly chart ──
-    st.markdown("---")
-    sec_header("📈 מגמת ביצועים — 14 ימים אחרונים")
-    wdf = week_stats(14)
-    if HAS_PLOTLY:
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=wdf["תאריך"], y=wdf["מתוכנן"],
-            name="מתוכנן", marker_color="rgba(0,212,255,.15)",
-            marker_line_color="rgba(0,212,255,.3)", marker_line_width=1))
-        fig.add_trace(go.Bar(
-            x=wdf["תאריך"], y=wdf["בוצע"],
-            name="בוצע", marker_color="rgba(0,255,136,.65)",
-            marker_line_color="rgba(0,255,136,.8)", marker_line_width=1))
-        fig.add_trace(go.Scatter(
-            x=wdf["תאריך"], y=wdf["אחוז"],
-            name="אחוז%", yaxis="y2", mode="lines+markers",
-            line=dict(color="#c9a84c", width=2.5, dash="solid"),
-            marker=dict(size=8, color="#c9a84c",
-                        line=dict(color="#ffffff", width=1.5)),
-            fill="tozeroy", fillcolor="rgba(0,212,255,.06)"))
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Heebo", color="#e2eeff"), height=340,
-            barmode="overlay", margin=dict(t=10, b=40, l=0, r=0),
-            legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h",
-                        y=1.12, font_size=12),
-            yaxis=dict(gridcolor="rgba(255,255,255,.04)", title="",
-                       tickfont=dict(size=11)),
-            yaxis2=dict(overlaying="y", side="left", range=[0, 115],
-                        gridcolor="rgba(0,212,255,.05)", showgrid=False,
-                        title="", tickfont=dict(size=11)),
-            xaxis=dict(gridcolor="rgba(255,255,255,.03)", tickfont=dict(size=11)),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # ── Monthly analysis ──
-    st.markdown("---")
-    sec_header("📅 ניתוח חודשי מעמיק")
-
-    mc, yc, _, exp_col = st.columns([1, 1, 1, 1])
-    sm = mc.selectbox("חודש", range(1, 13), index=today.month - 1,
-                      format_func=lambda x: MONTHS_HE[x - 1])
-    sy = yc.selectbox("שנה", [2025, 2026], index=1)
-
-    mdf = monthly_stats(sy, sm)
-    if not mdf.empty:
-        avg = round(mdf["אחוז"].mean())
-        best = int(mdf.loc[mdf["אחוז"].idxmax(), "יום"])
-        worst = int(mdf.loc[mdf["אחוז"].idxmin(), "יום"])
-
-        ma, mb, mc2, md = st.columns(4)
-        ma.metric("ממוצע חודשי",    f"{avg}%",  delta="יעד: 85%")
-        mb.metric("יום שיא",        f"{best} בחודש")
-        mc2.metric("יום חלש",       f"{worst} בחודש")
-        md.metric("סה\"כ בוצע",     int(mdf["בוצע"].sum()))
-
-        if HAS_PLOTLY:
-            c_bar, c_heat = st.columns([3, 2])
-            with c_bar:
-                colors_m = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
-                            for v in mdf["אחוז"]]
-                fig_m = go.Figure()
-                fig_m.add_trace(go.Bar(
-                    x=mdf["יום"], y=mdf["אחוז"],
-                    marker_color=colors_m,
-                    text=[f"{v}%" for v in mdf["אחוז"]],
-                    textposition="outside", textfont=dict(size=9, color="#e2eeff")))
-                fig_m.add_hline(y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
-                                annotation_text="יעד 85%",
-                                annotation_font_color="#00ff88",
-                                annotation_font_size=11)
-                fig_m.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="Heebo", color="#e2eeff"), height=300,
-                    margin=dict(t=30, b=30, l=0, r=0), showlegend=False,
-                    yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
-                    xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
-                st.plotly_chart(fig_m, use_container_width=True)
-
-            with c_heat:
-                # Category breakdown for month
-                cat_m = {}
-                _, nd = cal_lib.monthrange(sy, sm)
-                for day in range(1, nd + 1):
-                    for t in tasks_for_date(st.session_state.tasks,
-                                            datetime(sy, sm, day).date()):
-                        c = t["category"]
-                        cat_m.setdefault(c, {"done": 0, "total": 0})
-                        cat_m[c]["total"] += 1
-                        if t["is_done"]: cat_m[c]["done"] += 1
-                if cat_m:
-                    cdf = pd.DataFrame([
-                        {"קטגוריה": k, "אחוז": round(v["done"]/max(v["total"],1)*100),
-                         "בוצע": v["done"], "מתוכנן": v["total"]}
-                        for k, v in cat_m.items()]).sort_values("אחוז", ascending=True)
-                    CMAP2 = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
-                             "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
-                    fig_c = go.Figure(go.Bar(
-                        x=cdf["אחוז"], y=cdf["קטגוריה"],
-                        orientation="h",
-                        marker_color=[CMAP2.get(c,"#8899aa") for c in cdf["קטגוריה"]],
-                        text=[f"{v}%" for v in cdf["אחוז"]],
-                        textposition="outside",
-                        textfont=dict(color="#e2eeff", size=11)))
-                    fig_c.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Heebo", color="#e2eeff"), height=300,
-                        margin=dict(t=10, b=10, l=80, r=60),
-                        xaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
-                        yaxis=dict(gridcolor="rgba(255,255,255,.03)"),
-                        showlegend=False)
-                    st.plotly_chart(fig_c, use_container_width=True)
-
-        # Excel export
-        buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine="openpyxl") as w:
-            mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
-            wdf.to_excel(w, index=False, sheet_name="ביצועים שבועי")
-        st.download_button(
-            "📥 ייצוא דוח Excel מלא", buf.getvalue(),
-            f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    else:
-        st.markdown('<div class="al alert alert-gold">⚠️ אין נתוני משימות לחודש הנבחר</div>', unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: WORK ORDER — weekly board
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_work():
-    df = st.session_state.tasks
-    today = datetime.now()
-    start = today - timedelta(days=(today.weekday() + 1) % 7)
-    day_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
-    cols = st.columns(5)
-
-    for i, name in enumerate(day_names):
-        curr = start + timedelta(days=i)
-        ts = tasks_for_date(df, curr)
-        don = sum(1 for t in ts if t["is_done"])
-        pct = round(don / len(ts) * 100) if ts else 0
-        is_today = curr.date() == today.date()
-        pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
-
-        with cols[i]:
-            border_color = "var(--cyan)" if is_today else "var(--b2)"
-            bg = "rgba(0,212,255,.05)" if is_today else "transparent"
-            st.markdown(f"""
-            <div class="wchip" style="border-color:{border_color};background:linear-gradient(135deg,var(--surface),{bg})">
-              {'<span style="color:var(--ember);font-size:.6rem;font-family:var(--mono)">▸ היום ◂</span><br>' if is_today else ""}
-              <div class="day-name">{name}</div>
-              <div class="day-date">{curr.strftime('%d/%m/%y')}</div>
-              <div class="day-count">{don}/{len(ts)} ✓</div>
-            </div>
-            {pbar(pct, pct_color, 5)}
-            """, unsafe_allow_html=True)
-
-            # group by priority within day
-            urgent = [t for t in ts if t["priority"] == "דחוף"]
-            rest   = [t for t in ts if t["priority"] != "דחוף"]
-
-            for t in urgent + rest:
-                ico = "✅" if t["is_done"] else ("🚨" if t["priority"] == "דחוף" else "⏳")
-                lbl = f"{ico} {t['name']}"
-                with st.popover(lbl, use_container_width=True):
-                    st.markdown(f"**📋 {t['name']}**")
-                    st.markdown(f"**עדיפות:** {t['priority']}")
-                    st.markdown(f"**קטגוריה:** {t['category']}")
-                    if t["desc"]:     st.markdown(f"**📝 פירוט:** {t['desc']}")
-                    if not t["is_done"]:
-                        if st.button("✅ סמן כבוצע", key=f"w_{t['id']}_{i}_{curr.date()}"):
-                            mark_done(t["idx"], curr.strftime("%Y-%m-%d"))
-                            st.rerun()
-
-    # end of page_work
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: CALENDAR
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_calendar():
-    df = st.session_state.tasks
-    today = datetime.now().date()
-    events = []
-
-    for _, row in df.iterrows():
-        base = pd.to_datetime(row["Date"]).date()
-        for i in range(180):
-            d = base + timedelta(days=i)
-            if is_scheduled(base, row["Recurring"], d):
-                done = d.strftime("%Y-%m-%d") in str(row["Done_Dates"])
-                CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
-                        "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
-                base_color = CMAP.get(str(row.get("Category","")), "#388bfd")
-                color = "#00ff88" if done else ("#ff2d55" if d < today else base_color)
-                events.append({
-                    "title": f"{'✅ ' if done else ''}{row['Task_Name']}",
-                    "start": d.strftime("%Y-%m-%d"),
-                    "color": color,
-                    "allDay": True,
-                })
-
-    # Legend
-    CATS_COLORS = [("בטיחות","#ff2d55"),("ספירה","#c9a84c"),("תחזוקה","#ffb800"),
-                   ("לוגיסטיקה","#c084fc"),("ניקיון","#00ff88"),("כללי","#8899aa")]
-    legend_html = " &nbsp; ".join(
-        f'<span style="color:{c}">⬤</span> <span style="color:var(--txt2);font-size:.78rem">{n}</span>'
-        for n, c in CATS_COLORS)
-    st.markdown(
-        f'<div style="margin-bottom:12px;padding:10px 16px;background:var(--surface);'
-        f'border:1px solid var(--rule);border-radius:10px">'
-        f'{legend_html} &nbsp;&nbsp; '
-        f'<span style="color:#00ff88">⬤</span> <span style="color:var(--txt2);font-size:.78rem">בוצע</span> &nbsp; '
-        f'<span style="color:#ff2d55">⬤</span> <span style="color:var(--txt2);font-size:.78rem">מפוגר</span>'
-        f'</div>',
-        unsafe_allow_html=True)
-
-    st.markdown(f'<div style="color:var(--txt2);font-size:.8rem;margin-bottom:12px;font-family:var(--mono)">'
-                f'◈ {len(events)} אירועים | 6 חודשים קדימה</div>', unsafe_allow_html=True)
-
-    if HAS_CAL:
-        st_calendar(events=events,
-            options={
-                "direction": "rtl", "locale": "he",
-                "initialView": "dayGridMonth", "height": 680,
-                "headerToolbar": {
-                    "right": "today prev,next",
-                    "center": "title",
-                    "left": "dayGridMonth,timeGridWeek,listMonth"
-                }
-            },
-            custom_css="""
-              .fc { background:#0a1c35; color:#e2eeff; border-radius:16px; padding:14px; }
-              .fc-toolbar-title { font-family:'Orbitron',monospace; color:#c9a84c; font-size:1.1rem; }
-              .fc-button { background:#0d2240!important; border:1px solid rgba(0,212,255,.4)!important;
-                           border-radius:8px!important; color:#c9a84c!important; font-weight:700!important; }
-              .fc-button:hover { background:rgba(0,212,255,.15)!important; }
-              .fc-button-active { background:rgba(0,212,255,.2)!important; }
-              .fc-day-today { background:rgba(0,212,255,.08)!important; border:1px solid rgba(0,212,255,.3)!important; }
-              .fc-event { border-radius:5px!important; border:none!important; font-size:.72rem; font-weight:600; }
-              .fc-daygrid-day-number { color:#7a90b0; font-size:.8rem; }
-              .fc-col-header-cell { background:#071526; }
-              .fc-col-header-cell-cushion { color:#c9a84c; font-weight:700; font-size:.8rem; }
-            """)
-    else:
-        st.warning("💡 התקן `streamlit-calendar` לתצוגה מלאה")
-        upcoming = sorted([e for e in events if e["start"] >= today.strftime("%Y-%m-%d")],
-                          key=lambda x: x["start"])[:50]
-        if upcoming:
-            edf = pd.DataFrame(upcoming)[["start", "title"]]
-            edf.columns = ["תאריך", "משימה"]
-            st.dataframe(edf, use_container_width=True, height=500)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: MANAGE TASKS
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_manage():
-    df = st.session_state.tasks
-
-    # ── Filters ──
-    f1, f2, f3, f4 = st.columns(4)
-    fsearch = f1.text_input("🔍 חיפוש", placeholder="שם משימה...")
-    fpri    = f2.selectbox("עדיפות",   ["הכל"] + PRIS)
-    fcat    = f3.selectbox("קטגוריה",  ["הכל"] + CATS)
-    frec    = f4.selectbox("תדירות",   ["הכל"] + RECUR)
-
-    filt = df.copy()
-    if fsearch: filt = filt[filt["Task_Name"].str.contains(fsearch, na=False, case=False)]
-    if fpri   != "הכל": filt = filt[filt["Priority"]    == fpri]
-    if fcat   != "הכל": filt = filt[filt["Category"]    == fcat]
-    if frec   != "הכל": filt = filt[filt["Recurring"]   == frec]
-
-    st.markdown(
-        f'<div style="display:flex;align-items:center;gap:12px;margin:10px 0 16px">'
-        f'<span style="color:var(--txt2);font-size:.82rem;font-family:var(--mono)">'
-        f'◈ {len(filt)} / {len(df)} משימות</span>'
-        f'<div style="flex:1">{pbar(round(len(filt)/max(len(df),1)*100), height=4)}</div>'
-        f'</div>', unsafe_allow_html=True)
-
-    # Tab view: All / By category
-    tab_all, tab_cat = st.tabs(["📋 כל המשימות", "🏷️ לפי קטגוריה"])
-
-    with tab_all:
-        for idx, row in filt.iterrows():
-            ci, ce, cd = st.columns([5, 1, 1])
-            ci.markdown(
-                f'<div class="tc">'
-                f'<b style="font-size:.95rem">{row["Task_Name"]}</b> '
-                f'{pri_badge(row.get("Priority","רגיל"))} '
-                f'{cat_badge(row.get("Category",""))} '
-                f'{badge(row.get("Recurring",""),"gray")}'
-                f'{"<div style=color:var(--txt2);font-size:.78rem;margin-top:4px;font-family:var(--mono)>"+str(row.get("Description",""))+"</div>" if row.get("Description") else ""}'
-                f'</div>', unsafe_allow_html=True)
-
-            with ce:
-                with st.popover("✏️", use_container_width=True):
-                    nn = st.text_input("שם", value=row["Task_Name"], key=f"en{row['ID']}")
-                    nd = st.text_area("תיאור", value=str(row.get("Description", "")), key=f"ed{row['ID']}")
-                    np = st.selectbox("עדיפות", PRIS,
-                        index=PRIS.index(row.get("Priority","רגיל")) if row.get("Priority") in PRIS else 0,
-                        key=f"ep{row['ID']}")
-                    nc = st.selectbox("קטגוריה", CATS,
-                        index=CATS.index(row.get("Category","כללי")) if row.get("Category") in CATS else 0,
-                        key=f"ec{row['ID']}")
-                    nr = st.selectbox("תדירות", RECUR,
-                        index=RECUR.index(row.get("Recurring","יומי")) if row.get("Recurring") in RECUR else 0,
-                        key=f"er{row['ID']}")
-                    nd2 = st.date_input("תאריך", value=pd.to_datetime(row["Date"]).date(),
-                                        key=f"edt{row['ID']}")
-                    if st.button("💾 שמור שינויים", key=f"sv{row['ID']}", use_container_width=True):
-                        st.session_state.tasks.at[idx, "Task_Name"]   = nn
-                        st.session_state.tasks.at[idx, "Description"] = nd
-                        st.session_state.tasks.at[idx, "Priority"]    = np
-                        st.session_state.tasks.at[idx, "Category"]    = nc
-                        st.session_state.tasks.at[idx, "Recurring"]   = nr
-                        st.session_state.tasks.at[idx, "Date"]        = nd2.strftime("%Y-%m-%d")
-                        st.rerun()
-
-            with cd:
-                ck = f"cfm_{row['ID']}"
-                if not st.session_state.get(ck):
-                    if st.button("🗑️", key=f"dl{row['ID']}", help="מחק משימה"):
-                        st.session_state[ck] = True; st.rerun()
-                else:
-                    st.warning("בטוח?")
-                    if st.button("כן", key=f"cy{row['ID']}"):
-                        st.session_state.tasks = st.session_state.tasks.drop(idx).reset_index(drop=True)
-                        st.session_state.pop(ck, None); st.rerun()
-                    if st.button("לא", key=f"cn{row['ID']}"):
-                        st.session_state.pop(ck, None); st.rerun()
-
-    with tab_cat:
-        for cat in CATS:
-            cat_tasks = filt[filt["Category"] == cat]
-            if cat_tasks.empty: continue
-            with st.expander(f"{cat_badge(cat)} {cat} — {len(cat_tasks)} משימות", expanded=False):
-                for idx, row in cat_tasks.iterrows():
-                    st.markdown(
-                        f'<div class="tc">'
-                        f'<b>{row["Task_Name"]}</b> {pri_badge(row.get("Priority","רגיל"))} '
-                        f'{badge(row.get("Recurring",""),"gray")}'
-                        f'{"<br><span style=color:var(--txt2);font-size:.78rem>"+str(row.get("Description",""))+"</span>" if row.get("Description") else ""}'
-                        f'</div>', unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: ADD TASK
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_add():
-    c_form, c_preview = st.columns([2, 1])
-
-    with c_form:
-        with st.form("add_form", clear_on_submit=True):
-            sec_header("➕ הוספת משימה חדשה")
-            a, b = st.columns(2)
-            name = a.text_input("שם המשימה *", placeholder="לדוגמה: בדיקת מלאי אזור D")
-            freq = b.selectbox("תדירות חזרה", RECUR)
-            desc = st.text_area("פירוט / הוראות ביצוע",
-                                placeholder="תאר את המשימה בפירוט: מה לבדוק, איך לבצע, מה לתעד...")
-            c, d = st.columns(2)
-            pri  = c.selectbox("עדיפות",   PRIS)
-            cat  = d.selectbox("קטגוריה",  CATS)
-            sdate = st.date_input("תאריך התחלה", datetime.now())
-
-            submitted = st.form_submit_button("🚀 שמור משימה", use_container_width=True)
-            if submitted:
-                if not name.strip():
-                    st.error("⚠️ שם משימה הוא שדה חובה")
-                else:
-                    new_row = {
-                        "ID": st.session_state.next_id,
-                        "Task_Name": name.strip(), "Description": desc,
-                        "Recurring": freq, "Date": sdate.strftime("%Y-%m-%d"),
-                        "Done_Dates": "", "Priority": pri, "Category": cat,
-                    }
-                    st.session_state.tasks = pd.concat(
-                        [st.session_state.tasks, pd.DataFrame([new_row])],
-                        ignore_index=True)
-                    st.session_state.next_id += 1
-                    st.success(f"✅ משימה '{name}' נוספה בהצלחה!")
-                    st.rerun()
-
-    with c_preview:
-        sec_header("📊 סטטיסטיקת משימות")
-        df = st.session_state.tasks
-        total = len(df)
-
-        # By recurring type
-        st.markdown("**לפי תדירות:**")
-        for rec in RECUR:
-            cnt = len(df[df["Recurring"] == rec])
-            if cnt:
-                p = round(cnt / total * 100)
-                st.markdown(
-                    f'<div class="stat-row">'
-                    f'<span class="stat-label">{rec}</span>'
-                    f'<span class="stat-val">{cnt}</span>'
-                    f'</div>{pbar(p, height=4)}', unsafe_allow_html=True)
-
-        # By category
-        st.markdown("**לפי קטגוריה:**")
-        for cat in CATS:
-            cnt = len(df[df["Category"] == cat])
-            if cnt:
-                p = round(cnt / total * 100)
-                st.markdown(
-                    f'<div class="stat-row">'
-                    f'{cat_badge(cat)}'
-                    f'<span class="stat-val">{cnt}</span>'
-                    f'</div>{pbar(p, height=4)}', unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: INVENTORY COUNT DASHBOARD
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_inventory():
-    sec_header("📦 דשבורד ספירות מלאי")
-
-    inventory = st.session_state.inventory  # list of dicts
-
-    # ── Month selector ──
-    today = datetime.now()
-    month_options = []
-    for i in range(12):
-        dt = today - timedelta(days=30 * i)
-        month_options.append(f"{dt.year}-{dt.month:02d}")
-    month_options = list(dict.fromkeys(month_options))  # dedupe
-
-    col_sel, col_new = st.columns([2, 3])
-    sel_month = col_sel.selectbox(
-        "📅 בחר חודש לצפייה / עריכה",
-        month_options,
-        format_func=lambda x: f"{MONTHS_HE[int(x.split('-')[1])-1]} {x.split('-')[0]}"
-    )
-
-    # Find or create record for selected month
-    rec = next((r for r in inventory if r["month"] == sel_month), None)
-    if rec is None:
-        rec = {"month": sel_month,
-               "skus_total": 0, "skus_counted": 0,
-               "locs_total": 0, "locs_counted": 0, "no_gap": 0}
-
-    # ── Input form (admin only) ──
-    if st.session_state.user_role == "מנהל WMS":
-        with st.expander("✏️ הזן / עדכן נתוני ספירה לחודש זה", expanded=(rec["skus_total"] == 0)):
-            with st.form("inv_form"):
-                st.markdown(f"##### עדכון נתוני ספירה — "
-                            f"{MONTHS_HE[int(sel_month.split('-')[1])-1]} {sel_month.split('-')[0]}")
-                st.markdown("---")
-                st.markdown("**מק\"טים (SKUs)**")
-                c1, c2 = st.columns(2)
-                skus_total   = c1.number_input('סך מק"טים במחסן',   min_value=0, value=int(rec["skus_total"]),   step=1)
-                skus_counted = c2.number_input('מק"טים שנספרו',      min_value=0, value=int(rec["skus_counted"]), step=1)
-
-                st.markdown("**איתורים (Locations)**")
-                c3, c4 = st.columns(2)
-                locs_total   = c3.number_input("סך איתורים במחסן",   min_value=0, value=int(rec["locs_total"]),   step=1)
-                locs_counted = c4.number_input("איתורים שנספרו",      min_value=0, value=int(rec["locs_counted"]), step=1)
-
-                st.markdown("**דיוק**")
-                no_gap = st.number_input(
-                    "איתורים שנספרו ללא פער (מתוך שנספרו)",
-                    min_value=0, value=int(rec["no_gap"]), step=1,
-                    help="מספר האיתורים שהספירה תאמה בדיוק את מה שהיה במערכת")
-
-                if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
-                    new_rec = {
-                        "month": sel_month,
-                        "skus_total": skus_total, "skus_counted": skus_counted,
-                        "locs_total": locs_total, "locs_counted": locs_counted,
-                        "no_gap": no_gap,
-                    }
-                    # update or append
-                    updated = False
-                    for i, r in enumerate(st.session_state.inventory):
-                        if r["month"] == sel_month:
-                            st.session_state.inventory[i] = new_rec
-                            updated = True
-                            break
-                    if not updated:
-                        st.session_state.inventory.append(new_rec)
-                    st.success("✅ נתונים נשמרו!")
-                    st.rerun()
-
-    # re-fetch after possible save
-    rec = next((r for r in st.session_state.inventory if r["month"] == sel_month), rec)
-
-    st.markdown("---")
-
-    # ── KPI calculations ──
-    skus_t = max(int(rec["skus_total"]),   1)
-    skus_c = int(rec["skus_counted"])
-    locs_t = max(int(rec["locs_total"]),   1)
-    locs_c = int(rec["locs_counted"])
-    no_gap = int(rec["no_gap"])
-
-    pct_skus = round(skus_c / skus_t * 100)
-    pct_locs = round(locs_c / locs_t * 100)
-    pct_acc  = round(no_gap / max(locs_c, 1) * 100)
-
-    color_skus = "#00ff88" if pct_skus >= 90 else "#ffb800" if pct_skus >= 70 else "#ff2d55"
-    color_locs = "#c9a84c" if pct_locs >= 90 else "#ffb800" if pct_locs >= 70 else "#ff2d55"
-    color_acc  = "#c084fc" if pct_acc  >= 98 else "#ffb800" if pct_acc  >= 90 else "#ff2d55"
-
-    # ── Big 3 KPI cards ──
-    k1, k2, k3 = st.columns(3)
-    k1.markdown(kpi_card(f"{pct_skus}%", 'ספירת מק"טים',
-                         sub=f'{skus_c:,} / {skus_t:,} מק"טים',
-                         color=color_skus, icon="🏷️", kind="blue"), unsafe_allow_html=True)
-    k1.markdown(pbar(pct_skus, color_skus, 10), unsafe_allow_html=True)
-
-    k2.markdown(kpi_card(f"{pct_locs}%", "ספירת איתורים",
-                         sub=f'{locs_c:,} / {locs_t:,} איתורים',
-                         color=color_locs, icon="📍", kind="blue"), unsafe_allow_html=True)
-    k2.markdown(pbar(pct_locs, color_locs, 10), unsafe_allow_html=True)
-
-    k3.markdown(kpi_card(f"{pct_acc}%", "דיוק ספירה",
-                         sub=f'{no_gap:,} ללא פער מתוך {locs_c:,}',
-                         color=color_acc, icon="🎯", kind="blue"), unsafe_allow_html=True)
-    k3.markdown(pbar(pct_acc, color_acc, 10), unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ── Detail cards + Gauge charts ──
-    left_col, right_col = st.columns([3, 4])
-
-    with left_col:
-        sec_header("📊 פירוט מספרי")
-
-        def detail_row(label, val, total, color):
-            pct = round(val / max(total, 1) * 100)
-            remaining = total - val
-            status = "✅ הושלם" if pct >= 100 else f"⏳ נותרו {remaining:,}"
-            st.markdown(
-                f'<div style="background:var(--raised);border:1px solid var(--rule);'
-                f'border-radius:12px;padding:16px 18px;margin-bottom:12px;'
-                f'border-right:4px solid {color}">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-                f'<span style="font-weight:700;font-size:.95rem;color:var(--txt)">{label}</span>'
-                f'<span style="font-family:var(--mono);font-size:.8rem;color:var(--txt2)">{status}</span>'
-                f'</div>'
-                f'<div style="display:flex;justify-content:space-between;margin-bottom:8px">'
-                f'<span style="font-family:var(--orb);font-size:1.8rem;font-weight:800;color:{color}'
-                f';text-shadow:0 0 16px {color}66">{pct}%</span>'
-                f'<div style="text-align:left">'
-                f'<div style="font-size:.72rem;color:var(--txt2)">נספרו</div>'
-                f'<div style="font-family:var(--mono);font-size:1rem;color:{color};font-weight:700">{val:,}</div>'
-                f'</div>'
-                f'<div style="text-align:left">'
-                f'<div style="font-size:.72rem;color:var(--txt2)">סה"כ</div>'
-                f'<div style="font-family:var(--mono);font-size:1rem;color:var(--txt);font-weight:700">{total:,}</div>'
-                f'</div>'
-                f'</div>'
-                f'{pbar(pct, color, 8)}'
-                f'</div>',
-                unsafe_allow_html=True)
-
-        detail_row('מק"טים שנספרו', skus_c, skus_t, color_skus)
-        detail_row("איתורים שנספרו", locs_c, locs_t, color_locs)
-        detail_row("איתורים ללא פער", no_gap, locs_c, color_acc)
-
-        # Gap count
-        gap_count = locs_c - no_gap
-        gap_pct   = round(gap_count / max(locs_c, 1) * 100)
-        gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
-        st.markdown(
-            f'<div style="background:var(--raised);border:1px solid rgba(255,45,85,.3);'
-            f'border-radius:12px;padding:14px 18px;border-right:4px solid {gap_color}">'
-            f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'<span style="font-weight:700;color:var(--txt)">⚡ איתורים עם פער</span>'
-            f'<span style="font-family:var(--orb);font-size:1.5rem;color:{gap_color};font-weight:800">'
-            f'{gap_count:,}</span>'
-            f'</div>'
-            f'<div style="color:var(--txt2);font-size:.78rem;margin-top:4px">'
-            f'{gap_pct}% מהאיתורים שנספרו — '
-            f'{"⚠️ גבוה" if gap_pct > 10 else "⚡ בינוני" if gap_pct > 5 else "✅ תקין"}'
-            f'</div>'
-            f'</div>',
-            unsafe_allow_html=True)
-
-    with right_col:
-        if HAS_PLOTLY:
-            sec_header("🎯 גרפי ביצוע")
-
-            # 3 donut gauges
-            fig = make_subplots(rows=1, cols=3,
-                specs=[[{"type":"pie"},{"type":"pie"},{"type":"pie"}]],
-                subplot_titles=["מק\"טים","איתורים","דיוק"])
-
-            for col_idx, (val, total, color, label) in enumerate([
-                (skus_c, skus_t, color_skus, "מק\"טים"),
-                (locs_c, locs_t, color_locs, "איתורים"),
-                (no_gap, max(locs_c,1), color_acc, "דיוק"),
-            ], start=1):
-                remain = max(0, total - val)
-                pct_v  = round(val / max(total, 1) * 100)
-                fig.add_trace(go.Pie(
-                    values=[val, remain],
-                    hole=.72,
-                    marker_colors=[color, "rgba(255,255,255,.05)"],
-                    showlegend=False, textinfo="none",
-                    hoverinfo="skip",
-                ), row=1, col=col_idx)
-                fig.add_annotation(
-                    text=f"<b>{pct_v}%</b>",
-                    x=(col_idx - 1) / 3 + 1/6,
-                    y=0.5, xref="paper", yref="paper",
-                    font_size=22, font_family="Orbitron",
-                    font_color=color, showarrow=False)
-
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", height=260,
-                margin=dict(t=40, b=0, l=0, r=0),
-                font=dict(family="Heebo", color="#e2eeff"))
-            for ann in fig.layout.annotations:
-                if ann.text in ["מק\"טים", "איתורים", "דיוק"]:
-                    ann.update(font=dict(color="#7a90b0", size=12, family="Heebo"))
-            st.plotly_chart(fig, use_container_width=True)
-
-            # Stacked bar: counted vs not counted
-            fig2 = go.Figure()
-            cats_bar = ["מק\"טים", "איתורים"]
-            counted  = [skus_c, locs_c]
-            remaining= [skus_t - skus_c, locs_t - locs_c]
-            fig2.add_trace(go.Bar(
-                name="נספרו", x=cats_bar, y=counted,
-                marker_color=["#00ff88", "#c9a84c"],
-                text=[f"{v:,}" for v in counted],
-                textposition="inside", textfont=dict(color="#040d1c", size=13, family="Orbitron")))
-            fig2.add_trace(go.Bar(
-                name="טרם נספרו", x=cats_bar, y=remaining,
-                marker_color=["rgba(0,255,136,.1)", "rgba(0,212,255,.1)"],
-                marker_line_color=["rgba(0,255,136,.3)", "rgba(0,212,255,.3)"],
-                marker_line_width=1,
-                text=[f"{v:,}" for v in remaining],
-                textposition="inside", textfont=dict(color="#7a90b0", size=11)))
-            fig2.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Heebo", color="#e2eeff"), height=260,
-                barmode="stack", margin=dict(t=10, b=30, l=0, r=0),
-                legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12),
-                yaxis=dict(gridcolor="rgba(255,255,255,.04)"),
-                xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
-            st.plotly_chart(fig2, use_container_width=True)
-
-    # ── Historical trend (if multiple months exist) ──
-    if len(st.session_state.inventory) >= 2 and HAS_PLOTLY:
-        st.markdown("---")
-        sec_header("📈 מגמה היסטורית")
-        hist = sorted(st.session_state.inventory, key=lambda x: x["month"])
-        hdf = pd.DataFrame([{
-            "חודש":      f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
-            "מק\"טים %": round(int(r["skus_counted"]) / max(int(r["skus_total"]), 1) * 100),
-            "איתורים %": round(int(r["locs_counted"]) / max(int(r["locs_total"]), 1) * 100),
-            "דיוק %":    round(int(r["no_gap"]) / max(int(r["locs_counted"]), 1) * 100),
-        } for r in hist])
-
-        fig_h = go.Figure()
-        for col_name, color in [("מק\"טים %","#00ff88"),("איתורים %","#c9a84c"),("דיוק %","#c084fc")]:
-            fig_h.add_trace(go.Scatter(
-                x=hdf["חודש"], y=hdf[col_name],
-                name=col_name, mode="lines+markers",
-                line=dict(color=color, width=2.5),
-                marker=dict(size=9, color=color,
-                            line=dict(color="#040d1c", width=2)),
-                fill="tozeroy" if col_name == "דיוק %" else "none",
-                fillcolor=f"{color}0d"))
-        fig_h.add_hline(y=95, line_dash="dot", line_color="rgba(191,90,242,.4)",
-                        annotation_text="יעד דיוק 95%",
-                        annotation_font_color="#c084fc", annotation_font_size=11)
-        fig_h.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Heebo", color="#e2eeff"), height=300,
-            margin=dict(t=10, b=40, l=0, r=0),
-            legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12),
-            yaxis=dict(range=[0,108], gridcolor="rgba(255,255,255,.04)"),
-            xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
-        st.plotly_chart(fig_h, use_container_width=True)
-
-    # ── Export ──
-    st.markdown("---")
-    if st.session_state.inventory:
-        buf = io.BytesIO()
-        export_data = []
-        for r in sorted(st.session_state.inventory, key=lambda x: x["month"], reverse=True):
-            export_data.append({
-                "חודש":               f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
-                'סך מק"טים':         r["skus_total"],
-                'מק"טים שנספרו':      r["skus_counted"],
-                'אחוז ספירת מק"טים': f"{round(int(r['skus_counted'])/max(int(r['skus_total']),1)*100)}%",
-                "סך איתורים":         r["locs_total"],
-                "איתורים שנספרו":     r["locs_counted"],
-                "אחוז ספירת איתורים": f"{round(int(r['locs_counted'])/max(int(r['locs_total']),1)*100)}%",
-                "ללא פער":            r["no_gap"],
-                "אחוז דיוק":         f"{round(int(r['no_gap'])/max(int(r['locs_counted']),1)*100)}%",
-            })
-        with pd.ExcelWriter(buf, engine="openpyxl") as w:
-            pd.DataFrame(export_data).to_excel(w, index=False, sheet_name="ספירות מלאי")
-        st.download_button(
-            "📥 ייצוא כל הספירות — Excel",
-            buf.getvalue(), "ספירות_מלאי.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: ANALYTICS (מנהל בלבד)
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_analytics():
-    df = st.session_state.tasks
-    today = datetime.now()
-    sec_header("🔬 אנליטיקס מתקדם")
-
-    if not HAS_PLOTLY:
-        st.warning("נדרש plotly לדף זה")
-        return
-
-    # ── 4-panel overview ──
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=["ביצועים שבועיים", "התפלגות קטגוריות",
-                        "עומס לפי יום בשבוע", "ביצועים חודשיים"],
-        specs=[[{"type":"scatter"},{"type":"pie"}],
-               [{"type":"bar"},{"type":"bar"}]],
-        vertical_spacing=0.15, horizontal_spacing=0.1)
-
-    # 1. Weekly trend
-    wdf = week_stats(21)
-    fig.add_trace(go.Scatter(
-        x=wdf["תאריך"], y=wdf["אחוז"], mode="lines+markers",
-        line=dict(color="#c9a84c", width=2), marker=dict(size=7, color="#c9a84c"),
-        name="אחוז"), row=1, col=1)
-
-    # 2. Category pie
-    cat_counts = df["Category"].value_counts()
-    CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
-            "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
-    fig.add_trace(go.Pie(
-        labels=cat_counts.index.tolist(),
-        values=cat_counts.values.tolist(),
-        hole=.5, textinfo="label+percent",
-        marker_colors=[CMAP.get(c,"#8899aa") for c in cat_counts.index],
-        showlegend=False, name=""), row=1, col=2)
-
-    # 3. Load by day of week
-    day_load = {d: 0 for d in range(5)}
-    for _, row in df.iterrows():
-        rec = row["Recurring"]
-        if rec == "יומי":
-            for d in range(5): day_load[d] += 1
-        elif rec == "שבועי":
-            try:
-                base = pd.to_datetime(row["Date"]).date()
-                day_load[base.weekday() % 5] += 1
-            except: pass
-    day_names_en = ["ראשון","שני","שלישי","רביעי","חמישי"]
-    fig.add_trace(go.Bar(
-        x=day_names_en, y=[day_load[i] for i in range(5)],
-        marker_color=["rgba(0,212,255,.7)"]*5,
-        name="עומס"), row=2, col=1)
-
-    # 4. Monthly 6-month trend
-    months_data = []
-    for m in range(6, 0, -1):
-        dt = today - timedelta(days=30 * m)
-        mdf = monthly_stats(dt.year, dt.month)
-        if not mdf.empty:
-            months_data.append({
-                "חודש": f"{dt.month:02d}/{dt.year}",
-                "ממוצע": round(mdf["אחוז"].mean())
-            })
-    if months_data:
-        mtrend = pd.DataFrame(months_data)
-        colors_mt = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
-                     for v in mtrend["ממוצע"]]
-        fig.add_trace(go.Bar(
-            x=mtrend["חודש"], y=mtrend["ממוצע"],
-            marker_color=colors_mt, name="ממוצע חודשי",
-            text=[f"{v}%" for v in mtrend["ממוצע"]],
-            textposition="outside", textfont=dict(color="#e2eeff", size=10)), row=2, col=2)
-
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Heebo", color="#e2eeff"), height=700,
-        margin=dict(t=60, b=40, l=20, r=20),
-        showlegend=False,
-        yaxis=dict(gridcolor="rgba(255,255,255,.04)"),
-        yaxis3=dict(gridcolor="rgba(255,255,255,.04)"),
-        yaxis4=dict(gridcolor="rgba(255,255,255,.04)"),
-    )
-    for ann in fig.layout.annotations:
-        ann.update(font=dict(color="#c9a84c", size=13, family="Orbitron"))
-    st.plotly_chart(fig, use_container_width=True)
-
-    # ── Priority heatmap ──
-    st.markdown("---")
-    sec_header("🔥 מפת חום — עדיפות × קטגוריה")
-    heat_data = {}
-    for _, row in df.iterrows():
-        p = str(row.get("Priority","רגיל"))
-        c = str(row.get("Category","כללי"))
-        heat_data.setdefault(p, {})
-        heat_data[p][c] = heat_data[p].get(c, 0) + 1
-
-    heat_df = pd.DataFrame(heat_data).fillna(0).T
-    heat_df = heat_df.reindex(columns=PRIS, fill_value=0)
-    fig_heat = go.Figure(go.Heatmap(
-        z=heat_df.values, x=heat_df.columns.tolist(),
-        y=heat_df.index.tolist(),
-        colorscale=[[0,"rgba(0,212,255,.05)"],[0.5,"rgba(0,212,255,.4)"],[1,"#c9a84c"]],
-        text=heat_df.values, texttemplate="%{text}",
-        textfont=dict(size=14, color="#e2eeff"), showscale=False))
-    fig_heat.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Heebo", color="#e2eeff"), height=300,
-        margin=dict(t=10, b=10, l=80, r=20),
-        xaxis=dict(side="top"), yaxis=dict(autorange="reversed"))
-    st.plotly_chart(fig_heat, use_container_width=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
-check_timeout()
-
-if not st.session_state.user_role:
-    login_screen()
+            
     st.stop()
 
-role = st.session_state.user_role
-lt   = st.session_state.login_time
-elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
+df = load_data()
+# טעינת היסטוריה לצורך בחירת חודשים
+inv_history = load_inv_target_history()
 
-# ── Sidebar ──
-ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
-df_side = st.session_state.tasks
-today_side = len(tasks_for_date(df_side, datetime.now()))
-ov_side    = len(get_overdue())
+OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE = "📊 דשבורד בקרה", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה", "➕ הוספת משימה", "⚙️ הגדרות"
 
-st.sidebar.markdown(f"""
-<div style="padding:20px 0 12px;text-align:center">
-  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
-  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
-              color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
-    ● מחובר {elapsed_min} דק'
-  </div>
-</div>
-<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
-            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">להיום:</span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">פיגורים:</span>
-    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between">
-    <span style="color:var(--txt2)">סה"כ:</span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+st.sidebar.markdown(f"### שלום, **{st.session_state.user_role}**")
+if st.session_state.user_role == "מנהל WMS":
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL, OPT_ADD, OPT_MANAGE]
+elif st.session_state.user_role == "הנהלה":
+    menu = [OPT_DASH, OPT_INV, OPT_CAL]
+else:
+    menu = [OPT_DASH, OPT_WORK, OPT_INV, OPT_CAL]
 
-MENUS = {
-    "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס"],
-    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס"],
-    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה"],
-}
-choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
-
-st.sidebar.markdown("---")
-if elapsed_min >= 50:
-    st.sidebar.markdown(
-        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
-        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
-        unsafe_allow_html=True)
-if st.sidebar.button("🚪 התנתקות", use_container_width=True):
+choice = st.sidebar.radio("תפריט", menu)
+if st.sidebar.button("התנתקות"):
     st.session_state.user_role = None
-    st.session_state.login_time = None
     st.rerun()
 
-# ── Header Banner ──
-PAGE_ICONS = {
-    "📊 דשבורד":        "📊 דשבורד בקרה",
-    "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
-    "📅 לוח שנה":       "📅 לוח שנה",
-    "➕ הוספת משימה":   "➕ הוספת משימה חדשה",
-    "⚙️ ניהול משימות":  "⚙️ ניהול ועריכת משימות",
-    "📦 ספירות מלאי":   "📦 דשבורד ספירות מלאי",
-    "🔬 אנליטיקס":      "🔬 אנליטיקס מתקדם",
-}
-st.markdown(
-    f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
-    f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
-    f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
-    f'</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="page-header-banner"><h1>{choice}</h1></div>', unsafe_allow_html=True)
 
-# ── Route ──
-if   choice == "📊 דשבורד":          page_dashboard()
-elif choice == "📋 סידור עבודה":     page_work()
-elif choice == "📅 לוח שנה":          page_calendar()
-elif choice == "📦 ספירות מלאי":     page_inventory()
-elif choice == "➕ הוספת משימה":     page_add()
-elif choice == "⚙️ ניהול משימות":    page_manage()
-elif choice == "🔬 אנליטיקס":        page_analytics()
+# --- דשבורד בקרה ---
+if choice == OPT_DASH:
+    overdue_list = get_overdue_tasks(df)
+    if len(overdue_list) > 0:
+        st.markdown(f"""
+            <div style="background: rgba(255, 77, 109, 0.15); border: 1px solid var(--accent-red); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                <h4 style="color: var(--accent-red); margin: 0;">⚠️ שים לב: ישנן {len(overdue_list)} משימות שלא בוצעו בימים האחרונים</h4>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.expander("🔍 לצפייה וסגירת פיגורים"):
+            for t in overdue_list:
+                col_t, col_b = st.columns([3, 1])
+                col_t.warning(f"**{t['name']}** (מתאריך {t['date']})")
+                if col_b.button("סמן כבוצע", key=f"fix_ov_{t['id']}_{t['date']}"):
+                    df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{t['date']}".strip(",")
+                    save_data(df); st.rerun()
+
+    c_date, _ = st.columns([1, 3])
+    selected_date = c_date.date_input("בחר תאריך לבדיקה:", datetime.now())
+    selected_tasks = get_daily_status(df, selected_date)
+    total = len(selected_tasks)
+    done = sum(1 for t in selected_tasks if t["is_done"])
+    pct = int((done / total) * 100) if total > 0 else 0
+    
+    m1, m2, m3 = st.columns(3)
+    date_label = "להיום" if selected_date == datetime.now().date() else f"ל- {selected_date.strftime('%d/%m')}"
+    m1.metric(f"משימות {date_label}", total)
+    m2.metric("בוצעו", done)
+    m3.metric("אחוז ביצוע", f"{pct}%")
+    
+    st.write(f"### פירוט משימות {date_label}")
+    if total > 0:
+        for t in selected_tasks:
+            st.info(f"{'✅' if t['is_done'] else '⏳'} {t['name']}")
+    else:
+        st.write("אין משימות מתוכננות לתאריך זה.")
+
+    st.write("---")
+    st.write("### 📈 מגמת ביצועים שבועית")
+    weekly_data = []
+    for i in range(6, -1, -1):
+        day = datetime.now().date() - timedelta(days=i)
+        tasks = get_daily_status(df, day)
+        t_total = len(tasks)
+        t_done = sum(1 for t in tasks if t["is_done"])
+        t_pct = int((t_done / t_total) * 100) if t_total > 0 else 0
+        weekly_data.append({"תאריך": day.strftime("%d/%m"), "אחוז": t_pct})
+    
+    fig = px.area(pd.DataFrame(weekly_data), x="תאריך", y="אחוז", markers=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#ffffff", height=300)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("---")
+    st.write("### 📅 ניתוח ביצועים חודשי (הנהלה)")
+    
+    month_col, year_col = st.columns(2)
+    selected_month = month_col.selectbox("בחר חודש", range(1, 13), index=datetime.now().month - 1)
+    selected_year = year_col.selectbox("בחר שנה", [2025, 2026], index=1)
+
+    monthly_stats = []
+    _, num_days = cal_lib.monthrange(selected_year, selected_month)
+
+    for day in range(1, num_days + 1):
+        check_date = datetime(selected_year, selected_month, day).date()
+        tasks = get_daily_status(df, check_date)
+        if tasks:
+            t_total = len(tasks)
+            t_done = sum(1 for t in tasks if t["is_done"])
+            monthly_stats.append({"יום": day, "בוצע": t_done, "מתוכנן": t_total, "אחוז": int((t_done / t_total) * 100)})
+
+    if monthly_stats:
+        df_monthly = pd.DataFrame(monthly_stats)
+        avg_pct = int(df_monthly["אחוז"].mean())
+        st.metric("ממוצע ביצוע חודשי", f"{avg_pct}%")
+        
+        fig_month = px.bar(df_monthly, x="יום", y=["מתוכנן", "בוצע"], 
+                           title=f"פירוט ביצועים יומי - {selected_month}/{selected_year}",
+                           barmode="group",
+                           color_discrete_map={"מתוכנן": "#112347", "בוצע": "#00e5a0"})
+        fig_month.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="#ffffff")
+        st.plotly_chart(fig_month, use_container_width=True)
+    else:
+        st.warning("אין נתוני משימות לחודש הנבחר.")
+
+# --- סידור עבודה ---
+elif choice == OPT_WORK:
+    today = datetime.now()
+    start = today - timedelta(days=(today.weekday() + 1) % 7)
+    days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
+    cols = st.columns(5)
+    for i, name in enumerate(days):
+        curr_d = start + timedelta(days=i)
+        with cols[i]:
+            st.markdown(f'<div class="week-day-chip">{name}<br>{curr_d.strftime("%d/%m")}</div>', unsafe_allow_html=True)
+            for t in get_daily_status(df, curr_d):
+                label = f"✅ {t['name']}" if t['is_done'] else f"⏳ {t['name']}"
+                with st.popover(label, use_container_width=True):
+                    st.write(f"**תיאור:** {t['desc']}")
+                    if not t['is_done'] and st.button("סמן כבוצע", key=f"btn_{t['id']}_{i}"):
+                        d_str = curr_d.strftime("%Y-%m-%d")
+                        df.at[t['idx'], "Done_Dates"] = f"{df.at[t['idx'], 'Done_Dates']},{d_str}".strip(",")
+                        save_data(df); st.rerun()
+
+# --- ספירות מלאי ---
+elif choice == OPT_INV:
+    # בחירת חודש לצפייה/עריכה
+    current_month_str = datetime.now().strftime("%Y-%m")
+    # תיקון: הבטחת הצגת אפריל ומאי תמיד ברשימה
+    base_months = ["2026-05", "2026-04"]
+    all_months = sorted(list(set(base_months + inv_history['Month'].tolist())), reverse=True)
+    
+    c_sel, _ = st.columns([2, 2])
+    selected_month_view = c_sel.selectbox("בחר חודש לספירה", all_months, index=0)
+    
+    st.markdown(f"### 📦 סטטוס ספירת מלאי - {selected_month_view}")
+    
+    # טעינת נתונים לחודש הנבחר
+    inv_data = get_inv_data_for_month(selected_month_view)
+    
+    if st.session_state.user_role == "מנהל WMS":
+        with st.form("inv_management"):
+            st.write(f"#### 🛠️ ניהול יעדי ספירה לחודש {selected_month_view}")
+            c1, c2 = st.columns(2)
+            new_target = c1.number_input("סך מק\"טים במחסן", min_value=0, value=int(inv_data.get('Target', 0)))
+            new_current = c2.number_input("מק\"טים שנספרו", min_value=0, value=int(inv_data.get('Current', 0)))
+            
+            c3, c4 = st.columns(2)
+            new_sku_target = c3.number_input("איתורים לספירה (יעד)", min_value=0, value=int(inv_data.get('SKU_Target', 0)))
+            new_sku_current = c4.number_input("איתורים שנספרו בפועל", min_value=0, value=int(inv_data.get('SKU_Current', 0)))
+            
+            new_no_discrepancy = st.number_input("איתורים ללא פער (לחישוב דיוק)", min_value=0, value=int(inv_data.get('No_Discrepancy', 0)))
+            
+            if st.form_submit_button("עדכן נתונים"):
+                save_inv_target(selected_month_view, new_target, new_current, new_sku_target, new_sku_current, new_no_discrepancy)
+                st.rerun()
+    
+    st.write("---")
+    
+    # שליפת נתונים
+    target = inv_data.get('Target', 1) if inv_data.get('Target', 0) > 0 else 1
+    current = inv_data.get('Current', 0)
+    sku_target = inv_data.get('SKU_Target', 1) if inv_data.get('SKU_Target', 0) > 0 else 1
+    sku_current = inv_data.get('SKU_Current', 0)
+    no_disc = inv_data.get('No_Discrepancy', 0)
+    
+    # חישובי אחוזים - ללא הגבלת 100
+    pct_loc = int((current / target) * 100) if target > 0 else 0
+    pct_sku = int((sku_current / sku_target) * 100) if sku_target > 0 else 0
+    pct_acc = int((no_disc / current) * 100) if current > 0 else 0
+    
+    g_sku, g_loc, g_acc = st.columns(3)
+    
+    with g_sku:
+        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>מספר ספירות</h4>", unsafe_allow_html=True)
+        fig_sku = px.pie(values=[sku_current, 0 if sku_current >= sku_target else sku_target - sku_current], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#388bfd", "#112347"])
+        fig_sku.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
+                               annotations=[dict(text=f"{pct_sku}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+        st.plotly_chart(fig_sku, use_container_width=True)
+        st.markdown(f"<p style='text-align: center; color: white;'>{int(sku_current)} / {int(sku_target)} איתורים</p>", unsafe_allow_html=True)
+
+    with g_loc:
+        st.markdown("<h4 style='text-align: center; color: var(--accent-cyan);'>מספר מק\"טים</h4>", unsafe_allow_html=True)
+        fig_loc = px.pie(values=[current, 0 if current >= target else target - current], names=["בוצע", "נותר"], hole=0.7, color_discrete_sequence=["#00e5a0", "#112347"])
+        fig_loc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=320, margin=dict(t=0, b=0, l=0, r=0),
+                               annotations=[dict(text=f"{pct_loc}%", x=0.5, y=0.5, font_size=40, font_family="Orbitron", font_color="#00d4ff", showarrow=False)])
+        st.plotly_chart(fig_loc, use_container_width=True)
+        st.markdown(f"<p style='text-align: center; font-weight: bold; color: white;'>{int(current)} / {int(target)} מק\"טים</p>", unsafe_allow_html=True)
+
+    with g_acc:
+        st.markdown("<h4 style='text-align: center; color: var(--text-secondary);'>רמת דיוק</h4>", unsafe_allow_html=True)
+        fig_acc = px.pie(values=[no_disc, max(0, current-no_disc)], names=["תקין", "פער"], hole=0.7, color_discrete_sequence=["#f59e0b", "#112347"])
+        fig_acc.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=0, b=0, l=0, r=0),
+                               annotations=[dict(text=f"{pct_acc}%", x=0.5, y=0.5, font_size=30, font_family="Orbitron", font_color="#e8f0fe", showarrow=False)])
+        st.plotly_chart(fig_acc, use_container_width=True)
+        st.markdown(f"<p style='text-align: center; color: white;'>{int(no_disc)} איתורים ללא פער</p>", unsafe_allow_html=True)
+
+# --- הגדרות ---
+elif choice == OPT_MANAGE:
+    st.markdown("### ⚙️ ניהול ועריכת משימות")
+    for idx, row in df.iterrows():
+        st.markdown(f"""<div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 10px; background: var(--bg-card); border-right: 4px solid var(--accent-cyan);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-primary); font-weight: bold; font-size: 1.1rem;">{row['Task_Name']}</span>
+                <span style="color: var(--accent-cyan); font-size: 0.85rem; background: rgba(0, 212, 255, 0.1); padding: 2px 8px; border-radius: 20px;">{row['Recurring']}</span>
+            </div>
+        </div>""", unsafe_allow_html=True)
+        col1, col2, _ = st.columns([1.2, 1, 3])
+        with col1:
+            with st.popover("📝 עריכה", use_container_width=True):
+                n_n = st.text_input("שם", value=row['Task_Name'], key=f"e_n_{row['ID']}")
+                n_d = st.text_area("תיאור", value=row['Description'], key=f"e_d_{row['ID']}")
+                if st.button("שמור", key=f"s_{row['ID']}"):
+                    df.at[idx, 'Task_Name'], df.at[idx, 'Description'] = n_n, n_d
+                    save_data(df); st.rerun()
+        with col2:
+            if st.button("🗑️ מחיקה", key=f"d_{row['ID']}"):
+                df = df.drop(idx); save_data(df); st.rerun()
+
+# --- הוספת משימה ---
+elif choice == OPT_ADD:
+    with st.form("add_form"):
+        name = st.text_input("שם משימה")
+        desc = st.text_area("פירוט נוסף")
+        freq = st.selectbox("תדירות", ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"])
+        sd = st.date_input("תאריך התחלה")
+        if st.form_submit_button("שמור משימה"):
+            new = pd.DataFrame([{"ID": int(datetime.now().timestamp()), "Task_Name": name, "Description": desc, "Recurring": freq, "Date": sd.strftime("%Y-%m-%d"), "Done_Dates": ""}])
+            df = pd.concat([df, new], ignore_index=True); save_data(df); st.rerun()
+
+# --- לוח שנה ---
+elif choice == OPT_CAL:
+    events = []
+    for _, row in df.iterrows():
+        base = pd.to_datetime(row["Date"]).date()
+        for i in range(500):
+            d = base + timedelta(days=i)
+            if is_scheduled_on(base, row["Recurring"], d):
+                is_done = d.strftime("%Y-%m-%d") in str(row["Done_Dates"])
+                events.append({"title": row["Task_Name"], "start": d.strftime("%Y-%m-%d"), "color": "#00e5a0" if is_done else "#ff4d6d", "allDay": True})
+    calendar(events=events, options={"direction": "rtl", "locale": "he", "initialView": "dayGridMonth"}, custom_css=".fc { background: #0d1f3c; color: #e8f0fe; border-radius: 16px; }")
