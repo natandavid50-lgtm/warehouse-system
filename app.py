@@ -967,31 +967,38 @@ def page_dashboard():
         mb.metric("יום שיא",        f"{best} בחודש")
         mc2.metric("יום חלש",       f"{worst} בחודש")
         md.metric("סה\"כ בוצע",     int(mdf["בוצע"].sum()))
-
-        if HAS_PLOTLY:
+if HAS_PLOTLY:
             c_bar, c_heat = st.columns([3, 2])
             with c_bar:
                 colors_m = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
                             for v in mdf["אחוז"]]
+                
                 fig_m = go.Figure()
+                
                 fig_m.add_trace(go.Bar(
                     x=mdf["יום"], y=mdf["אחוז"],
                     marker_color=colors_m,
                     text=[f"{v}%" for v in mdf["אחוז"]],
-                    textposition="outside", textfont=dict(size=9, color="#e2eeff")))
+                    textposition="outside", 
+                    textfont=dict(size=9, color="#e2eeff")
+                ))
+                
                 fig_m.add_hline(
                     y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
                     annotation_text="יעד 85%",
                     annotation_font_color="#00ff88",
-                    annotation_font_size=11)
+                    annotation_font_size=11
+                )
+                
                 fig_m.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Heebo", color="#e2eeff"), height=300,
                     margin=dict(t=30, b=30, l=0, r=0), showlegend=False,
                     yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
-                    xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
+                    xaxis=dict(gridcolor="rgba(255,255,255,.03)")
+                )
+                
                 st.plotly_chart(fig_m, use_container_width=True)
-
             with c_heat:
                 # Category completion heatmap for the month
                 cat_day_data = {}
