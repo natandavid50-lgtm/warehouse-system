@@ -39,7 +39,6 @@ MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יונ�
              "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
 
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 #  CSS — Industrial Dark + Neon
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -501,7 +500,6 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px
 """, unsafe_allow_html=True)
 
 
-
 import sqlite3, json
 
 DB_PATH = "wms.db"
@@ -514,7 +512,7 @@ def get_conn():
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
-    
+
 def db_init():
     """Create tables if they don't exist."""
     with get_conn() as conn:
@@ -618,7 +616,6 @@ def init_state():
 init_state()
 
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TASK LOGIC
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -700,7 +697,6 @@ def monthly_stats(year, month):
             rows.append({"יום": day, "בוצע": don, "מתוכנן": len(ts),
                          "אחוז": round(don / len(ts) * 100)})
     return pd.DataFrame(rows) if rows else pd.DataFrame()
-
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -853,7 +849,6 @@ def page_dashboard():
 
     st.markdown(f'<div style="margin:8px 0 20px">{pbar(pct, pct_color, 10)}</div>', unsafe_allow_html=True)
 
-
     # ── Main content: tasks list + charts side by side ──
     col_l, col_r = st.columns([5, 4])
 
@@ -877,7 +872,7 @@ def page_dashboard():
                     if not t["is_done"] and cb.button("✓", key=f"d_{t['id']}_{dstr}_{cat}"):
                         mark_done(t["id"], dstr); st.rerun()
         else:
-            st.markdown('<div class="al alert alert-gold">ℹ️ <b>אין משימות לתאריך זה</b></div>', unsafe_allow_html=True)
+            st.markdown('<div class="al al-cyan">ℹ️ <b>אין משימות לתאריך זה</b></div>', unsafe_allow_html=True)
 
     with col_r:
         sec_header("📊 מבט מהיר")
@@ -993,16 +988,36 @@ def page_dashboard():
                     marker_color=colors_m,
                     text=[f"{v}%" for v in mdf["אחוז"]],
                     textposition="outside", textfont=dict(size=9, color="#e2eeff")))
-                fig_m.add_hline(y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
-                                annotation_text="יעד 85%",
-                                annotation_font_color="#00ff88",
-                                annotation_font_size=11)fig_m.update_layout(
+                fig_m.add_hline(
+                    y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
+                    annotation_text="יעד 85%",
+                    annotation_font_color="#00ff88",
+                    annotation_font_size=11)
+                fig_m.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Heebo", color="#e2eeff"), height=300,
                     margin=dict(t=30, b=30, l=0, r=0), showlegend=False,
                     yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_m, use_container_width=True)
+
+            with c_heat:
+                # Category completion heatmap for the month
+                cat_day_data = {}
+                for _, row in mdf.iterrows():
+                    cat_day_data[int(row["יום"])] = row["אחוז"]
+                fig_c = go.Figure(go.Bar(
+                    x=list(cat_day_data.keys()),
+                    y=list(cat_day_data.values()),
+                    marker_color=["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
+                                  for v in cat_day_data.values()],
+                    name="אחוז יומי"))
+                fig_c.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Heebo", color="#e2eeff"), height=300,
+                    margin=dict(t=30, b=30, l=0, r=0), showlegend=False,
+                    yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
+                    xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_c, use_container_width=True)
 
         # Excel export
@@ -1015,7 +1030,7 @@ def page_dashboard():
             f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
-        st.markdown('<div class="al alert alert-gold">⚠️ אין נתוני משימות לחודש הנבחר</div>', unsafe_allow_html=True)
+        st.markdown('<div class="al al-amber">⚠️ <b>אין נתוני משימות לחודש הנבחר</b></div>', unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1024,11 +1039,11 @@ def page_dashboard():
 def page_work():
     df = db_load_tasks()
     today = datetime.now()
-    
+
     # תיקון חישוב תחילת השבוע (יום ראשון = 0 לפי שעון מקומי)
     curr_day_idx = int(today.strftime('%w'))
     start = today - timedelta(days=curr_day_idx)
-    
+
     day_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(5)
 
@@ -1044,8 +1059,8 @@ def page_work():
             border_color = "var(--cyan)" if is_today else "var(--b2)"
             bg = "rgba(0,212,255,.05)" if is_today else "transparent"
             st.markdown(f"""
-            <div class="wchip" style="border-color:{border_color};background:linear-gradient(135deg,var(--surface),{bg})">
-              {'<span style="color:var(--ember);font-size:.6rem;font-family:var(--mono)">▸ היום ◂</span><br>' if is_today else ""}
+            <div class="wchip" style="border-color:{border_color};background:linear-gradient(135deg,var(--card),{bg})">
+              {'<span style="color:var(--amber);font-size:.6rem;font-family:var(--mono)">▸ היום ◂</span><br>' if is_today else ""}
               <div class="day-name">{name}</div>
               <div class="day-date">{curr.strftime('%d/%m/%y')}</div>
               <div class="day-count">{don}/{len(ts)} ✓</div>
@@ -1069,8 +1084,6 @@ def page_work():
                         if st.button("✅ סמן כבוצע", key=f"w_{t['id']}_{i}_{curr.date()}"):
                             mark_done(t["id"], curr.strftime("%Y-%m-%d"))
                             st.rerun()
-
-    # end of page_work
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1105,8 +1118,8 @@ def page_calendar():
         f'<span style="color:{c}">⬤</span> <span style="color:var(--txt2);font-size:.78rem">{n}</span>'
         for n, c in CATS_COLORS)
     st.markdown(
-        f'<div style="margin-bottom:12px;padding:10px 16px;background:var(--surface);'
-        f'border:1px solid var(--rule);border-radius:10px">'
+        f'<div style="margin-bottom:12px;padding:10px 16px;background:var(--card);'
+        f'border:1px solid var(--b1);border-radius:10px">'
         f'{legend_html} &nbsp;&nbsp; '
         f'<span style="color:#00ff88">⬤</span> <span style="color:var(--txt2);font-size:.78rem">בוצע</span> &nbsp; '
         f'<span style="color:#ff2d55">⬤</span> <span style="color:var(--txt2);font-size:.78rem">מפוגר</span>'
@@ -1350,7 +1363,7 @@ def page_inventory():
 
                 if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
                     db_save_inventory(sel_month, skus_total, skus_counted,
-                                          locs_total, locs_counted, no_gap)
+                                      locs_total, locs_counted, no_gap)
                     st.success("✅ נתונים נשמרו!")
                     st.rerun()
 
@@ -1404,7 +1417,7 @@ def page_inventory():
             remaining = total - val
             status = "✅ הושלם" if pct >= 100 else f"⏳ נותרו {remaining:,}"
             st.markdown(
-                f'<div style="background:var(--raised);border:1px solid var(--rule);'
+                f'<div style="background:var(--card2);border:1px solid var(--b1);'
                 f'border-radius:12px;padding:16px 18px;margin-bottom:12px;'
                 f'border-right:4px solid {color}">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
@@ -1436,7 +1449,7 @@ def page_inventory():
         gap_pct   = round(gap_count / max(locs_c, 1) * 100)
         gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
         st.markdown(
-            f'<div style="background:var(--raised);border:1px solid rgba(255,45,85,.3);'
+            f'<div style="background:var(--card2);border:1px solid rgba(255,45,85,.3);'
             f'border-radius:12px;padding:14px 18px;border-right:4px solid {gap_color}">'
             f'<div style="display:flex;justify-content:space-between;align-items:center">'
             f'<span style="font-weight:700;color:var(--txt)">⚡ איתורים עם פער</span>'
@@ -1449,7 +1462,8 @@ def page_inventory():
             f'</div>'
             f'</div>',
             unsafe_allow_html=True)
-with right_col:
+
+    with right_col:
         if HAS_PLOTLY:
             sec_header("🎯 גרפי ביצוע")
 
@@ -1770,9 +1784,9 @@ st.markdown(
 
 # ── Route ──
 if   choice == "📊 דשבורד":        page_dashboard()
-elif choice == "📋 סידור עבודה":     page_work()
-elif choice == "📅 לוח שנה":          page_calendar()
-elif choice == "📦 ספירות מלאי":     page_inventory()
-elif choice == "➕ הוספת משימה":     page_add()
-elif choice == "⚙️ ניהול משימות":    page_manage()
-elif choice == "🔬 אנליטיקס":        page_analytics()
+elif choice == "📋 סידור עבודה":   page_work()
+elif choice == "📅 לוח שנה":       page_calendar()
+elif choice == "📦 ספירות מלאי":   page_inventory()
+elif choice == "➕ הוספת משימה":   page_add()
+elif choice == "⚙️ ניהול משימות":  page_manage()
+elif choice == "🔬 אנליטיקס":      page_analytics()
