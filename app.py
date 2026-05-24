@@ -1048,7 +1048,6 @@ def page_work():
               {'<span style="color:var(--ember);font-size:.6rem;font-family:var(--mono)">▸ היום ◂</span><br>' if is_today else ""}
               <div class="day-name">{name}</div>
               <div class="day-date">{curr.strftime('%d/%m/%y')}</div>
-            """)
               <div class="day-count">{don}/{len(ts)} ✓</div>
             </div>
             {pbar(pct, pct_color, 5)}
