@@ -594,11 +594,10 @@ def db_save_inventory(month, skus_total, skus_counted, locs_total, locs_counted,
         "locs_counted": int(locs_counted),
         "no_gap": int(no_gap)
     }
-    # ביצוע Upsert (הכנסה או עדכון אם קיים) לפי עמודת המפתח month
     supabase.table("inventory").upsert(data, on_conflict="month").execute()
     
 # ═══════════════════════════════════════════════════════════════════════════════
-#  SESSION STATE INIT  (only auth state lives here now)
+#  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
 def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
@@ -642,7 +641,6 @@ def tasks_for_date(df, dt, skip_weekend=True):
     return out
 
 def mark_done(task_id, dstr):
-    """Persist a task completion to the DB."""
     df = db_load_tasks()
     row = df[df["ID"] == task_id]
     if row.empty: return
@@ -846,7 +844,6 @@ def page_dashboard():
     with col_l:
         sec_header(f"📋 משימות ל-{lbl}")
         if ts:
-            # group by category
             by_cat = {}
             for t in sorted(ts, key=lambda x: (x["is_done"], x["priority"] != "דחוף")):
                 by_cat.setdefault(t["category"], []).append(t)
@@ -868,7 +865,6 @@ def page_dashboard():
     with col_r:
         sec_header("📊 מבט מהיר")
 
-        # Category breakdown pie
         if HAS_PLOTLY and ts:
             cat_done = {}; cat_tot = {}
             for t in ts:
@@ -898,7 +894,6 @@ def page_dashboard():
                 font=dict(family="Heebo"))
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Priority breakdown
         st.markdown("**עדיפות:**")
         for pri, clr in [("דחוף","#ff2d55"),("גבוה","#ffb800"),("רגיל","#c9a84c"),("נמוך","#8899aa")]:
             cnt = sum(1 for t in ts if t["priority"] == pri)
@@ -967,29 +962,26 @@ def page_dashboard():
         mb.metric("יום שיא",        f"{best} בחודש")
         mc2.metric("יום חלש",       f"{worst} בחודש")
         md.metric("סה\"כ בוצע",     int(mdf["בוצע"].sum()))
-if HAS_PLOTLY:
+
+        if HAS_PLOTLY:
             c_bar, c_heat = st.columns([3, 2])
             with c_bar:
                 colors_m = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
                             for v in mdf["אחוז"]]
-                
                 fig_m = go.Figure()
-                
                 fig_m.add_trace(go.Bar(
                     x=mdf["יום"], y=mdf["אחוז"],
                     marker_color=colors_m,
                     text=[f"{v}%" for v in mdf["אחוז"]],
-                    textposition="outside", 
+                    textposition="outside",
                     textfont=dict(size=9, color="#e2eeff")
                 ))
-                
                 fig_m.add_hline(
                     y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
                     annotation_text="יעד 85%",
                     annotation_font_color="#00ff88",
                     annotation_font_size=11
                 )
-                
                 fig_m.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Heebo", color="#e2eeff"), height=300,
@@ -997,10 +989,9 @@ if HAS_PLOTLY:
                     yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)")
                 )
-                
                 st.plotly_chart(fig_m, use_container_width=True)
+
             with c_heat:
-                # Category completion heatmap for the month
                 cat_day_data = {}
                 for _, row in mdf.iterrows():
                     cat_day_data[int(row["יום"])] = row["אחוז"]
@@ -1008,7 +999,7 @@ if HAS_PLOTLY:
                     x=list(cat_day_data.keys()),
                     y=list(cat_day_data.values()),
                     marker_color=["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
-                    for v in cat_day_data.values()],
+                                  for v in cat_day_data.values()],
                     name="אחוז יומי"))
                 fig_c.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -1018,17 +1009,18 @@ if HAS_PLOTLY:
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_c, use_container_width=True)
 
-                # Excel export
-                    buf = io.BytesIO()
-            with pd.ExcelWriter(buf, engine="openpyxl") as w:
-                    mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
-                    wdf.to_excel(w, index=False, sheet_name="ביצועים שבועי")
-                    st.download_button(
-                    "📥 ייצוא דוח Excel מלא", buf.getvalue(),
-                    f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                    else:
-                    st.markdown('<div class="al al-amber">⚠️ <b>אין נתוני משימות לחודש הנבחר</b></div>', unsafe_allow_html=True)
+        # Excel export
+        buf = io.BytesIO()
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
+            wdf.to_excel(w, index=False, sheet_name="ביצועים שבועי")
+        st.download_button(
+            "📥 ייצוא דוח Excel מלא", buf.getvalue(),
+            f"דוח_ביצועים_{sm:02d}_{sy}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    else:
+        st.markdown('<div class="al al-amber">⚠️ <b>אין נתוני משימות לחודש הנבחר</b></div>', unsafe_allow_html=True)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE: WORK ORDER — weekly board
@@ -1037,7 +1029,6 @@ def page_work():
     df = db_load_tasks()
     today = datetime.now()
 
-    # תיקון חישוב תחילת השבוע (יום ראשון = 0 לפי שעון מקומי)
     curr_day_idx = int(today.strftime('%w'))
     start = today - timedelta(days=curr_day_idx)
 
@@ -1065,7 +1056,6 @@ def page_work():
             {pbar(pct, pct_color, 5)}
             """, unsafe_allow_html=True)
 
-            # group by priority within day
             urgent = [t for t in ts if t["priority"] == "דחוף"]
             rest   = [t for t in ts if t["priority"] != "דחוף"]
 
@@ -1108,7 +1098,6 @@ def page_calendar():
                     "allDay": True,
                 })
 
-    # Legend
     CATS_COLORS = [("בטיחות","#ff2d55"),("ספירה","#c9a84c"),("תחזוקה","#ffb800"),
                    ("לוגיסטיקה","#c084fc"),("ניקיון","#00ff88"),("כללי","#8899aa")]
     legend_html = " &nbsp; ".join(
@@ -1166,7 +1155,6 @@ def page_calendar():
 def page_manage():
     df = db_load_tasks()
 
-    # ── Filters ──
     f1, f2, f3, f4 = st.columns(4)
     fsearch = f1.text_input("🔍 חיפוש", placeholder="שם משימה...")
     fpri    = f2.selectbox("עדיפות",   ["הכל"] + PRIS)
@@ -1186,7 +1174,6 @@ def page_manage():
         f'<div style="flex:1">{pbar(round(len(filt)/max(len(df),1)*100), height=4)}</div>'
         f'</div>', unsafe_allow_html=True)
 
-    # Tab view: All / By category
     tab_all, tab_cat = st.tabs(["📋 כל המשימות", "🏷️ לפי קטגוריה"])
 
     with tab_all:
@@ -1280,7 +1267,6 @@ def page_add():
         df = db_load_tasks()
         total = len(df)
 
-        # By recurring type
         st.markdown("**לפי תדירות:**")
         for rec in RECUR:
             cnt = len(df[df["Recurring"] == rec])
@@ -1292,7 +1278,6 @@ def page_add():
                     f'<span class="stat-val">{cnt}</span>'
                     f'</div>{pbar(p, height=4)}', unsafe_allow_html=True)
 
-        # By category
         st.markdown("**לפי קטגוריה:**")
         for cat in CATS:
             cnt = len(df[df["Category"] == cat])
@@ -1313,13 +1298,12 @@ def page_inventory():
 
     inventory = db_load_inventory()
 
-    # ── Month selector ──
     today = datetime.now()
     month_options = []
     for i in range(12):
         dt = today - timedelta(days=30 * i)
         month_options.append(f"{dt.year}-{dt.month:02d}")
-    month_options = list(dict.fromkeys(month_options))  # dedupe
+    month_options = list(dict.fromkeys(month_options))
 
     col_sel, col_new = st.columns([2, 3])
     sel_month = col_sel.selectbox(
@@ -1328,14 +1312,12 @@ def page_inventory():
         format_func=lambda x: f"{MONTHS_HE[int(x.split('-')[1])-1]} {x.split('-')[0]}"
     )
 
-    # Find or create record for selected month
     rec = next((r for r in inventory if r["month"] == sel_month), None)
     if rec is None:
         rec = {"month": sel_month,
                "skus_total": 0, "skus_counted": 0,
                "locs_total": 0, "locs_counted": 0, "no_gap": 0}
 
-    # ── Input form (admin only) ──
     if st.session_state.user_role == "מנהל WMS":
         with st.expander("✏️ הזן / עדכן נתוני ספירה לחודש זה", expanded=(rec["skus_total"] == 0)):
             with st.form("inv_form"):
@@ -1364,12 +1346,10 @@ def page_inventory():
                     st.success("✅ נתונים נשמרו!")
                     st.rerun()
 
-    # re-fetch after possible save
     rec = next((r for r in db_load_inventory() if r["month"] == sel_month), rec)
 
     st.markdown("---")
 
-    # ── KPI calculations ──
     skus_t = max(int(rec["skus_total"]),   1)
     skus_c = int(rec["skus_counted"])
     locs_t = max(int(rec["locs_total"]),   1)
@@ -1384,7 +1364,6 @@ def page_inventory():
     color_locs = "#c9a84c" if pct_locs >= 90 else "#ffb800" if pct_locs >= 70 else "#ff2d55"
     color_acc  = "#c084fc" if pct_acc  >= 98 else "#ffb800" if pct_acc  >= 90 else "#ff2d55"
 
-    # ── Big 3 KPI cards ──
     k1, k2, k3 = st.columns(3)
     k1.markdown(kpi_card(f"{pct_skus}%", 'ספירת מק"טים',
                          sub=f'{skus_c:,} / {skus_t:,} מק"טים',
@@ -1403,7 +1382,6 @@ def page_inventory():
 
     st.markdown("---")
 
-    # ── Detail cards + Gauge charts ──
     left_col, right_col = st.columns([3, 4])
 
     with left_col:
@@ -1441,7 +1419,6 @@ def page_inventory():
         detail_row("איתורים שנספרו", locs_c, locs_t, color_locs)
         detail_row("איתורים ללא פער", no_gap, locs_c, color_acc)
 
-        # Gap count
         gap_count = locs_c - no_gap
         gap_pct   = round(gap_count / max(locs_c, 1) * 100)
         gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
@@ -1464,7 +1441,6 @@ def page_inventory():
         if HAS_PLOTLY:
             sec_header("🎯 גרפי ביצוע")
 
-            # 3 donut gauges
             fig = make_subplots(rows=1, cols=3,
                 specs=[[{"type":"pie"},{"type":"pie"},{"type":"pie"}]],
                 subplot_titles=["מק\"טים","איתורים","דיוק"])
@@ -1499,7 +1475,6 @@ def page_inventory():
                     ann.update(font=dict(color="#7a90b0", size=12, family="Heebo"))
             st.plotly_chart(fig, use_container_width=True)
 
-            # Stacked bar: counted vs not counted
             fig2 = go.Figure()
             cats_bar = ["מק\"טים", "איתורים"]
             counted  = [skus_c, locs_c]
@@ -1525,7 +1500,6 @@ def page_inventory():
                 xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
             st.plotly_chart(fig2, use_container_width=True)
 
-    # ── Historical trend (if multiple months exist) ──
     if len(db_load_inventory()) >= 2 and HAS_PLOTLY:
         st.markdown("---")
         sec_header("📈 מגמה היסטורית")
@@ -1559,7 +1533,6 @@ def page_inventory():
             xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
         st.plotly_chart(fig_h, use_container_width=True)
 
-    # ── Export ──
     st.markdown("---")
     if db_load_inventory():
         buf = io.BytesIO()
@@ -1585,7 +1558,7 @@ def page_inventory():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: ANALYTICS (מנהל בלבד)
+#  PAGE: ANALYTICS
 # ═══════════════════════════════════════════════════════════════════════════════
 def page_analytics():
     df = db_load_tasks()
@@ -1596,7 +1569,6 @@ def page_analytics():
         st.warning("נדרש plotly לדף זה")
         return
 
-    # ── 4-panel overview ──
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=["ביצועים שבועיים", "התפלגות קטגוריות",
@@ -1605,14 +1577,12 @@ def page_analytics():
                [{"type":"bar"},{"type":"bar"}]],
         vertical_spacing=0.15, horizontal_spacing=0.1)
 
-    # 1. Weekly trend
     wdf = week_stats(21)
     fig.add_trace(go.Scatter(
         x=wdf["תאריך"], y=wdf["אחוז"], mode="lines+markers",
         line=dict(color="#c9a84c", width=2), marker=dict(size=7, color="#c9a84c"),
         name="אחוז"), row=1, col=1)
 
-    # 2. Category pie
     cat_counts = df["Category"].value_counts()
     CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
             "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
@@ -1623,7 +1593,6 @@ def page_analytics():
         marker_colors=[CMAP.get(c,"#8899aa") for c in cat_counts.index],
         showlegend=False, name=""), row=1, col=2)
 
-    # 3. Load by day of week
     day_load = {d: 0 for d in range(5)}
     for _, row in df.iterrows():
         rec = row["Recurring"]
@@ -1640,7 +1609,6 @@ def page_analytics():
         marker_color=["rgba(0,212,255,.7)"]*5,
         name="עומס"), row=2, col=1)
 
-    # 4. Monthly 6-month trend
     months_data = []
     for m in range(6, 0, -1):
         dt = today - timedelta(days=30 * m)
@@ -1673,7 +1641,6 @@ def page_analytics():
         ann.update(font=dict(color="#c9a84c", size=13, family="Orbitron"))
     st.plotly_chart(fig, use_container_width=True)
 
-    # ── Priority heatmap ──
     st.markdown("---")
     sec_header("🔥 מפת חום — עדיפות × קטגוריה")
     heat_data = {}
@@ -1712,7 +1679,6 @@ role = st.session_state.user_role
 lt   = st.session_state.login_time
 elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
 
-# ── Sidebar ──
 ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
 df_side = db_load_tasks()
 today_side = len(tasks_for_date(df_side, datetime.now()))
@@ -1763,7 +1729,6 @@ if st.sidebar.button("🚪 התנתקות", use_container_width=True):
     st.session_state.login_time = None
     st.rerun()
 
-# ── Header Banner ──
 PAGE_ICONS = {
     "📊 דשבורד":        "📊 דשבורד בקרה",
     "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
@@ -1779,7 +1744,6 @@ st.markdown(
     f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
     f'</div>', unsafe_allow_html=True)
 
-# ── Route ──
 if   choice == "📊 דשבורד":        page_dashboard()
 elif choice == "📋 סידור עבודה":   page_work()
 elif choice == "📅 לוח שנה":       page_calendar()
