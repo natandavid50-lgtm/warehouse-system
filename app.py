@@ -1004,40 +1004,7 @@ def page_dashboard():
                     yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_m, use_container_width=True)
-
-            with c_heat:
-                # Category breakdown for month
-                cat_m = {}
-                _, nd = cal_lib.monthrange(sy, sm)
-                df_an = db_load_tasks()
-                for day in range(1, nd + 1):
-                    for t in tasks_for_date(df_an, datetime(sy, sm, day).date()):
-                        c = t["category"]
-                        cat_m.setdefault(c, {"done": 0, "total": 0})
-                        cat_m[c]["total"] += 1
-                        if t["is_done"]: cat_m[c]["done"] += 1
-                if cat_m:
-                    cdf = pd.DataFrame([
-                        {"קטגוריה": k, "אחוז": round(v["done"]/max(v["total"],1)*100),
-                         "בוצע": v["done"], "מתוכנן": v["total"]}
-                        for k, v in cat_m.items()]).sort_values("אחוז", ascending=True)
-                    CMAP2 = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
-                             "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
-                    fig_c = go.Figure(go.Bar(
-                        x=cdf["אחוז"], y=cdf["קטגוריה"],
-                        orientation="h",
-                        marker_color=[CMAP2.get(c,"#8899aa") for c in cdf["קטגוריה"]],
-                        text=[f"{v}%" for v in cdf["אחוז"]],
-                        textposition="outside",
-                        textfont=dict(color="#e2eeff", size=11)))
-                    fig_c.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Heebo", color="#e2eeff"), height=300,
-                        margin=dict(t=10, b=10, l=80, r=60),
-                        xaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
-                        yaxis=dict(gridcolor="rgba(255,255,255,.03)"),
-                        showlegend=False)
-                    st.plotly_chart(fig_c, use_container_width=True)
+st.plotly_chart(fig_c, use_container_width=True)
 
         # Excel export
         buf = io.BytesIO()
@@ -1058,7 +1025,11 @@ def page_dashboard():
 def page_work():
     df = db_load_tasks()
     today = datetime.now()
-    start = today - timedelta(days=(today.weekday() + 1) % 7)
+    
+    # תיקון חישוב תחילת השבוע (יום ראשון = 0 לפי שעון מקומי)
+    curr_day_idx = int(today.strftime('%w'))
+    start = today - timedelta(days=curr_day_idx)
+    
     day_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי"]
     cols = st.columns(5)
 
@@ -1479,8 +1450,7 @@ def page_inventory():
             f'</div>'
             f'</div>',
             unsafe_allow_html=True)
-
-    with right_col:
+with right_col:
         if HAS_PLOTLY:
             sec_header("🎯 גרפי ביצוע")
 
@@ -1800,7 +1770,7 @@ st.markdown(
     f'</div>', unsafe_allow_html=True)
 
 # ── Route ──
-if   choice == "📊 דשבורד":          page_dashboard()
+if   choice == "📊 דשבורד":        page_dashboard()
 elif choice == "📋 סידור עבודה":     page_work()
 elif choice == "📅 לוח שנה":          page_calendar()
 elif choice == "📦 ספירות מלאי":     page_inventory()
