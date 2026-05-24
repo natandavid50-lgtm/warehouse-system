@@ -44,627 +44,465 @@ MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יונ�
 SEED_TASKS = []
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PREMIUM CSS — Luxury Dark · Gold & Obsidian
+#  CSS — Industrial Dark + Neon
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-/* ════════════════════════════════════
-   DESIGN TOKENS
-   ════════════════════════════════════ */
 :root {
-  /* Surfaces */
-  --ink:       #08090d;
-  --void:      #0c0d12;
-  --surface:   #111318;
-  --raised:    #181a21;
-  --float:     #1e2029;
-  --overlay:   #242730;
-
-  /* Gold palette */
-  --gold:      #c9a84c;
-  --gold-lt:   #e8cb7a;
-  --gold-dk:   #8a6e2a;
-  --gold-glow: rgba(201,168,76,.18);
-
-  /* Semantic */
-  --emerald:   #2dd4a0;
-  --ember:     #f97316;
-  --crimson:   #f43f5e;
-  --sapphire:  #60a5fa;
-  --amethyst:  #c084fc;
-
-  /* Text */
-  --t1:  #f0ece0;
-  --t2:  #9a9480;
-  --t3:  #5a5548;
-
-  /* Borders */
-  --rule:    rgba(201,168,76,.12);
-  --rule-md: rgba(201,168,76,.28);
-  --rule-hi: rgba(201,168,76,.55);
-
-  /* Type */
-  --serif: 'DM Serif Display', Georgia, serif;
-  --sans:  'Noto Sans Hebrew', sans-serif;
-  --mono:  'Space Mono', monospace;
-
-  /* Geometry */
-  --rad:   10px;
-  --rad-lg:16px;
-  --rad-xl:22px;
+  --bg0:     #020810;
+  --bg1:     #040d1c;
+  --bg2:     #071526;
+  --card:    #0a1c35;
+  --card2:   #0d2240;
+  --card3:   #102850;
+  --b0:      rgba(0,212,255,.08);
+  --b1:      rgba(0,212,255,.2);
+  --b2:      rgba(0,212,255,.45);
+  --b3:      rgba(0,212,255,.7);
+  --cyan:    #00d4ff;
+  --green:   #00ff88;
+  --red:     #ff2d55;
+  --amber:   #ffb800;
+  --purple:  #bf5af2;
+  --txt:     #e2eeff;
+  --txt2:    #6b8aaa;
+  --txt3:    #3d5a75;
+  --mono:    'JetBrains Mono', monospace;
+  --orb:     'Orbitron', monospace;
+  --heb:     'Heebo', sans-serif;
+  --r:       14px;
+  --r2:      20px;
+  --shadow:  0 8px 32px rgba(0,0,0,.6);
+  --glow-c:  0 0 30px rgba(0,212,255,.25);
+  --glow-g:  0 0 30px rgba(0,255,136,.2);
+  --glow-r:  0 0 30px rgba(255,45,85,.25);
 }
 
-/* ════════════════════════════════════
-   BASE
-   ════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; }
 html, body, [class*="css"] {
-  font-family: var(--sans) !important;
+  font-family: var(--heb) !important;
   direction: rtl !important;
   text-align: right !important;
-  -webkit-font-smoothing: antialiased;
 }
 
-/* ════════════════════════════════════
-   APP BACKGROUND — noise + vignette
-   ════════════════════════════════════ */
 .stApp {
-  background-color: var(--ink) !important;
+  background-color: var(--bg0) !important;
   background-image:
-    radial-gradient(ellipse 120% 60% at 50% -10%,
-      rgba(201,168,76,.06) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 100%,
-      rgba(45,212,160,.03) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-  background-size: 100% 100%, 100% 100%, 256px 256px;
+    linear-gradient(rgba(0,212,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,.03) 1px, transparent 1px),
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0,212,255,.07) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,255,136,.04) 0%, transparent 60%);
+  background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
 }
 
-/* ════════════════════════════════════
-   SIDEBAR
-   ════════════════════════════════════ */
 [data-testid="stSidebar"] {
-  background: var(--void) !important;
-  border-left: 1px solid var(--rule) !important;
+  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%) !important;
+  border-left: 1px solid var(--b1) !important;
+  box-shadow: 4px 0 40px rgba(0,0,0,.5) !important;
 }
-[data-testid="stSidebar"]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-}
-[data-testid="stSidebar"] * { color: var(--t1) !important; }
+[data-testid="stSidebar"] * { color: var(--txt) !important; }
 [data-testid="stSidebar"] .stRadio label {
   background: transparent !important;
   border: 1px solid transparent;
-  border-radius: var(--rad);
+  border-radius: 10px;
   padding: 10px 14px;
-  margin: 2px 0;
-  transition: all .22s cubic-bezier(.4,0,.2,1);
+  margin: 3px 0;
+  transition: all .2s;
   display: block;
-  font-size: .88rem;
-  font-weight: 500;
-  letter-spacing: .2px;
-  color: var(--t2) !important;
+  font-weight: 600;
 }
 [data-testid="stSidebar"] .stRadio label:hover {
-  background: rgba(201,168,76,.07) !important;
-  border-color: var(--rule-md) !important;
-  color: var(--t1) !important;
-  padding-right: 18px;
+  background: rgba(0,212,255,.08) !important;
+  border-color: var(--b2) !important;
+  transform: translateX(-3px);
 }
 
-/* ════════════════════════════════════
-   STREAMLIT METRICS
-   ════════════════════════════════════ */
 [data-testid="stMetric"] {
-  background: var(--surface) !important;
+  background: var(--card) !important;
   padding: 22px 20px !important;
-  border-radius: var(--rad-lg) !important;
-  border: 1px solid var(--rule) !important;
-  transition: all .3s !important;
+  border-radius: var(--r) !important;
+  border: 1px solid var(--b1) !important;
+  box-shadow: var(--shadow) !important;
+  transition: all .25s !important;
   position: relative;
   overflow: hidden;
 }
-[data-testid="stMetric"]::after {
+[data-testid="stMetric"]::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(201,168,76,.04) 0%, transparent 60%);
-  pointer-events: none;
+  top: 0; right: 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
 }
 [data-testid="stMetric"]:hover {
-  border-color: var(--rule-md) !important;
-  transform: translateY(-3px) !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px var(--rule-md) !important;
+  transform: translateY(-4px) !important;
+  border-color: var(--b2) !important;
+  box-shadow: var(--glow-c), var(--shadow) !important;
 }
 [data-testid="stMetricLabel"] {
-  color: var(--t3) !important;
-  font-size: .72rem !important;
+  color: var(--txt2) !important;
+  font-size: .78rem !important;
   font-weight: 600 !important;
-  letter-spacing: 1.5px !important;
+  letter-spacing: 1px !important;
   text-transform: uppercase !important;
 }
 [data-testid="stMetricValue"] {
-  color: var(--gold-lt) !important;
-  font-family: var(--serif) !important;
-  font-weight: 400 !important;
-  font-size: 2.2rem !important;
-  letter-spacing: .5px;
+  color: var(--cyan) !important;
+  font-family: var(--orb) !important;
+  font-weight: 800 !important;
+  font-size: 2.1rem !important;
+  text-shadow: 0 0 20px rgba(0,212,255,.4);
 }
 
-/* ════════════════════════════════════
-   BUTTONS
-   ════════════════════════════════════ */
 .stButton > button {
-  background: transparent !important;
-  border: 1px solid var(--rule-md) !important;
-  color: var(--gold) !important;
-  border-radius: var(--rad) !important;
-  font-family: var(--sans) !important;
-  font-weight: 600 !important;
-  font-size: .85rem !important;
-  letter-spacing: .3px;
-  transition: all .22s !important;
-  padding: 8px 18px !important;
+  background: rgba(0,212,255,.08) !important;
+  border: 1px solid var(--b2) !important;
+  color: var(--cyan) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-family: var(--heb) !important;
+  transition: all .2s !important;
 }
 .stButton > button:hover {
-  background: var(--gold-glow) !important;
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 28px rgba(201,168,76,.15) !important;
+  background: rgba(0,212,255,.18) !important;
+  box-shadow: var(--glow-c) !important;
   transform: translateY(-1px);
 }
 
-/* ════════════════════════════════════
-   FORMS & INPUTS
-   ════════════════════════════════════ */
 [data-testid="stForm"] {
-  background: var(--surface) !important;
-  border: 1px solid var(--rule) !important;
-  border-radius: var(--rad-xl) !important;
+  background: var(--card) !important;
+  border: 1px solid var(--b1) !important;
+  border-radius: var(--r2) !important;
   padding: 28px !important;
-  position: relative;
-  overflow: hidden;
-}
-[data-testid="stForm"]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-dk), transparent);
 }
 [data-testid="stForm"] .stButton > button {
-  background: linear-gradient(135deg, var(--gold-dk) 0%, #6b5020 100%) !important;
-  color: var(--ink) !important;
+  background: linear-gradient(135deg, #0088cc, #005fa3) !important;
+  color: #fff !important;
   border: none !important;
-  font-weight: 700 !important;
-  box-shadow: 0 4px 16px rgba(201,168,76,.25) !important;
+  box-shadow: 0 4px 20px rgba(0,136,204,.4) !important;
 }
 [data-testid="stForm"] .stButton > button:hover {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dk) 100%) !important;
-  box-shadow: 0 6px 28px rgba(201,168,76,.4) !important;
+  background: linear-gradient(135deg, #00a8ff, #0077cc) !important;
+  box-shadow: 0 6px 28px rgba(0,168,255,.5) !important;
 }
+
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
 .stNumberInput > div > div > input,
 .stDateInput > div > div > input {
-  background: var(--raised) !important;
-  border: 1px solid var(--rule) !important;
-  border-radius: var(--rad) !important;
-  color: var(--t1) !important;
-  font-family: var(--sans) !important;
-  font-size: .88rem !important;
+  background: var(--bg2) !important;
+  border: 1px solid var(--b1) !important;
+  border-radius: 10px !important;
+  color: var(--txt) !important;
+  font-family: var(--heb) !important;
   transition: border-color .2s !important;
 }
 .stTextInput > div > div > input:focus,
 .stTextArea > div > div > textarea:focus {
-  border-color: var(--rule-hi) !important;
-  box-shadow: 0 0 0 3px rgba(201,168,76,.08) !important;
+  border-color: var(--b3) !important;
+  box-shadow: 0 0 0 2px rgba(0,212,255,.12) !important;
 }
-label[data-testid="stWidgetLabel"] p {
-  color: var(--t2) !important;
-  font-size: .78rem !important;
-  font-weight: 600 !important;
-  letter-spacing: .8px !important;
-  text-transform: uppercase !important;
-}
+label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; font-weight: 600 !important; }
 
-/* ════════════════════════════════════
-   EXPANDER
-   ════════════════════════════════════ */
-[data-testid="stExpander"] {
-  background: var(--surface) !important;
-  border: 1px solid var(--rule) !important;
-  border-radius: var(--rad-lg) !important;
-}
-details > summary { color: var(--gold) !important; font-weight: 600 !important; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg0); }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
 
-/* ════════════════════════════════════
-   TABS
-   ════════════════════════════════════ */
-[data-testid="stTabs"] [role="tab"] {
-  color: var(--t2) !important;
-  font-weight: 600 !important;
-  font-size: .84rem !important;
-  letter-spacing: .3px;
-  transition: all .2s !important;
-}
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-  color: var(--gold-lt) !important;
-  border-bottom: 2px solid var(--gold) !important;
-}
-
-/* ════════════════════════════════════
-   DOWNLOAD BUTTON
-   ════════════════════════════════════ */
-[data-testid="stDownloadButton"] > button {
-  background: rgba(45,212,160,.08) !important;
-  border: 1px solid rgba(45,212,160,.3) !important;
-  color: var(--emerald) !important;
-}
-[data-testid="stDownloadButton"] > button:hover {
-  background: rgba(45,212,160,.16) !important;
-  box-shadow: 0 0 24px rgba(45,212,160,.12) !important;
-}
-
-/* ════════════════════════════════════
-   POPOVER
-   ════════════════════════════════════ */
 div[data-testid="stPopover"] > button {
   width: 100% !important;
   min-height: 58px !important;
   margin-bottom: 6px !important;
-  font-weight: 600 !important;
-  border-radius: var(--rad) !important;
-  border: 1px solid var(--rule) !important;
-  background: var(--surface) !important;
-  color: var(--t1) !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--b1) !important;
+  background: var(--card) !important;
+  color: var(--txt) !important;
   text-align: right !important;
   transition: all .2s !important;
-  font-size: .86rem !important;
 }
 div[data-testid="stPopover"] > button:hover {
-  border-color: var(--rule-md) !important;
-  background: var(--raised) !important;
+  border-color: var(--b2) !important;
+  background: var(--card2) !important;
 }
 
-/* ════════════════════════════════════
-   SCROLLBAR
-   ════════════════════════════════════ */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--ink); }
-::-webkit-scrollbar-thumb { background: var(--rule-md); border-radius: 2px; }
+details > summary { color: var(--cyan) !important; font-weight: 700 !important; }
+[data-testid="stExpander"] {
+  background: var(--card) !important;
+  border: 1px solid var(--b1) !important;
+  border-radius: var(--r) !important;
+}
 
-/* ════════════════════════════════════
-   DATAFRAME
-   ════════════════════════════════════ */
+[data-testid="stTabs"] [role="tab"] {
+  color: var(--txt2) !important;
+  font-weight: 700 !important;
+  transition: all .2s !important;
+}
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+  color: var(--cyan) !important;
+  border-bottom: 2px solid var(--cyan) !important;
+}
+
+[data-testid="stDownloadButton"] > button {
+  background: linear-gradient(135deg, rgba(0,255,136,.15), rgba(0,255,136,.05)) !important;
+  border: 1px solid rgba(0,255,136,.4) !important;
+  color: var(--green) !important;
+}
+[data-testid="stDownloadButton"] > button:hover {
+  background: rgba(0,255,136,.25) !important;
+  box-shadow: var(--glow-g) !important;
+}
+
 [data-testid="stDataFrame"] {
-  border: 1px solid var(--rule) !important;
-  border-radius: var(--rad-lg) !important;
-  overflow: hidden;
+  border: 1px solid var(--b1) !important;
+  border-radius: var(--r) !important;
 }
 
-/* ════════════════════════════════════
-   ── CUSTOM COMPONENTS ──
-   ════════════════════════════════════ */
+/* ── CUSTOM COMPONENTS ── */
 
-/* ── BANNER ── */
-.banner {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--rule-md);
-  border-radius: var(--rad-xl);
-  padding: 30px 40px;
-  margin-bottom: 26px;
+.mega-banner {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card2) 50%, var(--card) 100%);
+  border: 1px solid var(--b2);
+  border-radius: var(--r2);
+  padding: 32px 40px;
+  margin-bottom: 28px;
   text-align: center;
+  position: relative;
   overflow: hidden;
+  box-shadow: var(--glow-c), var(--shadow);
 }
-.banner::before {
+.mega-banner::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%, var(--gold-dk) 20%, var(--gold-lt) 50%, var(--gold-dk) 80%, transparent 100%);
-}
-.banner::after {
-  content: '';
-  position: absolute;
-  bottom: -80px; left: 50%;
+  top: -80px; left: 50%;
   transform: translateX(-50%);
-  width: 300px; height: 160px;
-  background: radial-gradient(ellipse, rgba(201,168,76,.08) 0%, transparent 70%);
+  width: 400px; height: 160px;
+  background: radial-gradient(ellipse, rgba(0,212,255,.15) 0%, transparent 70%);
   pointer-events: none;
 }
-.banner-wordmark {
-  font-family: var(--serif);
-  font-size: 2rem;
-  color: var(--gold-lt);
-  letter-spacing: 3px;
-  margin: 0 0 4px;
-  text-shadow: 0 2px 30px rgba(201,168,76,.3);
+.mega-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
 }
-.banner-sub {
-  font-size: .72rem;
-  color: var(--t3);
-  letter-spacing: 3px;
+.mega-banner h1 {
+  font-family: var(--orb) !important;
+  font-size: 2rem !important;
+  font-weight: 900 !important;
+  color: var(--cyan) !important;
+  letter-spacing: 4px !important;
+  margin: 0 0 8px !important;
+  text-shadow: 0 0 40px rgba(0,212,255,.5) !important;
+}
+.mega-banner .sub {
+  color: var(--txt2);
+  font-size: .85rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  font-weight: 500;
 }
-.live-pip {
+.mega-banner .live-dot {
   display: inline-block;
-  width: 6px; height: 6px;
+  width: 8px; height: 8px;
   border-radius: 50%;
-  background: var(--emerald);
-  box-shadow: 0 0 10px var(--emerald);
+  background: var(--green);
+  box-shadow: 0 0 12px var(--green);
   margin-left: 8px;
-  animation: pip 2.4s ease infinite;
-  vertical-align: middle;
+  animation: pulse-dot 2s ease infinite;
 }
-@keyframes pip {
+@keyframes pulse-dot {
   0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.3; transform:scale(.6); }
+  50%      { opacity:.5; transform:scale(.7); }
 }
 
-/* ── KPI CARD ── */
 .kpi {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: var(--rad-lg);
-  padding: 22px 18px 18px;
+  background: var(--card);
+  border: 1px solid var(--b1);
+  border-radius: var(--r2);
+  padding: 24px 20px;
   text-align: center;
   position: relative;
   overflow: hidden;
-  transition: all .3s cubic-bezier(.4,0,.2,1);
+  transition: all .3s;
   cursor: default;
 }
+.kpi:hover { transform: translateY(-5px); border-color: var(--b2); }
 .kpi::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  transition: opacity .3s;
+  top: 0; right: 0; width: 100%; height: 3px;
 }
-.kpi-gold::before   { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
-.kpi-emerald::before{ background: linear-gradient(90deg, transparent, var(--emerald), transparent); }
-.kpi-crimson::before{ background: linear-gradient(90deg, transparent, var(--crimson), transparent); }
-.kpi-ember::before  { background: linear-gradient(90deg, transparent, var(--ember), transparent); }
-.kpi:hover {
-  border-color: var(--rule-md);
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0,0,0,.5);
-}
+.kpi-blue::before   { background: linear-gradient(90deg, var(--cyan), #005fa3); }
+.kpi-green::before  { background: linear-gradient(90deg, var(--green), #005f35); }
+.kpi-red::before    { background: linear-gradient(90deg, var(--red), #6b001e); }
+.kpi-amber::before  { background: linear-gradient(90deg, var(--amber), #6b4a00); }
+.kpi-purple::before { background: linear-gradient(90deg, var(--purple), #3d0070); }
+.kpi:hover.kpi-blue  { box-shadow: var(--glow-c); }
+.kpi:hover.kpi-green { box-shadow: var(--glow-g); }
+.kpi:hover.kpi-red   { box-shadow: var(--glow-r); }
 .kpi-icon {
-  font-size: 1.6rem;
+  font-size: 2rem;
   margin-bottom: 10px;
   display: block;
+  filter: drop-shadow(0 0 12px currentColor);
 }
-.kpi-num {
-  font-family: var(--serif);
-  font-size: 2.6rem;
-  font-weight: 400;
+.kpi-val {
+  font-family: var(--orb);
+  font-size: 2.8rem;
+  font-weight: 900;
   line-height: 1;
-  margin-bottom: 6px;
-  letter-spacing: 1px;
+  margin-bottom: 8px;
 }
-.kpi-label {
-  font-size: .68rem;
-  color: var(--t3);
-  letter-spacing: 2px;
+.kpi-lbl {
+  font-size: .72rem;
+  color: var(--txt2);
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   font-weight: 600;
 }
 .kpi-sub {
-  font-size: .72rem;
+  font-size: .75rem;
   margin-top: 6px;
-  font-family: var(--mono);
-  opacity: .7;
-}
-
-/* ── PROGRESS BAR ── */
-.track {
-  background: rgba(255,255,255,.05);
-  border-radius: 99px;
-  overflow: hidden;
-  position: relative;
-}
-.fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width .9s cubic-bezier(.4,0,.2,1);
-}
-
-/* ── SECTION HEADER ── */
-.sh {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 26px 0 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--rule);
-}
-.sh-line {
-  width: 3px;
-  height: 18px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.sh-text {
-  font-family: var(--sans);
-  font-size: .72rem;
   font-weight: 700;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--t2);
+  font-family: var(--mono);
 }
 
-/* ── TASK CARD ── */
-.tc {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: var(--rad);
-  padding: 12px 14px 12px 18px;
-  margin-bottom: 6px;
-  position: relative;
-  transition: all .22s;
+.prog {
+  background: rgba(255,255,255,.06);
+  border-radius: 20px;
+  height: 8px;
   overflow: hidden;
+  margin: 6px 0;
+  position: relative;
 }
-.tc::before {
+.prog::after {
   content: '';
   position: absolute;
-  top: 0; right: 0;
-  width: 3px; height: 100%;
-  border-radius: 0 var(--rad) var(--rad) 0;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.06) 50%, transparent 100%);
+  animation: shimmer 2s ease infinite;
 }
-.tc-gold::before   { background: var(--gold); }
-.tc-emerald::before{ background: var(--emerald); }
-.tc-crimson::before{ background: var(--crimson); }
-.tc-ember::before  { background: var(--ember); }
-.tc-dim::before    { background: var(--t3); }
-.tc:hover {
-  background: var(--raised);
-  border-color: var(--rule-md);
-  transform: translateX(-2px);
-}
-.tc.done { opacity: .52; }
-.tc-name {
-  font-weight: 600;
-  font-size: .9rem;
-  color: var(--t1);
-  margin-bottom: 3px;
-}
-.tc-meta {
-  font-size: .74rem;
-  color: var(--t2);
-  font-family: var(--mono);
-}
-.tc-desc {
-  font-size: .76rem;
-  color: var(--t3);
-  margin-top: 5px;
-  line-height: 1.5;
+@keyframes shimmer { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+.pfill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width .8s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── BADGE ── */
-.chip {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: .65rem;
-  font-weight: 700;
-  letter-spacing: .6px;
-  text-transform: uppercase;
-  margin: 1px;
-}
-.chip-gold    { background: rgba(201,168,76,.14); color: var(--gold-lt);  border: 1px solid rgba(201,168,76,.22); }
-.chip-emerald { background: rgba(45,212,160,.12); color: var(--emerald);  border: 1px solid rgba(45,212,160,.2); }
-.chip-crimson { background: rgba(244,63,94,.12);  color: var(--crimson);  border: 1px solid rgba(244,63,94,.2); }
-.chip-ember   { background: rgba(249,115,22,.12); color: var(--ember);    border: 1px solid rgba(249,115,22,.2); }
-.chip-ameth   { background: rgba(192,132,252,.12);color: var(--amethyst); border: 1px solid rgba(192,132,252,.2); }
-.chip-dim     { background: rgba(255,255,255,.05);color: var(--t2);       border: 1px solid var(--rule); }
-
-/* ── WEEK CHIP ── */
-.wchip {
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: var(--rad-lg);
-  padding: 12px 8px;
-  margin-bottom: 10px;
-  text-align: center;
+.tc {
+  background: var(--card);
+  border: 1px solid var(--b0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 7px;
+  border-right: 4px solid var(--cyan);
   transition: all .2s;
   position: relative;
   overflow: hidden;
 }
-.wchip.today {
-  border-color: var(--rule-md);
-  background: var(--raised);
-}
-.wchip.today::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-}
-.wchip-name { font-size: .72rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; }
-.wchip-date { font-size: .68rem; color: var(--t3); font-family: var(--mono); margin-top: 2px; }
-.wchip-count{ font-size: .65rem; color: var(--emerald); font-weight: 700; margin-top: 4px; }
+.tc:hover { background: var(--card2); border-color: var(--b2); transform: translateX(-3px); }
+.tc.done   { border-right-color: var(--green) !important; opacity: .65; }
+.tc.urgent { border-right-color: var(--red)   !important; }
+.tc.high   { border-right-color: var(--amber) !important; }
 
-/* ── ALERT ── */
-.alert {
-  border-radius: var(--rad);
-  padding: 12px 16px;
-  margin-bottom: 14px;
-  font-size: .86rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  line-height: 1.5;
+.b {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: .67rem;
+  font-weight: 800;
+  margin: 1px;
+  letter-spacing: .3px;
 }
-.alert-red     { background: rgba(244,63,94,.08);  border: 1px solid rgba(244,63,94,.25); }
-.alert-gold    { background: rgba(201,168,76,.07);  border: 1px solid rgba(201,168,76,.2); }
-.alert-emerald { background: rgba(45,212,160,.07);  border: 1px solid rgba(45,212,160,.2); }
+.b-blue   { background: rgba(0,212,255,.14);  color: #5dd8ff; border: 1px solid rgba(0,212,255,.25); }
+.b-green  { background: rgba(0,255,136,.12);  color: #00ff88; border: 1px solid rgba(0,255,136,.2); }
+.b-red    { background: rgba(255,45,85,.14);  color: #ff5577; border: 1px solid rgba(255,45,85,.25); }
+.b-amber  { background: rgba(255,184,0,.14);  color: #ffd040; border: 1px solid rgba(255,184,0,.25); }
+.b-purple { background: rgba(191,90,242,.14); color: #d070ff; border: 1px solid rgba(191,90,242,.25); }
+.b-gray   { background: rgba(255,255,255,.07);color: var(--txt2); border: 1px solid var(--b1); }
 
-/* ── STAT ROW ── */
-.sr {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid rgba(255,255,255,.03);
-}
-.sr:last-child { border-bottom: none; }
-.sr-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.sr-lbl { color: var(--t2); font-size: .8rem; flex: 1; }
-.sr-val { color: var(--t1); font-size: .8rem; font-weight: 700; font-family: var(--mono); }
-
-/* ── DETAIL CARD (inventory) ── */
-.dc {
-  background: var(--raised);
-  border: 1px solid var(--rule);
-  border-radius: var(--rad-lg);
-  padding: 18px 20px;
-  margin-bottom: 12px;
+.wchip {
+  background: linear-gradient(135deg, var(--card), var(--card2));
+  border: 1px solid var(--b2);
+  border-radius: 12px;
+  padding: 12px 8px;
+  margin-bottom: 10px;
+  text-align: center;
   position: relative;
   overflow: hidden;
-  transition: all .22s;
+  box-shadow: var(--glow-c);
 }
-.dc::after {
+.wchip .day-name {
+  font-family: var(--orb);
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+.wchip .day-date { font-size: .68rem; color: var(--txt2); font-family: var(--mono); margin-top: 2px; }
+.wchip .day-count { font-size: .62rem; color: var(--green); font-weight: 700; margin-top: 4px; }
+
+.al { border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: .9rem; display: flex; align-items: flex-start; gap: 10px; }
+.al-red    { background: rgba(255,45,85,.1);   border: 1px solid rgba(255,45,85,.4); }
+.al-green  { background: rgba(0,255,136,.07);  border: 1px solid rgba(0,255,136,.25); }
+.al-amber  { background: rgba(255,184,0,.08);  border: 1px solid rgba(255,184,0,.3); }
+.al-cyan   { background: rgba(0,212,255,.07);  border: 1px solid rgba(0,212,255,.25); }
+
+.stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--b0); }
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: var(--txt2); font-size: .82rem; flex: 1; }
+.stat-val   { color: var(--txt);  font-size: .85rem; font-weight: 700; font-family: var(--mono); }
+
+.sec-h {
+  font-family: var(--orb);
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 24px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--b1);
+  position: relative;
+}
+.sec-h::after {
   content: '';
   position: absolute;
-  top: 0; right: 0;
-  width: 3px; height: 100%;
+  bottom: -1px; right: 0;
+  width: 60px; height: 2px;
+  background: var(--cyan);
+  box-shadow: var(--glow-c);
 }
-.dc:hover { border-color: var(--rule-md); }
 
-/* ── LOGIN BUTTONS ── */
+.mm { background: var(--card); border: 1px solid var(--b1); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: all .2s; }
+.mm:hover { border-color: var(--b2); transform: translateY(-2px); }
+.mm-icon { font-size: 1.5rem; }
+.mm-val  { font-family: var(--orb); font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
+.mm-lbl  { font-size: .72rem; color: var(--txt2); letter-spacing: .5px; }
+
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
 div[data-testid="stHorizontalBlock"] .stButton > button {
-  min-height: 200px !important;
-  height: 200px !important;
+  min-height: 220px !important;
+  height: 220px !important;
   width: 100% !important;
-  border-radius: var(--rad-xl) !important;
-  font-size: 1.3rem !important;
-  font-weight: 700 !important;
+  border-radius: var(--r2) !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   white-space: pre-wrap !important;
   text-align: center !important;
-  line-height: 1.6 !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
-  border-color: var(--rule-hi) !important;
-  background: rgba(201,168,76,.05) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
-  border-color: rgba(45,212,160,.35) !important;
-  background: rgba(45,212,160,.04) !important;
-}
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
-  border-color: rgba(96,165,250,.35) !important;
-  background: rgba(96,165,250,.04) !important;
-}
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -773,54 +611,46 @@ def monthly_stats(year, month):
 #  UI HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 def pbar(pct, color=None, height=8):
-    c = color or ("#2dd4a0" if pct >= 80 else "#f97316" if pct >= 50 else "#f43f5e")
-    return (f'<div class="track" style="height:{height}px">'
-            f'<div class="fill" style="width:{min(pct,100)}%;background:{c};height:{height}px"></div>'
+    c = color or ("#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55")
+    glow = f"0 0 10px {c}66"
+    return (f'<div class="prog" style="height:{height}px">'
+            f'<div class="pfill" style="width:{min(pct,100)}%;background:{c};box-shadow:{glow}"></div>'
             f'</div>')
 
-def badge(text, kind="dim"):
-    k_map = {"blue":"gold","green":"emerald","red":"crimson","amber":"ember",
-             "purple":"ameth","gray":"dim", "gold":"gold","emerald":"emerald",
-             "crimson":"crimson","ember":"ember"}
-    cls = k_map.get(kind, "dim")
-    return f'<span class="chip chip-{cls}">{text}</span>'
+def badge(text, kind="blue"):
+    return f'<span class="b b-{kind}">{text}</span>'
 
 def pri_badge(p):
-    return badge(p, {"דחוף":"crimson","גבוה":"ember","רגיל":"gold","נמוך":"dim"}.get(p,"dim"))
+    return badge(p, {"דחוף":"red","גבוה":"amber","רגיל":"blue","נמוך":"gray"}.get(p,"blue"))
 
 def cat_badge(c):
-    return badge(c, {"בטיחות":"crimson","ספירה":"gold","תחזוקה":"ember",
-                     "לוגיסטיקה":"ameth","ניקיון":"emerald","כללי":"dim"}.get(c,"dim"))
-
-def tc_color(priority, is_done):
-    if is_done:     return "tc-dim"
-    if priority == "דחוף": return "tc-crimson"
-    if priority == "גבוה": return "tc-ember"
-    return "tc-gold"
+    return badge(c, {"בטיחות":"red","ספירה":"blue","תחזוקה":"amber",
+                     "לוגיסטיקה":"purple","ניקיון":"green","כללי":"gray"}.get(c,"gray"))
 
 def task_card_html(t):
-    col_cls = tc_color(t["priority"], t["is_done"])
-    icon = "✓" if t["is_done"] else ("!" if t["priority"] == "דחוף" else "·")
-    rec  = f' {badge(t["rec"],"dim")}' if t.get("rec") else ""
-    desc = (f'<div class="tc-desc">{t["desc"]}</div>') if t.get("desc") else ""
-    done_cls = " done" if t["is_done"] else ""
-    return (f'<div class="tc {col_cls}{done_cls}">'
-            f'<div class="tc-name">{icon} {t["name"]} {pri_badge(t["priority"])} {cat_badge(t["category"])}{rec}</div>'
+    cls = "tc" + (" done" if t["is_done"] else
+                  " urgent" if t["priority"] == "דחוף" else
+                  " high"   if t["priority"] == "גבוה" else "")
+    icon = "✅" if t["is_done"] else ("🚨" if t["priority"] == "דחוף" else "⏳")
+    rec  = f' {badge(t["rec"],"gray")}' if t.get("rec") else ""
+    desc = (f'<div style="color:var(--txt2);font-size:.78rem;margin-top:5px;'
+            f'font-family:var(--mono)">{t["desc"]}</div>') if t.get("desc") else ""
+    return (f'<div class="{cls}">'
+            f'{icon} <b style="font-size:.95rem">{t["name"]}</b>'
+            f' {pri_badge(t["priority"])} {cat_badge(t["category"])}{rec}'
             f'{desc}</div>')
 
-def kpi_card(val, label, sub="", color="var(--gold-lt)", icon="◈", kind="gold"):
-    return (f'<div class="kpi kpi-{kind}">'
-            f'<div class="kpi-icon">{icon}</div>'
-            f'<div class="kpi-num" style="color:{color}">{val}</div>'
-            f'<div class="kpi-label">{label}</div>'
-            f'{"<div class=kpi-sub style=color:"+color+";opacity:.65>"+sub+"</div>" if sub else ""}'
+def kpi_card(val, label, sub="", color="var(--cyan)", icon="📊", kind="blue"):
+    glow = {"blue":"var(--glow-c)","green":"var(--glow-g)","red":"var(--glow-r)"}.get(kind,"")
+    return (f'<div class="kpi kpi-{kind}" style="box-shadow:{glow}">'
+            f'<span class="kpi-icon" style="color:{color}">{icon}</span>'
+            f'<div class="kpi-val" style="color:{color};text-shadow:0 0 20px {color}66">{val}</div>'
+            f'<div class="kpi-lbl">{label}</div>'
+            f'{"<div class=kpi-sub style=color:"+color+";opacity:.7>"+sub+"</div>" if sub else ""}'
             f'</div>')
 
-def sec_header(title, color="var(--gold)"):
-    st.markdown(
-        f'<div class="sh"><div class="sh-line" style="background:{color}"></div>'
-        f'<div class="sh-text">{title}</div></div>',
-        unsafe_allow_html=True)
+def sec_header(title):
+    st.markdown(f'<div class="sec-h">{title}</div>', unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -835,10 +665,10 @@ def check_timeout():
 
 def login_screen():
     st.markdown("""
-    <div class="banner">
-      <div class="banner-wordmark">אחים כהן · WMS</div>
-      <div class="banner-sub">
-        <span class="live-pip"></span>
+    <div class="mega-banner">
+      <h1>⬡ אחים כהן · WMS ⬡</h1>
+      <div class="sub">
+        <span class="live-dot"></span>
         מערכת ניהול מחסן מתקדמת
       </div>
     </div>
@@ -847,15 +677,16 @@ def login_screen():
     c1, c2, c3 = st.columns(3)
     with c1:
         with st.popover("🔑\nמנהל WMS", use_container_width=True):
-            st.markdown(f'<div style="color:var(--t2);font-size:.8rem;margin-bottom:14px;letter-spacing:.3px">גישה מלאה לכל מודולי המערכת</div>', unsafe_allow_html=True)
+            st.markdown("#### 🔐 כניסת מנהל מערכת")
+            st.markdown('<div style="color:var(--txt2);font-size:.82rem;margin-bottom:12px">גישה מלאה לכל מודולי המערכת</div>', unsafe_allow_html=True)
             pwd = st.text_input("סיסמה", type="password", key="lpwd")
-            if st.button("כניסה למערכת", use_container_width=True):
+            if st.button("🚀 כניסה למערכת", use_container_width=True):
                 if hashlib.sha256(pwd.encode()).hexdigest() == ADMIN_HASH:
                     st.session_state.user_role = "מנהל WMS"
                     st.session_state.login_time = datetime.now()
                     st.rerun()
                 else:
-                    st.error("סיסמה שגויה")
+                    st.error("❌ סיסמה שגויה")
     with c2:
         if st.button("📦\nצוות מחסן", use_container_width=True):
             st.session_state.user_role = "צוות מחסן"
@@ -871,11 +702,11 @@ def login_screen():
     df = st.session_state.tasks
     today_ts = tasks_for_date(df, datetime.now())
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.markdown(kpi_card(len(df), "משימות", icon="◈", kind="gold"), unsafe_allow_html=True)
-    c2.markdown(kpi_card(len(today_ts), "להיום", icon="◈", kind="emerald", color="var(--emerald)"), unsafe_allow_html=True)
-    c3.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="◈", kind="crimson", color="var(--crimson)"), unsafe_allow_html=True)
-    c4.markdown(kpi_card(len(st.session_state.get("inventory",[])), "חודשי ספירה", icon="◈", kind="gold"), unsafe_allow_html=True)
-    c5.markdown(kpi_card(datetime.now().strftime("%H:%M"), "שעה", icon="◈", kind="gold"), unsafe_allow_html=True)
+    c1.markdown(kpi_card(len(df),    "משימות",      icon="📋", kind="blue"), unsafe_allow_html=True)
+    c2.markdown(kpi_card(len(today_ts),"להיום",     icon="📅", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    c3.markdown(kpi_card(len(get_overdue()),"פיגורים",icon="⚠️",kind="red",  color="var(--red)"),   unsafe_allow_html=True)
+    c4.markdown(kpi_card(len(st.session_state.get("inventory",[])),"חודשי ספירה",icon="📦",kind="blue"), unsafe_allow_html=True)
+    c5.markdown(kpi_card(datetime.now().strftime("%H:%M"),"שעה",icon="🕐",kind="blue"), unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -890,9 +721,9 @@ def page_dashboard():
     overdue = get_overdue()
     if overdue:
         st.markdown(
-            f'<div class="alert alert-red">⚠ <div><b style="color:var(--crimson)">'
+            f'<div class="al al-red">🚨 <div><b style="color:var(--red);font-size:1rem">'
             f'{len(overdue)} משימות שלא בוצעו בשבוע האחרון</b>'
-            f'<div style="color:var(--t2);font-size:.8rem;margin-top:2px">'
+            f'<div style="color:var(--txt2);font-size:.8rem;margin-top:2px">'
             f'לחץ להצגה וסגירה</div></div></div>',
             unsafe_allow_html=True)
         with st.expander("📋 פירוט פיגורים וסגירתם"):
@@ -907,7 +738,7 @@ def page_dashboard():
     sel = dc.date_input("📅 תאריך", today)
     dstr = sel.strftime("%Y-%m-%d")
     tc.markdown(f"""
-    <div style="padding:8px 0;color:var(--t2);font-family:var(--mono);font-size:.85rem">
+    <div style="padding:8px 0;color:var(--txt2);font-family:var(--mono);font-size:.85rem">
       🕐 {today.strftime('%H:%M:%S')} &nbsp;|&nbsp; 
       📆 {today.strftime('%A')} &nbsp;|&nbsp;
       {'🟢 <span style="color:var(--emerald)">עסק פתוח</span>' if today.weekday() not in [4,5] else '🔴 <span style="color:var(--crimson)">סגור (סוף שבוע)</span>'}
@@ -916,24 +747,23 @@ def page_dashboard():
     ts = tasks_for_date(df, sel)
     tot = len(ts); don = sum(1 for t in ts if t["is_done"])
     pct = round(don / tot * 100) if tot else 0
-    pct_color = "#2dd4a0" if pct >= 80 else "#f97316" if pct >= 50 else "#f43f5e"
+    pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
     lbl = "היום" if sel == today.date() else sel.strftime("%d/%m")
 
     # ── Big KPI row ──
     k1, k2, k3, k4, k5 = st.columns(5)
-    pct_color = "#2dd4a0" if pct >= 80 else "#f97316" if pct >= 50 else "#f43f5e"
-    k1.markdown(kpi_card(tot, f"משימות {lbl}", icon="◈", kind="gold"), unsafe_allow_html=True)
-    k2.markdown(kpi_card(don, "בוצעו", icon="◈", kind="emerald", color="var(--emerald)"), unsafe_allow_html=True)
-    k3.markdown(kpi_card(tot-don, "נותרו", icon="◈",
-                         kind="crimson" if tot-don > 3 else "gold",
-                         color="var(--crimson)" if tot-don > 3 else "var(--gold-lt)"), unsafe_allow_html=True)
-    k4.markdown(kpi_card(f"{pct}%", "ביצוע",
-                         sub=("מצוין" if pct>=80 else "בינוני" if pct>=50 else "נמוך"),
-                         icon="◈", kind="emerald" if pct>=80 else "crimson",
-                         color="var(--emerald)" if pct>=80 else "var(--crimson)"), unsafe_allow_html=True)
-    k5.markdown(kpi_card(len(overdue), "פיגורים", icon="◈", kind="crimson", color="var(--crimson)"), unsafe_allow_html=True)
+    pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
+    k1.markdown(kpi_card(tot,     f"משימות {lbl}", icon="📋", kind="blue"), unsafe_allow_html=True)
+    k2.markdown(kpi_card(don,     "בוצעו",         icon="✅", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    k3.markdown(kpi_card(tot-don, "נותרו",          icon="⏳",
+                         kind="red" if tot-don > 3 else "blue",
+                         color="var(--red)" if tot-don > 3 else "var(--cyan)"), unsafe_allow_html=True)
+    k4.markdown(kpi_card(f"{pct}%","ביצוע",
+                         sub=f"{'🔥 מצוין' if pct>=80 else '⚠️ בינוני' if pct>=50 else '❌ נמוך'}",
+                         icon="📈", kind="green" if pct>=80 else "red", color=pct_color), unsafe_allow_html=True)
+    k5.markdown(kpi_card(len(overdue),"פיגורים",   icon="🚨", kind="red",  color="var(--red)"), unsafe_allow_html=True)
 
-    st.markdown(f'<div style="margin:8px 0 20px">{pbar(pct, pct_color, 6)}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="margin:8px 0 20px">{pbar(pct, pct_color, 10)}</div>', unsafe_allow_html=True)
 
 
     # ── Main content: tasks list + charts side by side ──
@@ -951,7 +781,7 @@ def page_dashboard():
                 p = round(don_c / len(cat_tasks) * 100)
                 st.markdown(f'<div style="margin:14px 0 6px;display:flex;align-items:center;gap:8px">'
                             f'{cat_badge(cat)} '
-                            f'<span style="color:var(--t2);font-size:.75rem">{don_c}/{len(cat_tasks)}</span>'
+                            f'<span style="color:var(--txt2);font-size:.75rem">{don_c}/{len(cat_tasks)}</span>'
                             f'{pbar(p)}</div>', unsafe_allow_html=True)
                 for t in cat_tasks:
                     ca, cb = st.columns([7, 1])
@@ -973,8 +803,8 @@ def page_dashboard():
                 if t["is_done"]: cat_done[c] = cat_done.get(c, 0) + 1
             cat_names = list(cat_tot.keys())
             cat_vals  = [cat_tot[c] for c in cat_names]
-            CMAP = {"בטיחות":"#f43f5e","ספירה":"#c9a84c","תחזוקה":"#f97316",
-                    "לוגיסטיקה":"#c084fc","ניקיון":"#2dd4a0","כללי":"#8899aa"}
+            CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
+                    "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
             colors = [CMAP.get(c, "#8899aa") for c in cat_names]
             fig_pie = go.Figure(go.Pie(
                 labels=cat_names, values=cat_vals,
@@ -996,7 +826,7 @@ def page_dashboard():
 
         # Priority breakdown
         st.markdown("**עדיפות:**")
-        for pri, clr in [("דחוף","#f43f5e"),("גבוה","#f97316"),("רגיל","#c9a84c"),("נמוך","#8899aa")]:
+        for pri, clr in [("דחוף","#ff2d55"),("גבוה","#ffb800"),("רגיל","#c9a84c"),("נמוך","#8899aa")]:
             cnt = sum(1 for t in ts if t["priority"] == pri)
             don_c = sum(1 for t in ts if t["priority"] == pri and t["is_done"])
             if cnt:
@@ -1067,7 +897,7 @@ def page_dashboard():
         if HAS_PLOTLY:
             c_bar, c_heat = st.columns([3, 2])
             with c_bar:
-                colors_m = ["#2dd4a0" if v >= 80 else "#f97316" if v >= 50 else "#f43f5e"
+                colors_m = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
                             for v in mdf["אחוז"]]
                 fig_m = go.Figure()
                 fig_m.add_trace(go.Bar(
@@ -1077,7 +907,7 @@ def page_dashboard():
                     textposition="outside", textfont=dict(size=9, color="#e2eeff")))
                 fig_m.add_hline(y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
                                 annotation_text="יעד 85%",
-                                annotation_font_color="#2dd4a0",
+                                annotation_font_color="#00ff88",
                                 annotation_font_size=11)
                 fig_m.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -1103,8 +933,8 @@ def page_dashboard():
                         {"קטגוריה": k, "אחוז": round(v["done"]/max(v["total"],1)*100),
                          "בוצע": v["done"], "מתוכנן": v["total"]}
                         for k, v in cat_m.items()]).sort_values("אחוז", ascending=True)
-                    CMAP2 = {"בטיחות":"#f43f5e","ספירה":"#c9a84c","תחזוקה":"#f97316",
-                             "לוגיסטיקה":"#c084fc","ניקיון":"#2dd4a0","כללי":"#8899aa"}
+                    CMAP2 = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
+                             "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
                     fig_c = go.Figure(go.Bar(
                         x=cdf["אחוז"], y=cdf["קטגוריה"],
                         orientation="h",
@@ -1150,10 +980,10 @@ def page_work():
         don = sum(1 for t in ts if t["is_done"])
         pct = round(don / len(ts) * 100) if ts else 0
         is_today = curr.date() == today.date()
-        pct_color = "#2dd4a0" if pct >= 80 else "#f97316" if pct >= 50 else "#f43f5e"
+        pct_color = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
 
         with cols[i]:
-            border_color = "var(--gold-lt)" if is_today else "var(--rule-md)"
+            border_color = "var(--cyan)" if is_today else "var(--b2)"
             bg = "rgba(0,212,255,.05)" if is_today else "transparent"
             st.markdown(f"""
             <div class="wchip" style="border-color:{border_color};background:linear-gradient(135deg,var(--surface),{bg})">
@@ -1199,10 +1029,10 @@ def page_calendar():
             d = base + timedelta(days=i)
             if is_scheduled(base, row["Recurring"], d):
                 done = d.strftime("%Y-%m-%d") in str(row["Done_Dates"])
-                CMAP = {"בטיחות":"#f43f5e","ספירה":"#c9a84c","תחזוקה":"#f97316",
-                        "לוגיסטיקה":"#c084fc","ניקיון":"#2dd4a0","כללי":"#8899aa"}
+                CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
+                        "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
                 base_color = CMAP.get(str(row.get("Category","")), "#388bfd")
-                color = "#2dd4a0" if done else ("#f43f5e" if d < today else base_color)
+                color = "#00ff88" if done else ("#ff2d55" if d < today else base_color)
                 events.append({
                     "title": f"{'✅ ' if done else ''}{row['Task_Name']}",
                     "start": d.strftime("%Y-%m-%d"),
@@ -1211,21 +1041,21 @@ def page_calendar():
                 })
 
     # Legend
-    CATS_COLORS = [("בטיחות","#f43f5e"),("ספירה","#c9a84c"),("תחזוקה","#f97316"),
-                   ("לוגיסטיקה","#c084fc"),("ניקיון","#2dd4a0"),("כללי","#8899aa")]
+    CATS_COLORS = [("בטיחות","#ff2d55"),("ספירה","#c9a84c"),("תחזוקה","#ffb800"),
+                   ("לוגיסטיקה","#c084fc"),("ניקיון","#00ff88"),("כללי","#8899aa")]
     legend_html = " &nbsp; ".join(
-        f'<span style="color:{c}">⬤</span> <span style="color:var(--t2);font-size:.78rem">{n}</span>'
+        f'<span style="color:{c}">⬤</span> <span style="color:var(--txt2);font-size:.78rem">{n}</span>'
         for n, c in CATS_COLORS)
     st.markdown(
         f'<div style="margin-bottom:12px;padding:10px 16px;background:var(--surface);'
         f'border:1px solid var(--rule);border-radius:10px">'
         f'{legend_html} &nbsp;&nbsp; '
-        f'<span style="color:#2dd4a0">⬤</span> <span style="color:var(--t2);font-size:.78rem">בוצע</span> &nbsp; '
-        f'<span style="color:#f43f5e">⬤</span> <span style="color:var(--t2);font-size:.78rem">מפוגר</span>'
+        f'<span style="color:#00ff88">⬤</span> <span style="color:var(--txt2);font-size:.78rem">בוצע</span> &nbsp; '
+        f'<span style="color:#ff2d55">⬤</span> <span style="color:var(--txt2);font-size:.78rem">מפוגר</span>'
         f'</div>',
         unsafe_allow_html=True)
 
-    st.markdown(f'<div style="color:var(--t2);font-size:.8rem;margin-bottom:12px;font-family:var(--mono)">'
+    st.markdown(f'<div style="color:var(--txt2);font-size:.8rem;margin-bottom:12px;font-family:var(--mono)">'
                 f'◈ {len(events)} אירועים | 6 חודשים קדימה</div>', unsafe_allow_html=True)
 
     if HAS_CAL:
@@ -1283,7 +1113,7 @@ def page_manage():
 
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:12px;margin:10px 0 16px">'
-        f'<span style="color:var(--t2);font-size:.82rem;font-family:var(--mono)">'
+        f'<span style="color:var(--txt2);font-size:.82rem;font-family:var(--mono)">'
         f'◈ {len(filt)} / {len(df)} משימות</span>'
         f'<div style="flex:1">{pbar(round(len(filt)/max(len(df),1)*100), height=4)}</div>'
         f'</div>', unsafe_allow_html=True)
@@ -1300,7 +1130,7 @@ def page_manage():
                 f'{pri_badge(row.get("Priority","רגיל"))} '
                 f'{cat_badge(row.get("Category",""))} '
                 f'{badge(row.get("Recurring",""),"gray")}'
-                f'{"<div style=color:var(--t2);font-size:.78rem;margin-top:4px;font-family:var(--mono)>"+str(row.get("Description",""))+"</div>" if row.get("Description") else ""}'
+                f'{"<div style=color:var(--txt2);font-size:.78rem;margin-top:4px;font-family:var(--mono)>"+str(row.get("Description",""))+"</div>" if row.get("Description") else ""}'
                 f'</div>', unsafe_allow_html=True)
 
             with ce:
@@ -1350,7 +1180,7 @@ def page_manage():
                         f'<div class="tc">'
                         f'<b>{row["Task_Name"]}</b> {pri_badge(row.get("Priority","רגיל"))} '
                         f'{badge(row.get("Recurring",""),"gray")}'
-                        f'{"<br><span style=color:var(--t2);font-size:.78rem>"+str(row.get("Description",""))+"</span>" if row.get("Description") else ""}'
+                        f'{"<br><span style=color:var(--txt2);font-size:.78rem>"+str(row.get("Description",""))+"</span>" if row.get("Description") else ""}'
                         f'</div>', unsafe_allow_html=True)
 
 
@@ -1509,9 +1339,9 @@ def page_inventory():
     pct_locs = round(locs_c / locs_t * 100)
     pct_acc  = round(no_gap / max(locs_c, 1) * 100)
 
-    color_skus = "#2dd4a0" if pct_skus >= 90 else "#f97316" if pct_skus >= 70 else "#f43f5e"
-    color_locs = "#c9a84c" if pct_locs >= 90 else "#f97316" if pct_locs >= 70 else "#f43f5e"
-    color_acc  = "#c084fc" if pct_acc  >= 98 else "#f97316" if pct_acc  >= 90 else "#f43f5e"
+    color_skus = "#00ff88" if pct_skus >= 90 else "#ffb800" if pct_skus >= 70 else "#ff2d55"
+    color_locs = "#c9a84c" if pct_locs >= 90 else "#ffb800" if pct_locs >= 70 else "#ff2d55"
+    color_acc  = "#c084fc" if pct_acc  >= 98 else "#ffb800" if pct_acc  >= 90 else "#ff2d55"
 
     # ── Big 3 KPI cards ──
     k1, k2, k3 = st.columns(3)
@@ -1547,19 +1377,19 @@ def page_inventory():
                 f'border-radius:12px;padding:16px 18px;margin-bottom:12px;'
                 f'border-right:4px solid {color}">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-                f'<span style="font-weight:700;font-size:.95rem;color:var(--t1)">{label}</span>'
-                f'<span style="font-family:var(--mono);font-size:.8rem;color:var(--t2)">{status}</span>'
+                f'<span style="font-weight:700;font-size:.95rem;color:var(--txt)">{label}</span>'
+                f'<span style="font-family:var(--mono);font-size:.8rem;color:var(--txt2)">{status}</span>'
                 f'</div>'
                 f'<div style="display:flex;justify-content:space-between;margin-bottom:8px">'
                 f'<span style="font-family:var(--orb);font-size:1.8rem;font-weight:800;color:{color}'
                 f';text-shadow:0 0 16px {color}66">{pct}%</span>'
                 f'<div style="text-align:left">'
-                f'<div style="font-size:.72rem;color:var(--t2)">נספרו</div>'
+                f'<div style="font-size:.72rem;color:var(--txt2)">נספרו</div>'
                 f'<div style="font-family:var(--mono);font-size:1rem;color:{color};font-weight:700">{val:,}</div>'
                 f'</div>'
                 f'<div style="text-align:left">'
-                f'<div style="font-size:.72rem;color:var(--t2)">סה"כ</div>'
-                f'<div style="font-family:var(--mono);font-size:1rem;color:var(--t1);font-weight:700">{total:,}</div>'
+                f'<div style="font-size:.72rem;color:var(--txt2)">סה"כ</div>'
+                f'<div style="font-family:var(--mono);font-size:1rem;color:var(--txt);font-weight:700">{total:,}</div>'
                 f'</div>'
                 f'</div>'
                 f'{pbar(pct, color, 8)}'
@@ -1573,16 +1403,16 @@ def page_inventory():
         # Gap count
         gap_count = locs_c - no_gap
         gap_pct   = round(gap_count / max(locs_c, 1) * 100)
-        gap_color = "#f43f5e" if gap_pct > 10 else "#f97316" if gap_pct > 5 else "#2dd4a0"
+        gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
         st.markdown(
             f'<div style="background:var(--raised);border:1px solid rgba(255,45,85,.3);'
             f'border-radius:12px;padding:14px 18px;border-right:4px solid {gap_color}">'
             f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'<span style="font-weight:700;color:var(--t1)">⚡ איתורים עם פער</span>'
+            f'<span style="font-weight:700;color:var(--txt)">⚡ איתורים עם פער</span>'
             f'<span style="font-family:var(--orb);font-size:1.5rem;color:{gap_color};font-weight:800">'
             f'{gap_count:,}</span>'
             f'</div>'
-            f'<div style="color:var(--t2);font-size:.78rem;margin-top:4px">'
+            f'<div style="color:var(--txt2);font-size:.78rem;margin-top:4px">'
             f'{gap_pct}% מהאיתורים שנספרו — '
             f'{"⚠️ גבוה" if gap_pct > 10 else "⚡ בינוני" if gap_pct > 5 else "✅ תקין"}'
             f'</div>'
@@ -1635,7 +1465,7 @@ def page_inventory():
             remaining= [skus_t - skus_c, locs_t - locs_c]
             fig2.add_trace(go.Bar(
                 name="נספרו", x=cats_bar, y=counted,
-                marker_color=["#2dd4a0", "#c9a84c"],
+                marker_color=["#00ff88", "#c9a84c"],
                 text=[f"{v:,}" for v in counted],
                 textposition="inside", textfont=dict(color="#040d1c", size=13, family="Orbitron")))
             fig2.add_trace(go.Bar(
@@ -1667,7 +1497,7 @@ def page_inventory():
         } for r in hist])
 
         fig_h = go.Figure()
-        for col_name, color in [("מק\"טים %","#2dd4a0"),("איתורים %","#c9a84c"),("דיוק %","#c084fc")]:
+        for col_name, color in [("מק\"טים %","#00ff88"),("איתורים %","#c9a84c"),("דיוק %","#c084fc")]:
             fig_h.add_trace(go.Scatter(
                 x=hdf["חודש"], y=hdf[col_name],
                 name=col_name, mode="lines+markers",
@@ -1743,8 +1573,8 @@ def page_analytics():
 
     # 2. Category pie
     cat_counts = df["Category"].value_counts()
-    CMAP = {"בטיחות":"#f43f5e","ספירה":"#c9a84c","תחזוקה":"#f97316",
-            "לוגיסטיקה":"#c084fc","ניקיון":"#2dd4a0","כללי":"#8899aa"}
+    CMAP = {"בטיחות":"#ff2d55","ספירה":"#c9a84c","תחזוקה":"#ffb800",
+            "לוגיסטיקה":"#c084fc","ניקיון":"#00ff88","כללי":"#8899aa"}
     fig.add_trace(go.Pie(
         labels=cat_counts.index.tolist(),
         values=cat_counts.values.tolist(),
@@ -1781,7 +1611,7 @@ def page_analytics():
             })
     if months_data:
         mtrend = pd.DataFrame(months_data)
-        colors_mt = ["#2dd4a0" if v >= 80 else "#f97316" if v >= 50 else "#f43f5e"
+        colors_mt = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
                      for v in mtrend["ממוצע"]]
         fig.add_trace(go.Bar(
             x=mtrend["חודש"], y=mtrend["ממוצע"],
@@ -1848,27 +1678,27 @@ today_side = len(tasks_for_date(df_side, datetime.now()))
 ov_side    = len(get_overdue())
 
 st.sidebar.markdown(f"""
-<div style="padding:22px 0 14px;text-align:center;border-bottom:1px solid var(--rule);margin-bottom:14px">
-  <div style="font-family:var(--serif);font-size:1.4rem;color:var(--gold-lt);letter-spacing:2px;margin-bottom:4px">
-    {ROLE_ICONS.get(role,'·')} {role}
-  </div>
-  <div style="font-size:.68rem;color:var(--t3);letter-spacing:2px;text-transform:uppercase">
-    מחובר {elapsed_min} דק'
+<div style="padding:20px 0 12px;text-align:center">
+  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
+  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
+              color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
+    ● מחובר {elapsed_min} דק'
   </div>
 </div>
-<div style="background:var(--raised);border:1px solid var(--rule);border-radius:var(--rad);
-            padding:10px 14px;margin-bottom:16px;font-size:.75rem;font-family:var(--mono)">
-  <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule)">
-    <span style="color:var(--t3)">להיום</span>
-    <span style="color:var(--gold-lt);font-weight:700">{today_side}</span>
+<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
+            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">להיום:</span>
+    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
   </div>
-  <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule)">
-    <span style="color:var(--t3)">פיגורים</span>
-    <span style="color:{'var(--crimson)' if ov_side else 'var(--emerald)'};font-weight:700">{ov_side}</span>
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">פיגורים:</span>
+    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
   </div>
-  <div style="display:flex;justify-content:space-between;padding:4px 0">
-    <span style="color:var(--t3)">סה"כ משימות</span>
-    <span style="color:var(--t1);font-weight:700">{len(df_side)}</span>
+  <div style="display:flex;justify-content:space-between">
+    <span style="color:var(--txt2)">סה"כ:</span>
+    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1881,30 +1711,31 @@ MENUS = {
 }
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
+st.sidebar.markdown("---")
 if elapsed_min >= 50:
     st.sidebar.markdown(
-        f'<div class="alert alert-gold" style="font-size:.76rem;padding:8px 12px;margin:8px 0">'
-        f'⚠ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
+        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
+        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
         unsafe_allow_html=True)
-if st.sidebar.button("התנתקות", use_container_width=True):
+if st.sidebar.button("🚪 התנתקות", use_container_width=True):
     st.session_state.user_role = None
     st.session_state.login_time = None
     st.rerun()
 
 # ── Header Banner ──
-PAGE_TITLES = {
-    "📊 דשבורד":"דשבורד בקרה","📋 סידור עבודה":"סידור עבודה שבועי",
-    "📅 לוח שנה":"לוח שנה","➕ הוספת משימה":"הוספת משימה חדשה",
-    "⚙️ ניהול משימות":"ניהול ועריכת משימות",
-    "📦 ספירות מלאי":"דשבורד ספירות מלאי",
-    "🔬 אנליטיקס":"אנליטיקס מתקדם",
+PAGE_ICONS = {
+    "📊 דשבורד":        "📊 דשבורד בקרה",
+    "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
+    "📅 לוח שנה":       "📅 לוח שנה",
+    "➕ הוספת משימה":   "➕ הוספת משימה חדשה",
+    "⚙️ ניהול משימות":  "⚙️ ניהול ועריכת משימות",
+    "📦 ספירות מלאי":   "📦 דשבורד ספירות מלאי",
+    "🔬 אנליטיקס":      "🔬 אנליטיקס מתקדם",
 }
 st.markdown(
-    f'<div class="banner" style="padding:18px 32px;margin-bottom:20px">'
-    f'<div class="banner-wordmark" style="font-size:1.3rem;letter-spacing:2px">'
-    f'{PAGE_TITLES.get(choice, choice)}</div>'
-    f'<div class="banner-sub"><span class="live-pip"></span>'
-    f'{datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;·&nbsp; {role}</div>'
+    f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
+    f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
+    f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
     f'</div>', unsafe_allow_html=True)
 
 # ── Route ──
