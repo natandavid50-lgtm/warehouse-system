@@ -505,7 +505,7 @@ import sqlite3, json
 DB_PATH = "wms.db"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  DATABASE LAYER — SQLite (persists across refreshes)
+#  DATABASE LAYER — Supabase Client
 # ═══════════════════════════════════════════════════════════════════════════════
 def get_conn():
     from supabase import create_client
@@ -514,98 +514,89 @@ def get_conn():
     return create_client(url, key)
 
 def db_init():
-    """Create tables if they don't exist."""
-    with get_conn() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS tasks (
-                id          INTEGER PRIMARY KEY,
-                task_name   TEXT    NOT NULL,
-                description TEXT    DEFAULT '',
-                recurring   TEXT    DEFAULT 'לא',
-                start_date  TEXT    NOT NULL,
-                done_dates  TEXT    DEFAULT '',
-                priority    TEXT    DEFAULT 'רגיל',
-                category    TEXT    DEFAULT 'כללי'
-            )""")
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS inventory (
-                month           TEXT PRIMARY KEY,
-                skus_total      INTEGER DEFAULT 0,
-                skus_counted    INTEGER DEFAULT 0,
-                locs_total      INTEGER DEFAULT 0,
-                locs_counted    INTEGER DEFAULT 0,
-                no_gap          INTEGER DEFAULT 0
-            )""")
-        conn.commit()
-
-db_init()
+    """הפונקציה קיימת לצורך תאימות, ב-Supabase הטבלאות מנוהלות ישירות דרך ה-Dashboard שלהם"""
+    pass
 
 # ── Tasks ──────────────────────────────────────────────────────────────────────
 def db_load_tasks() -> pd.DataFrame:
-    with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM tasks ORDER BY id").fetchall()
+    try:
+        supabase = get_conn()
+        res = supabase.table("tasks").select("*").order("id").execute()
+        rows = res.data
+    except Exception as e:
+        st.error(f"שגיאה בטעינת משימות: {e}")
+        rows = []
+        
     if not rows:
         return pd.DataFrame(columns=[
             "ID","Task_Name","Description","Recurring","Date","Done_Dates","Priority","Category"])
+            
     return pd.DataFrame([{
-        "ID":          r["id"],
-        "Task_Name":   r["task_name"],
-        "Description": r["description"],
-        "Recurring":   r["recurring"],
-        "Date":        r["start_date"],
-        "Done_Dates":  r["done_dates"],
-        "Priority":    r["priority"],
-        "Category":    r["category"],
+        "ID":          r.get("id"),
+        "Task_Name":   r.get("task_name"),
+        "Description": r.get("description", ""),
+        "Recurring":   r.get("recurring", "לא"),
+        "Date":        r.get("start_date"),
+        "Done_Dates":  r.get("done_dates", ""),
+        "Priority":    r.get("priority", "רגיל"),
+        "Category":    r.get("category", "כללי"),
     } for r in rows])
 
-def db_add_task(name, desc, recurring, start_date, priority, category) -> int:
-    with get_conn() as conn:
-        cur = conn.execute(
-            "INSERT INTO tasks (task_name,description,recurring,start_date,priority,category) "
-            "VALUES (?,?,?,?,?,?)",
-            (name, desc, recurring, start_date, priority, category))
-        conn.commit()
-        return cur.lastrowid
+def db_add_task(name, desc, recurring, start_date, priority, category):
+    supabase = get_conn()
+    data = {
+        "task_name": name,
+        "description": desc,
+        "recurring": recurring,
+        "start_date": str(start_date),
+        "priority": priority,
+        "category": category
+    }
+    res = supabase.table("tasks").insert(data).execute()
+    return res.data[0]["id"] if res.data else None
 
 def db_update_task(task_id, name, desc, recurring, start_date, priority, category):
-    with get_conn() as conn:
-        conn.execute(
-            "UPDATE tasks SET task_name=?,description=?,recurring=?,start_date=?,priority=?,category=? "
-            "WHERE id=?",
-            (name, desc, recurring, start_date, priority, category, task_id))
-        conn.commit()
+    supabase = get_conn()
+    data = {
+        "task_name": name,
+        "description": desc,
+        "recurring": recurring,
+        "start_date": str(start_date),
+        "priority": priority,
+        "category": category
+    }
+    supabase.table("tasks").update(data).eq("id", task_id).execute()
 
 def db_delete_task(task_id):
-    with get_conn() as conn:
-        conn.execute("DELETE FROM tasks WHERE id=?", (task_id,))
-        conn.commit()
+    supabase = get_conn()
+    supabase.table("tasks").delete().eq("id", task_id).execute()
 
 def db_mark_done(task_id, done_dates_str):
-    with get_conn() as conn:
-        conn.execute("UPDATE tasks SET done_dates=? WHERE id=?", (done_dates_str, task_id))
-        conn.commit()
+    supabase = get_conn()
+    supabase.table("tasks").update({"done_dates": done_dates_str}).eq("id", task_id).execute()
 
 # ── Inventory ──────────────────────────────────────────────────────────────────
 def db_load_inventory() -> list:
-    with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM inventory ORDER BY month DESC").fetchall()
-    return [dict(r) for r in rows]
+    try:
+        supabase = get_conn()
+        res = supabase.table("inventory").select("*").order("month", desc=True).execute()
+        return res.data if res.data else []
+    except Exception as e:
+        return []
 
 def db_save_inventory(month, skus_total, skus_counted, locs_total, locs_counted, no_gap):
-    with get_conn() as conn:
-        conn.execute("""
-            INSERT INTO inventory (month,skus_total,skus_counted,locs_total,locs_counted,no_gap)
-            VALUES (?,?,?,?,?,?)
-            ON CONFLICT(month) DO UPDATE SET
-                skus_total=excluded.skus_total,
-                skus_counted=excluded.skus_counted,
-                locs_total=excluded.locs_total,
-                locs_counted=excluded.locs_counted,
-                no_gap=excluded.no_gap
-        """, (month, skus_total, skus_counted, locs_total, locs_counted, no_gap))
-        conn.commit()
-
-
+    supabase = get_conn()
+    data = {
+        "month": month,
+        "skus_total": int(skus_total),
+        "skus_counted": int(skus_counted),
+        "locs_total": int(locs_total),
+        "locs_counted": int(locs_counted),
+        "no_gap": int(no_gap)
+    }
+    # ביצוע Upsert (הכנסה או עדכון אם קיים) לפי עמודת המפתח month
+    supabase.table("inventory").upsert(data, on_conflict="month").execute()
+    
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT  (only auth state lives here now)
 # ═══════════════════════════════════════════════════════════════════════════════
