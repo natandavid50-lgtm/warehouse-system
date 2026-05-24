@@ -38,10 +38,7 @@ RECUR = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
 MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
              "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  SEED TASKS — ריק, הוסף משימות דרך הממשק
-# ═══════════════════════════════════════════════════════════════════════════════
-SEED_TASKS = []
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  CSS — Industrial Dark + Neon
@@ -508,23 +505,23 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
+APP_VERSION = "2.0"   # bump this to wipe stale session data on redeploy
+
 def init_state():
+    # Wipe session if it's from an old version (has tasks from previous seed)
+    if st.session_state.get("_version") != APP_VERSION:
+        keys_to_clear = [k for k in st.session_state.keys()]
+        for k in keys_to_clear:
+            del st.session_state[k]
+        st.session_state._version = APP_VERSION
+
     if "tasks" not in st.session_state:
-        if SEED_TASKS:
-            st.session_state.tasks = pd.DataFrame([{
-                "ID": t["id"], "Task_Name": t["name"], "Description": t["desc"],
-                "Recurring": t["rec"], "Date": t["date"],
-                "Done_Dates": "", "Priority": t["pri"], "Category": t["cat"],
-            } for t in SEED_TASKS])
-            st.session_state.next_id = max(t["id"] for t in SEED_TASKS) + 1
-        else:
-            st.session_state.tasks = pd.DataFrame(columns=[
-                "ID","Task_Name","Description","Recurring","Date",
-                "Done_Dates","Priority","Category"])
-            st.session_state.next_id = 1
-    # inventory: list of monthly records
+        st.session_state.tasks = pd.DataFrame(columns=[
+            "ID", "Task_Name", "Description", "Recurring", "Date",
+            "Done_Dates", "Priority", "Category"])
+        st.session_state.next_id = 1
     if "inventory" not in st.session_state:
-        st.session_state.inventory = []   # each: {month, skus_total, skus_counted, locs_total, locs_counted, no_gap}
+        st.session_state.inventory = []
     if "user_role"   not in st.session_state: st.session_state.user_role   = None
     if "login_time"  not in st.session_state: st.session_state.login_time  = None
     if "active_page" not in st.session_state: st.session_state.active_page = None
@@ -700,13 +697,11 @@ def login_screen():
 
     st.markdown("---")
     df = st.session_state.tasks
-    today_ts = tasks_for_date(df, datetime.now())
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.markdown(kpi_card(len(df),    "משימות",      icon="📋", kind="blue"), unsafe_allow_html=True)
-    c2.markdown(kpi_card(len(today_ts),"להיום",     icon="📅", kind="green", color="var(--green)"), unsafe_allow_html=True)
-    c3.markdown(kpi_card(len(get_overdue()),"פיגורים",icon="⚠️",kind="red",  color="var(--red)"),   unsafe_allow_html=True)
-    c4.markdown(kpi_card(len(st.session_state.get("inventory",[])),"חודשי ספירה",icon="📦",kind="blue"), unsafe_allow_html=True)
-    c5.markdown(kpi_card(datetime.now().strftime("%H:%M"),"שעה",icon="🕐",kind="blue"), unsafe_allow_html=True)
+    inv_count = len(st.session_state.get("inventory", []))
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", kind="blue"), unsafe_allow_html=True)
+    c2.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="⚠️", kind="red", color="var(--red)"), unsafe_allow_html=True)
+    c3.markdown(kpi_card(inv_count, "חודשי ספירה", icon="📦", kind="blue"), unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -733,16 +728,10 @@ def page_dashboard():
                 if c2.button("✓", key=f"ov_{t['id']}_{t['date']}"):
                     mark_done(t["idx"], t["date"]); st.rerun()
 
-    # ── Date + Live clock ──
-    dc, tc, _ = st.columns([1, 1, 2])
+    # ── Date selector ──
+    dc, _ = st.columns([1, 3])
     sel = dc.date_input("📅 תאריך", today)
     dstr = sel.strftime("%Y-%m-%d")
-    tc.markdown(f"""
-    <div style="padding:8px 0;color:var(--txt2);font-family:var(--mono);font-size:.85rem">
-      🕐 {today.strftime('%H:%M:%S')} &nbsp;|&nbsp; 
-      📆 {today.strftime('%A')} &nbsp;|&nbsp;
-      {'🟢 <span style="color:var(--emerald)">עסק פתוח</span>' if today.weekday() not in [4,5] else '🔴 <span style="color:var(--crimson)">סגור (סוף שבוע)</span>'}
-    </div>""", unsafe_allow_html=True)
 
     ts = tasks_for_date(df, sel)
     tot = len(ts); don = sum(1 for t in ts if t["is_done"])
