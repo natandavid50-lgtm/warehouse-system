@@ -996,17 +996,16 @@ def page_dashboard():
                 fig_m.add_hline(y=85, line_dash="dot", line_color="rgba(0,255,136,.4)",
                                 annotation_text="יעד 85%",
                                 annotation_font_color="#00ff88",
-                                annotation_font_size=11)
-                fig_m.update_layout(
+                                annotation_font_size=11)fig_m.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Heebo", color="#e2eeff"), height=300,
                     margin=dict(t=30, b=30, l=0, r=0), showlegend=False,
                     yaxis=dict(range=[0, 115], gridcolor="rgba(255,255,255,.04)"),
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_m, use_container_width=True)
-st.plotly_chart(fig_c, use_container_width=True)
+                st.plotly_chart(fig_c, use_container_width=True)
 
-# Excel export
+        # Excel export
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
@@ -1017,6 +1016,7 @@ st.plotly_chart(fig_c, use_container_width=True)
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         st.markdown('<div class="al alert alert-gold">⚠️ אין נתוני משימות לחודש הנבחר</div>', unsafe_allow_html=True)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE: WORK ORDER — weekly board
@@ -1048,6 +1048,7 @@ def page_work():
               {'<span style="color:var(--ember);font-size:.6rem;font-family:var(--mono)">▸ היום ◂</span><br>' if is_today else ""}
               <div class="day-name">{name}</div>
               <div class="day-date">{curr.strftime('%d/%m/%y')}</div>
+            """)
               <div class="day-count">{don}/{len(ts)} ✓</div>
             </div>
             {pbar(pct, pct_color, 5)}
