@@ -32,62 +32,63 @@ st.set_page_config(
 
 ADMIN_HASH = hashlib.sha256(b"1234").hexdigest()
 SESSION_MINS = 60
-WORKERS = ["יוסי כהן", "דוד לוי", "מיכל אברהם", "אחמד חסן", "רינה שמיר", "ברק נחמיאס"]
 PRIS  = ["רגיל", "דחוף", "גבוה", "נמוך"]
 CATS  = ["כללי", "בטיחות", "לוגיסטיקה", "ניקיון", "תחזוקה", "ספירה"]
 RECUR = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
+MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
+             "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SEED TASKS — 40 משימות hardcoded
 # ═══════════════════════════════════════════════════════════════════════════════
 SEED_TASKS = [
     # יומיות
-    {"id":1,  "name":"פתיחת מחסן",               "desc":"פתיחת שערים, בדיקת חשמל, מצלמות, מערכת אזעקה",         "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":2,  "name":"בדיקת טמפרטורות",           "desc":"רישום ב-3 נקודות מדידה, עדכון בטבלה",                  "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות",    "worker":"דוד לוי"},
-    {"id":3,  "name":"סיבוב מחסן בוקר",           "desc":"בדיקת מעברים, סימון חסימות, דיווח חריגים",             "rec":"יומי",     "date":"2026-01-01","pri":"גבוה", "cat":"לוגיסטיקה", "worker":"מיכל אברהם"},
-    {"id":4,  "name":"עדכון יומן קבלה",           "desc":"רישום כל הספקים, כמויות, מספרי הזמנה",                 "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"לוגיסטיקה", "worker":"אחמד חסן"},
-    {"id":5,  "name":"ניקוי רצפה — אזור A",       "desc":"שטיפה עם מגב וחומר ניקוי, ייבוש, פינוי אשפה",          "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון",    "worker":"רינה שמיר"},
-    {"id":6,  "name":"ניקוי רצפה — אזור B",       "desc":"שטיפה עם מגב וחומר ניקוי, ייבוש, פינוי אשפה",          "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון",    "worker":"ברק נחמיאס"},
-    {"id":7,  "name":"בדיקת ציוד חירום",          "desc":"עזרה ראשונה, כיבאים, יציאות חירום — תקינות",           "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":8,  "name":"סגירת מחסן",                "desc":"נעילת שערים, כיבוי אורות ומערכות, הפעלת אזעקה",        "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות",    "worker":"דוד לוי"},
-    {"id":9,  "name":"עדכון סטטוס הזמנות",        "desc":"בדיקת מערכת הזמנות, עדכון סטטוס לוגיסטיקה",           "rec":"יומי",     "date":"2026-01-01","pri":"גבוה", "cat":"לוגיסטיקה", "worker":"מיכל אברהם"},
-    {"id":10, "name":"ניקוי שירותים ופינה",       "desc":"חיטוי שירותים, מילוי חומרי ניקוי",                     "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון",    "worker":"רינה שמיר"},
+    {"id":1,  "name":"פתיחת מחסן",               "desc":"פתיחת שערים, בדיקת חשמל, מצלמות, מערכת אזעקה",         "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות"},
+    {"id":2,  "name":"בדיקת טמפרטורות",           "desc":"רישום ב-3 נקודות מדידה, עדכון בטבלה",                  "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות"},
+    {"id":3,  "name":"סיבוב מחסן בוקר",           "desc":"בדיקת מעברים, סימון חסימות, דיווח חריגים",             "rec":"יומי",     "date":"2026-01-01","pri":"גבוה", "cat":"לוגיסטיקה"},
+    {"id":4,  "name":"עדכון יומן קבלה",           "desc":"רישום כל הספקים, כמויות, מספרי הזמנה",                 "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"לוגיסטיקה"},
+    {"id":5,  "name":"ניקוי רצפה — אזור A",       "desc":"שטיפה עם מגב וחומר ניקוי, ייבוש, פינוי אשפה",          "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון"},
+    {"id":6,  "name":"ניקוי רצפה — אזור B",       "desc":"שטיפה עם מגב וחומר ניקוי, ייבוש, פינוי אשפה",          "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון"},
+    {"id":7,  "name":"בדיקת ציוד חירום",          "desc":"עזרה ראשונה, כיבאים, יציאות חירום — תקינות",           "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות"},
+    {"id":8,  "name":"סגירת מחסן",                "desc":"נעילת שערים, כיבוי אורות ומערכות, הפעלת אזעקה",        "rec":"יומי",     "date":"2026-01-01","pri":"דחוף", "cat":"בטיחות"},
+    {"id":9,  "name":"עדכון סטטוס הזמנות",        "desc":"בדיקת מערכת הזמנות, עדכון סטטוס לוגיסטיקה",           "rec":"יומי",     "date":"2026-01-01","pri":"גבוה", "cat":"לוגיסטיקה"},
+    {"id":10, "name":"ניקוי שירותים ופינה",       "desc":"חיטוי שירותים, מילוי חומרי ניקוי",                     "rec":"יומי",     "date":"2026-01-01","pri":"רגיל", "cat":"ניקיון"},
 
     # שבועיות
-    {"id":11, "name":"ספירת מלאי — מדף 1-10",    "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"ספירה",     "worker":"יוסי כהן"},
-    {"id":12, "name":"ספירת מלאי — מדף 11-20",   "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-05","pri":"גבוה", "cat":"ספירה",     "worker":"דוד לוי"},
-    {"id":13, "name":"ספירת מלאי — מדף 21-30",   "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-06","pri":"גבוה", "cat":"ספירה",     "worker":"אחמד חסן"},
-    {"id":14, "name":"תחזוקת מלגזה 1",            "desc":"בדיקת שמן, גלגלים, מטען, בלמים, מזלג",                "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":15, "name":"תחזוקת מלגזה 2",            "desc":"בדיקת שמן, גלגלים, מטען, בלמים, מזלג",                "rec":"שבועי",    "date":"2026-01-05","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":16, "name":"בדיקת גנרטור",              "desc":"הפעלת בדיקה 10 דקות, רישום נתונים, בדיקת דלק",        "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"תחזוקה",    "worker":"יוסי כהן"},
-    {"id":17, "name":"דוח קבלת סחורה שבועי",     "desc":"ריכוז נתוני ספקים, כמויות, חריגות, דוח PDF",           "rec":"שבועי",    "date":"2026-01-05","pri":"רגיל", "cat":"לוגיסטיקה", "worker":"מיכל אברהם"},
-    {"id":18, "name":"בדיקת מצלמות אבטחה",       "desc":"בדיקה ויזואלית ל-32 מצלמות, בדיקת הקלטה",             "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"בטיחות",    "worker":"דוד לוי"},
-    {"id":19, "name":"הדרכת בטיחות שבועית",      "desc":"15 דקות הדרכה עם כל הצוות, חתימה על נוכחות",          "rec":"שבועי",    "date":"2026-01-06","pri":"גבוה", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":20, "name":"ניקוי מדפים — שורה A",     "desc":"אבק, ניקוי עמוק, בדיקת יציבות מדפים",                  "rec":"שבועי",    "date":"2026-01-06","pri":"רגיל", "cat":"ניקיון",    "worker":"רינה שמיר"},
-    {"id":21, "name":"ניקוי מדפים — שורה B",     "desc":"אבק, ניקוי עמוק, בדיקת יציבות מדפים",                  "rec":"שבועי",    "date":"2026-01-07","pri":"רגיל", "cat":"ניקיון",    "worker":"רינה שמיר"},
-    {"id":22, "name":"בדיקת תאריכי תפוגה",       "desc":"סריקת קטגוריית מזון + תרופות + חומרים כימיים",         "rec":"שבועי",    "date":"2026-01-05","pri":"דחוף", "cat":"בטיחות",    "worker":"אחמד חסן"},
+    {"id":11, "name":"ספירת מלאי — מדף 1-10",    "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"ספירה"},
+    {"id":12, "name":"ספירת מלאי — מדף 11-20",   "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-05","pri":"גבוה", "cat":"ספירה"},
+    {"id":13, "name":"ספירת מלאי — מדף 21-30",   "desc":"ספירה ידנית + עדכון מערכת + תיעוד פערים",              "rec":"שבועי",    "date":"2026-01-06","pri":"גבוה", "cat":"ספירה"},
+    {"id":14, "name":"תחזוקת מלגזה 1",            "desc":"בדיקת שמן, גלגלים, מטען, בלמים, מזלג",                "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":15, "name":"תחזוקת מלגזה 2",            "desc":"בדיקת שמן, גלגלים, מטען, בלמים, מזלג",                "rec":"שבועי",    "date":"2026-01-05","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":16, "name":"בדיקת גנרטור",              "desc":"הפעלת בדיקה 10 דקות, רישום נתונים, בדיקת דלק",        "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":17, "name":"דוח קבלת סחורה שבועי",     "desc":"ריכוז נתוני ספקים, כמויות, חריגות, דוח PDF",           "rec":"שבועי",    "date":"2026-01-05","pri":"רגיל", "cat":"לוגיסטיקה"},
+    {"id":18, "name":"בדיקת מצלמות אבטחה",       "desc":"בדיקה ויזואלית ל-32 מצלמות, בדיקת הקלטה",             "rec":"שבועי",    "date":"2026-01-04","pri":"גבוה", "cat":"בטיחות"},
+    {"id":19, "name":"הדרכת בטיחות שבועית",      "desc":"15 דקות הדרכה עם כל הצוות, חתימה על נוכחות",          "rec":"שבועי",    "date":"2026-01-06","pri":"גבוה", "cat":"בטיחות"},
+    {"id":20, "name":"ניקוי מדפים — שורה A",     "desc":"אבק, ניקוי עמוק, בדיקת יציבות מדפים",                  "rec":"שבועי",    "date":"2026-01-06","pri":"רגיל", "cat":"ניקיון"},
+    {"id":21, "name":"ניקוי מדפים — שורה B",     "desc":"אבק, ניקוי עמוק, בדיקת יציבות מדפים",                  "rec":"שבועי",    "date":"2026-01-07","pri":"רגיל", "cat":"ניקיון"},
+    {"id":22, "name":"בדיקת תאריכי תפוגה",       "desc":"סריקת קטגוריית מזון + תרופות + חומרים כימיים",         "rec":"שבועי",    "date":"2026-01-05","pri":"דחוף", "cat":"בטיחות"},
 
     # דו-שבועיות
-    {"id":23, "name":"ספירה מלאה — אזור C",       "desc":"ספירה מלאה כולל תיעוד צילום + דוח פערים",              "rec":"דו-שבועי", "date":"2026-01-06","pri":"גבוה", "cat":"ספירה",     "worker":"יוסי כהן"},
-    {"id":24, "name":"כיול מאזניים",               "desc":"3 מאזניים — כיול ותיעוד, אישור מדידה",                 "rec":"דו-שבועי", "date":"2026-01-06","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":25, "name":"בדיקת ממטרות אש",           "desc":"בדיקת לחץ מים ב-6 נקודות, תיעוד",                     "rec":"דו-שבועי", "date":"2026-01-07","pri":"דחוף", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":26, "name":"עדכון טבלת מיקומים",        "desc":"עדכון מפת המחסן במערכת, סימון שינויים",                "rec":"דו-שבועי", "date":"2026-01-08","pri":"רגיל", "cat":"לוגיסטיקה", "worker":"מיכל אברהם"},
-    {"id":27, "name":"פגישת צוות דו-שבועית",     "desc":"סיכום ביצועים, שיחת שיפור, עדכוני הנהלה",              "rec":"דו-שבועי", "date":"2026-01-07","pri":"רגיל", "cat":"כללי",      "worker":"יוסי כהן"},
-    {"id":28, "name":"בדיקת מערכת כריכה",        "desc":"בדיקת כריכה אוטומטית + ניקוי ראש כריכה",              "rec":"דו-שבועי", "date":"2026-01-08","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
+    {"id":23, "name":"ספירה מלאה — אזור C",       "desc":"ספירה מלאה כולל תיעוד צילום + דוח פערים",              "rec":"דו-שבועי", "date":"2026-01-06","pri":"גבוה", "cat":"ספירה"},
+    {"id":24, "name":"כיול מאזניים",               "desc":"3 מאזניים — כיול ותיעוד, אישור מדידה",                 "rec":"דו-שבועי", "date":"2026-01-06","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":25, "name":"בדיקת ממטרות אש",           "desc":"בדיקת לחץ מים ב-6 נקודות, תיעוד",                     "rec":"דו-שבועי", "date":"2026-01-07","pri":"דחוף", "cat":"בטיחות"},
+    {"id":26, "name":"עדכון טבלת מיקומים",        "desc":"עדכון מפת המחסן במערכת, סימון שינויים",                "rec":"דו-שבועי", "date":"2026-01-08","pri":"רגיל", "cat":"לוגיסטיקה"},
+    {"id":27, "name":"פגישת צוות דו-שבועית",     "desc":"סיכום ביצועים, שיחת שיפור, עדכוני הנהלה",              "rec":"דו-שבועי", "date":"2026-01-07","pri":"רגיל", "cat":"כללי"},
+    {"id":28, "name":"בדיקת מערכת כריכה",        "desc":"בדיקת כריכה אוטומטית + ניקוי ראש כריכה",              "rec":"דו-שבועי", "date":"2026-01-08","pri":"גבוה", "cat":"תחזוקה"},
 
     # חודשיות
-    {"id":29, "name":"ספירה חודשית מלאה",         "desc":"כל המחסן — ספירה ותיעוד, דוח מלאי חודשי",             "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"ספירה",     "worker":"יוסי כהן"},
-    {"id":30, "name":"בדיקת חשמל ראשית",          "desc":"חשמלאי מוסמך — 4 לוחות, בדיקת נתיכים",               "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":31, "name":"החלפת פילטרים",              "desc":"מיזוג, אוורור, ניקוי אוויר — 8 יחידות",               "rec":"חודשי",    "date":"2026-01-15","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":32, "name":"דוח ביצועים חודשי",         "desc":"ריכוז נתונים, גרפים, הצגה להנהלה",                    "rec":"חודשי",    "date":"2026-01-28","pri":"גבוה", "cat":"כללי",      "worker":"מיכל אברהם"},
-    {"id":33, "name":"גיבוי נתוני מערכת",         "desc":"גיבוי לשרת ענן + בדיקת שחזור, תיעוד",                 "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"כללי",      "worker":"מיכל אברהם"},
-    {"id":34, "name":"תרגיל חירום ופינוי",        "desc":"תרגיל פינוי עם כל הצוות, עדכון נהלים",                "rec":"חודשי",    "date":"2026-01-10","pri":"גבוה", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":35, "name":"בדיקת ארגז עזרה ראשונה",   "desc":"תוקף תרופות, מילוי חסרים, בדיקת ציוד",               "rec":"חודשי",    "date":"2026-01-05","pri":"גבוה", "cat":"בטיחות",    "worker":"דוד לוי"},
-    {"id":36, "name":"עדכון נהלי עבודה",          "desc":"סקירת SOP ועדכון לפי שינויים רגולטוריים",             "rec":"חודשי",    "date":"2026-01-20","pri":"רגיל", "cat":"כללי",      "worker":"מיכל אברהם"},
-    {"id":37, "name":"ביקורת ספקים",              "desc":"הערכת 5 ספקים מובילים, דוח איכות",                    "rec":"חודשי",    "date":"2026-01-25","pri":"רגיל", "cat":"לוגיסטיקה", "worker":"אחמד חסן"},
-    {"id":38, "name":"בדיקת רכב משלוחים",        "desc":"טסט + שמן + צמיגים + בלמים + רישיון",                 "rec":"חודשי",    "date":"2026-01-10","pri":"גבוה", "cat":"תחזוקה",    "worker":"ברק נחמיאס"},
-    {"id":39, "name":"עדכון מפת סכנות",           "desc":"עדכון מפת נקודות סכנה, שלטים, מסלולי פינוי",          "rec":"חודשי",    "date":"2026-01-12","pri":"גבוה", "cat":"בטיחות",    "worker":"יוסי כהן"},
-    {"id":40, "name":"ישיבת הנהלה + WMS",         "desc":"הצגת ביצועי מחסן להנהלה, תכנון חודש הבא",             "rec":"חודשי",    "date":"2026-01-26","pri":"גבוה", "cat":"כללי",      "worker":"מיכל אברהם"},
+    {"id":29, "name":"ספירה חודשית מלאה",         "desc":"כל המחסן — ספירה ותיעוד, דוח מלאי חודשי",             "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"ספירה"},
+    {"id":30, "name":"בדיקת חשמל ראשית",          "desc":"חשמלאי מוסמך — 4 לוחות, בדיקת נתיכים",               "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"תחזוקה"},
+    {"id":31, "name":"החלפת פילטרים",              "desc":"מיזוג, אוורור, ניקוי אוויר — 8 יחידות",               "rec":"חודשי",    "date":"2026-01-15","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":32, "name":"דוח ביצועים חודשי",         "desc":"ריכוז נתונים, גרפים, הצגה להנהלה",                    "rec":"חודשי",    "date":"2026-01-28","pri":"גבוה", "cat":"כללי"},
+    {"id":33, "name":"גיבוי נתוני מערכת",         "desc":"גיבוי לשרת ענן + בדיקת שחזור, תיעוד",                 "rec":"חודשי",    "date":"2026-01-01","pri":"דחוף", "cat":"כללי"},
+    {"id":34, "name":"תרגיל חירום ופינוי",        "desc":"תרגיל פינוי עם כל הצוות, עדכון נהלים",                "rec":"חודשי",    "date":"2026-01-10","pri":"גבוה", "cat":"בטיחות"},
+    {"id":35, "name":"בדיקת ארגז עזרה ראשונה",   "desc":"תוקף תרופות, מילוי חסרים, בדיקת ציוד",               "rec":"חודשי",    "date":"2026-01-05","pri":"גבוה", "cat":"בטיחות"},
+    {"id":36, "name":"עדכון נהלי עבודה",          "desc":"סקירת SOP ועדכון לפי שינויים רגולטוריים",             "rec":"חודשי",    "date":"2026-01-20","pri":"רגיל", "cat":"כללי"},
+    {"id":37, "name":"ביקורת ספקים",              "desc":"הערכת 5 ספקים מובילים, דוח איכות",                    "rec":"חודשי",    "date":"2026-01-25","pri":"רגיל", "cat":"לוגיסטיקה"},
+    {"id":38, "name":"בדיקת רכב משלוחים",        "desc":"טסט + שמן + צמיגים + בלמים + רישיון",                 "rec":"חודשי",    "date":"2026-01-10","pri":"גבוה", "cat":"תחזוקה"},
+    {"id":39, "name":"עדכון מפת סכנות",           "desc":"עדכון מפת נקודות סכנה, שלטים, מסלולי פינוי",          "rec":"חודשי",    "date":"2026-01-12","pri":"גבוה", "cat":"בטיחות"},
+    {"id":40, "name":"ישיבת הנהלה + WMS",         "desc":"הצגת ביצועי מחסן להנהלה, תכנון חודש הבא",             "rec":"חודשי",    "date":"2026-01-26","pri":"גבוה", "cat":"כללי"},
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -661,10 +662,12 @@ def init_state():
         st.session_state.tasks = pd.DataFrame([{
             "ID": t["id"], "Task_Name": t["name"], "Description": t["desc"],
             "Recurring": t["rec"], "Date": t["date"],
-            "Done_Dates": "", "Priority": t["pri"],
-            "Category": t["cat"], "Assigned_To": t["worker"],
+            "Done_Dates": "", "Priority": t["pri"], "Category": t["cat"],
         } for t in SEED_TASKS])
         st.session_state.next_id = max(t["id"] for t in SEED_TASKS) + 1
+    # inventory: list of monthly records
+    if "inventory" not in st.session_state:
+        st.session_state.inventory = []   # each: {month, skus_total, skus_counted, locs_total, locs_counted, no_gap}
     if "user_role"   not in st.session_state: st.session_state.user_role   = None
     if "login_time"  not in st.session_state: st.session_state.login_time  = None
     if "active_page" not in st.session_state: st.session_state.active_page = None
@@ -700,7 +703,6 @@ def tasks_for_date(df, dt, skip_weekend=True):
                     "desc": str(row.get("Description", "")),
                     "priority": str(row.get("Priority", "רגיל")),
                     "category": str(row.get("Category", "כללי")),
-                    "assigned": str(row.get("Assigned_To", "")),
                     "is_done": dstr in done, "date": dstr,
                     "rec": str(row.get("Recurring", "")),
                 })
@@ -773,13 +775,12 @@ def task_card_html(t):
                   " urgent" if t["priority"] == "דחוף" else
                   " high" if t["priority"] == "גבוה" else "")
     icon = "✅" if t["is_done"] else ("🚨" if t["priority"] == "דחוף" else "⏳")
-    asgn = f' {badge(t["assigned"],"green")}' if t.get("assigned") else ""
     rec  = f' {badge(t["rec"],"gray")}' if t.get("rec") else ""
     desc = (f'<div style="color:var(--txt2);font-size:.78rem;margin-top:5px;'
             f'font-family:var(--mono)">{t["desc"]}</div>') if t.get("desc") else ""
     return (f'<div class="{cls}">'
             f'{icon} <b style="font-size:.95rem">{t["name"]}</b>'
-            f' {pri_badge(t["priority"])} {cat_badge(t["category"])}{asgn}{rec}'
+            f' {pri_badge(t["priority"])} {cat_badge(t["category"])}{rec}'
             f'{desc}</div>')
 
 def kpi_card(val, label, sub="", color="var(--cyan)", icon="📊", kind="blue"):
@@ -848,7 +849,7 @@ def login_screen():
     c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", kind="blue"), unsafe_allow_html=True)
     c2.markdown(kpi_card(len(today_ts), "להיום", icon="📅", kind="green"), unsafe_allow_html=True)
     c3.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="⚠️", kind="red", color="var(--red)"), unsafe_allow_html=True)
-    c4.markdown(kpi_card(len(WORKERS), "עובדים פעילים", icon="👥", kind="blue"), unsafe_allow_html=True)
+    c4.markdown(kpi_card(len(st.session_state.get("inventory",[])), "חודשי ספירה", icon="📦", kind="blue"), unsafe_allow_html=True)
     c5.markdown(kpi_card(datetime.now().strftime("%H:%M"), "שעה נוכחית", icon="🕐", kind="blue"), unsafe_allow_html=True)
 
 
@@ -976,23 +977,6 @@ def page_dashboard():
                     f'<span class="stat-val" style="color:{clr}">{don_c}/{cnt}</span></div>'
                     f'{pbar(p, clr, 5)}', unsafe_allow_html=True)
 
-        # Worker breakdown
-        st.markdown("**לפי עובד:**")
-        worker_ts = {}
-        for t in ts:
-            w = t["assigned"] or "לא שויך"
-            worker_ts.setdefault(w, {"done": 0, "total": 0})
-            worker_ts[w]["total"] += 1
-            if t["is_done"]: worker_ts[w]["done"] += 1
-        for w, v in sorted(worker_ts.items(), key=lambda x: -x[1]["total"]):
-            p = round(v["done"] / v["total"] * 100) if v["total"] else 0
-            c = "#00ff88" if p >= 80 else "#ffb800" if p >= 50 else "#ff2d55"
-            st.markdown(
-                f'<div class="stat-row">'
-                f'<span class="stat-label">👤 {w}</span>'
-                f'<span class="stat-val" style="color:{c}">{v["done"]}/{v["total"]}</span>'
-                f'</div>{pbar(p, c, 5)}', unsafe_allow_html=True)
-
     # ── Weekly chart ──
     st.markdown("---")
     sec_header("📈 מגמת ביצועים — 14 ימים אחרונים")
@@ -1033,8 +1017,6 @@ def page_dashboard():
     st.markdown("---")
     sec_header("📅 ניתוח חודשי מעמיק")
 
-    MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
-                 "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
     mc, yc, _, exp_col = st.columns([1, 1, 1, 1])
     sm = mc.selectbox("חודש", range(1, 13), index=today.month - 1,
                       format_func=lambda x: MONTHS_HE[x - 1])
@@ -1164,38 +1146,13 @@ def page_work():
                     st.markdown(f"**📋 {t['name']}**")
                     st.markdown(f"**עדיפות:** {t['priority']}")
                     st.markdown(f"**קטגוריה:** {t['category']}")
-                    if t["assigned"]: st.markdown(f"**👤 שויך ל:** {t['assigned']}")
                     if t["desc"]:     st.markdown(f"**📝 פירוט:** {t['desc']}")
                     if not t["is_done"]:
                         if st.button("✅ סמן כבוצע", key=f"w_{t['id']}_{i}_{curr.date()}"):
                             mark_done(t["idx"], curr.strftime("%Y-%m-%d"))
                             st.rerun()
 
-    # ── Worker view below ──
-    st.markdown("---")
-    sec_header("👥 מבט לפי עובד — השבוע הנוכחי")
-    wcols = st.columns(len(WORKERS))
-    for wi, worker in enumerate(WORKERS):
-        with wcols[wi]:
-            w_don = 0; w_tot = 0
-            for i in range(5):
-                curr = start + timedelta(days=i)
-                for t in tasks_for_date(df, curr):
-                    if t["assigned"] == worker:
-                        w_tot += 1
-                        if t["is_done"]: w_don += 1
-            w_pct = round(w_don / w_tot * 100) if w_tot else 0
-            w_color = "#00ff88" if w_pct >= 80 else "#ffb800" if w_pct >= 50 else "#ff2d55"
-            st.markdown(
-                f'<div class="mm">'
-                f'<div class="mm-icon">👤</div>'
-                f'<div>'
-                f'<div class="mm-val" style="color:{w_color}">{w_pct}%</div>'
-                f'<div class="mm-lbl">{worker}</div>'
-                f'<div style="font-size:.68rem;color:var(--txt2);font-family:var(--mono)">{w_don}/{w_tot}</div>'
-                f'</div></div>',
-                unsafe_allow_html=True)
-            st.markdown(pbar(w_pct, w_color, 5), unsafe_allow_html=True)
+    # end of page_work
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1282,19 +1239,17 @@ def page_manage():
     df = st.session_state.tasks
 
     # ── Filters ──
-    f1, f2, f3, f4, f5 = st.columns(5)
+    f1, f2, f3, f4 = st.columns(4)
     fsearch = f1.text_input("🔍 חיפוש", placeholder="שם משימה...")
     fpri    = f2.selectbox("עדיפות",   ["הכל"] + PRIS)
     fcat    = f3.selectbox("קטגוריה",  ["הכל"] + CATS)
     frec    = f4.selectbox("תדירות",   ["הכל"] + RECUR)
-    fwork   = f5.selectbox("עובד",     ["הכל"] + WORKERS)
 
     filt = df.copy()
     if fsearch: filt = filt[filt["Task_Name"].str.contains(fsearch, na=False, case=False)]
     if fpri   != "הכל": filt = filt[filt["Priority"]    == fpri]
     if fcat   != "הכל": filt = filt[filt["Category"]    == fcat]
     if frec   != "הכל": filt = filt[filt["Recurring"]   == frec]
-    if fwork  != "הכל": filt = filt[filt["Assigned_To"] == fwork]
 
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:12px;margin:10px 0 16px">'
@@ -1309,13 +1264,12 @@ def page_manage():
     with tab_all:
         for idx, row in filt.iterrows():
             ci, ce, cd = st.columns([5, 1, 1])
-            asgn_b = badge(str(row.get("Assigned_To", "")), "green") if row.get("Assigned_To") else ""
             ci.markdown(
                 f'<div class="tc">'
                 f'<b style="font-size:.95rem">{row["Task_Name"]}</b> '
                 f'{pri_badge(row.get("Priority","רגיל"))} '
                 f'{cat_badge(row.get("Category",""))} '
-                f'{badge(row.get("Recurring",""),"gray")} {asgn_b}'
+                f'{badge(row.get("Recurring",""),"gray")}'
                 f'{"<div style=color:var(--txt2);font-size:.78rem;margin-top:4px;font-family:var(--mono)>"+str(row.get("Description",""))+"</div>" if row.get("Description") else ""}'
                 f'</div>', unsafe_allow_html=True)
 
@@ -1332,10 +1286,6 @@ def page_manage():
                     nr = st.selectbox("תדירות", RECUR,
                         index=RECUR.index(row.get("Recurring","יומי")) if row.get("Recurring") in RECUR else 0,
                         key=f"er{row['ID']}")
-                    na = st.selectbox("שייך ל", ["—"] + WORKERS,
-                        index=(WORKERS.index(row.get("Assigned_To","")) + 1
-                               if row.get("Assigned_To") in WORKERS else 0),
-                        key=f"ea{row['ID']}")
                     nd2 = st.date_input("תאריך", value=pd.to_datetime(row["Date"]).date(),
                                         key=f"edt{row['ID']}")
                     if st.button("💾 שמור שינויים", key=f"sv{row['ID']}", use_container_width=True):
@@ -1344,7 +1294,6 @@ def page_manage():
                         st.session_state.tasks.at[idx, "Priority"]    = np
                         st.session_state.tasks.at[idx, "Category"]    = nc
                         st.session_state.tasks.at[idx, "Recurring"]   = nr
-                        st.session_state.tasks.at[idx, "Assigned_To"] = "" if na == "—" else na
                         st.session_state.tasks.at[idx, "Date"]        = nd2.strftime("%Y-%m-%d")
                         st.rerun()
 
@@ -1389,10 +1338,9 @@ def page_add():
             freq = b.selectbox("תדירות חזרה", RECUR)
             desc = st.text_area("פירוט / הוראות ביצוע",
                                 placeholder="תאר את המשימה בפירוט: מה לבדוק, איך לבצע, מה לתעד...")
-            c, d, e = st.columns(3)
+            c, d = st.columns(2)
             pri  = c.selectbox("עדיפות",   PRIS)
             cat  = d.selectbox("קטגוריה",  CATS)
-            asgn = e.selectbox("שייך לעובד", ["—"] + WORKERS)
             sdate = st.date_input("תאריך התחלה", datetime.now())
 
             submitted = st.form_submit_button("🚀 שמור משימה", use_container_width=True)
@@ -1405,7 +1353,6 @@ def page_add():
                         "Task_Name": name.strip(), "Description": desc,
                         "Recurring": freq, "Date": sdate.strftime("%Y-%m-%d"),
                         "Done_Dates": "", "Priority": pri, "Category": cat,
-                        "Assigned_To": "" if asgn == "—" else asgn,
                     }
                     st.session_state.tasks = pd.concat(
                         [st.session_state.tasks, pd.DataFrame([new_row])],
@@ -1443,109 +1390,297 @@ def page_add():
                     f'<span class="stat-val">{cnt}</span>'
                     f'</div>{pbar(p, height=4)}', unsafe_allow_html=True)
 
-        # By worker
-        st.markdown("**לפי עובד:**")
-        for w in WORKERS:
-            cnt = len(df[df["Assigned_To"] == w])
-            if cnt:
-                p = round(cnt / total * 100)
-                st.markdown(
-                    f'<div class="stat-row">'
-                    f'<span class="stat-label">👤 {w}</span>'
-                    f'<span class="stat-val">{cnt}</span>'
-                    f'</div>{pbar(p, height=4)}', unsafe_allow_html=True)
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: WORKERS ANALYTICS
+#  PAGE: INVENTORY COUNT DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════════
-def page_workers():
-    df = st.session_state.tasks
-    today = datetime.now().date()
+def page_inventory():
+    sec_header("📦 דשבורד ספירות מלאי")
 
-    sec_header("👥 ניתוח ביצועי עובדים")
+    inventory = st.session_state.inventory  # list of dicts
 
-    # 30-day performance per worker
-    perf = []
-    for w in WORKERS:
-        wdf = df[df["Assigned_To"] == w]
-        tot = 0; don = 0
-        for i in range(30):
-            d = today - timedelta(days=i)
-            ts = tasks_for_date(wdf, d)
-            tot += len(ts)
-            don += sum(1 for t in ts if t["is_done"])
-        pct = round(don / tot * 100) if tot else 0
-        streak = 0
-        for i in range(30):
-            d = today - timedelta(days=i)
-            ts = tasks_for_date(wdf, d)
-            if not ts: continue
-            if all(t["is_done"] for t in ts): streak += 1
-            else: break
-        perf.append({"עובד": w, "ביצוע": pct, "בוצע": don,
-                     "סה\"כ": tot, "רצף_ימים": streak})
+    # ── Month selector ──
+    today = datetime.now()
+    month_options = []
+    for i in range(12):
+        dt = today - timedelta(days=30 * i)
+        month_options.append(f"{dt.year}-{dt.month:02d}")
+    month_options = list(dict.fromkeys(month_options))  # dedupe
 
-    perf_df = pd.DataFrame(perf).sort_values("ביצוע", ascending=False)
+    col_sel, col_new = st.columns([2, 3])
+    sel_month = col_sel.selectbox(
+        "📅 בחר חודש לצפייה / עריכה",
+        month_options,
+        format_func=lambda x: f"{MONTHS_HE[int(x.split('-')[1])-1]} {x.split('-')[0]}"
+    )
 
-    # Worker cards
-    cols = st.columns(3)
-    for wi, (_, row) in enumerate(perf_df.iterrows()):
-        with cols[wi % 3]:
-            pct = int(row["ביצוע"])
-            c = "#00ff88" if pct >= 80 else "#ffb800" if pct >= 50 else "#ff2d55"
-            medal = "🥇" if wi == 0 else "🥈" if wi == 1 else "🥉" if wi == 2 else "👤"
-            st.markdown(f"""
-            <div class="kpi kpi-{'green' if pct>=80 else 'amber' if pct>=50 else 'red'}"
-                 style="margin-bottom:14px">
-              <div style="font-size:2rem;margin-bottom:6px">{medal}</div>
-              <div style="font-weight:800;font-size:1rem;color:var(--txt);margin-bottom:8px">{row['עובד']}</div>
-              <div class="kpi-val" style="color:{c};font-size:2.2rem">{pct}%</div>
-              <div class="kpi-lbl">ביצוע 30 ימים</div>
-              <div style="color:var(--txt2);font-size:.72rem;font-family:var(--mono);margin-top:6px">
-                {int(row['בוצע'])} / {int(row['סה"כ'])} משימות
-              </div>
-            </div>
-            {pbar(pct, c, 6)}
-            """, unsafe_allow_html=True)
+    # Find or create record for selected month
+    rec = next((r for r in inventory if r["month"] == sel_month), None)
+    if rec is None:
+        rec = {"month": sel_month,
+               "skus_total": 0, "skus_counted": 0,
+               "locs_total": 0, "locs_counted": 0, "no_gap": 0}
 
-    if HAS_PLOTLY:
+    # ── Input form (admin only) ──
+    if st.session_state.user_role == "מנהל WMS":
+        with st.expander("✏️ הזן / עדכן נתוני ספירה לחודש זה", expanded=(rec["skus_total"] == 0)):
+            with st.form("inv_form"):
+                st.markdown(f"##### עדכון נתוני ספירה — "
+                            f"{MONTHS_HE[int(sel_month.split('-')[1])-1]} {sel_month.split('-')[0]}")
+                st.markdown("---")
+                st.markdown("**מק\"טים (SKUs)**")
+                c1, c2 = st.columns(2)
+                skus_total   = c1.number_input('סך מק"טים במחסן',   min_value=0, value=int(rec["skus_total"]),   step=1)
+                skus_counted = c2.number_input('מק"טים שנספרו',      min_value=0, value=int(rec["skus_counted"]), step=1)
+
+                st.markdown("**איתורים (Locations)**")
+                c3, c4 = st.columns(2)
+                locs_total   = c3.number_input("סך איתורים במחסן",   min_value=0, value=int(rec["locs_total"]),   step=1)
+                locs_counted = c4.number_input("איתורים שנספרו",      min_value=0, value=int(rec["locs_counted"]), step=1)
+
+                st.markdown("**דיוק**")
+                no_gap = st.number_input(
+                    "איתורים שנספרו ללא פער (מתוך שנספרו)",
+                    min_value=0, value=int(rec["no_gap"]), step=1,
+                    help="מספר האיתורים שהספירה תאמה בדיוק את מה שהיה במערכת")
+
+                if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
+                    new_rec = {
+                        "month": sel_month,
+                        "skus_total": skus_total, "skus_counted": skus_counted,
+                        "locs_total": locs_total, "locs_counted": locs_counted,
+                        "no_gap": no_gap,
+                    }
+                    # update or append
+                    updated = False
+                    for i, r in enumerate(st.session_state.inventory):
+                        if r["month"] == sel_month:
+                            st.session_state.inventory[i] = new_rec
+                            updated = True
+                            break
+                    if not updated:
+                        st.session_state.inventory.append(new_rec)
+                    st.success("✅ נתונים נשמרו!")
+                    st.rerun()
+
+    # re-fetch after possible save
+    rec = next((r for r in st.session_state.inventory if r["month"] == sel_month), rec)
+
+    st.markdown("---")
+
+    # ── KPI calculations ──
+    skus_t = max(int(rec["skus_total"]),   1)
+    skus_c = int(rec["skus_counted"])
+    locs_t = max(int(rec["locs_total"]),   1)
+    locs_c = int(rec["locs_counted"])
+    no_gap = int(rec["no_gap"])
+
+    pct_skus = round(skus_c / skus_t * 100)
+    pct_locs = round(locs_c / locs_t * 100)
+    pct_acc  = round(no_gap / max(locs_c, 1) * 100)
+
+    color_skus = "#00ff88" if pct_skus >= 90 else "#ffb800" if pct_skus >= 70 else "#ff2d55"
+    color_locs = "#00d4ff" if pct_locs >= 90 else "#ffb800" if pct_locs >= 70 else "#ff2d55"
+    color_acc  = "#bf5af2" if pct_acc  >= 98 else "#ffb800" if pct_acc  >= 90 else "#ff2d55"
+
+    # ── Big 3 KPI cards ──
+    k1, k2, k3 = st.columns(3)
+    k1.markdown(kpi_card(f"{pct_skus}%", 'ספירת מק"טים',
+                         sub=f'{skus_c:,} / {skus_t:,} מק"טים',
+                         color=color_skus, icon="🏷️", kind="blue"), unsafe_allow_html=True)
+    k1.markdown(pbar(pct_skus, color_skus, 10), unsafe_allow_html=True)
+
+    k2.markdown(kpi_card(f"{pct_locs}%", "ספירת איתורים",
+                         sub=f'{locs_c:,} / {locs_t:,} איתורים',
+                         color=color_locs, icon="📍", kind="blue"), unsafe_allow_html=True)
+    k2.markdown(pbar(pct_locs, color_locs, 10), unsafe_allow_html=True)
+
+    k3.markdown(kpi_card(f"{pct_acc}%", "דיוק ספירה",
+                         sub=f'{no_gap:,} ללא פער מתוך {locs_c:,}',
+                         color=color_acc, icon="🎯", kind="blue"), unsafe_allow_html=True)
+    k3.markdown(pbar(pct_acc, color_acc, 10), unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── Detail cards + Gauge charts ──
+    left_col, right_col = st.columns([3, 4])
+
+    with left_col:
+        sec_header("📊 פירוט מספרי")
+
+        def detail_row(label, val, total, color):
+            pct = round(val / max(total, 1) * 100)
+            remaining = total - val
+            status = "✅ הושלם" if pct >= 100 else f"⏳ נותרו {remaining:,}"
+            st.markdown(
+                f'<div style="background:var(--card2);border:1px solid var(--b1);'
+                f'border-radius:12px;padding:16px 18px;margin-bottom:12px;'
+                f'border-right:4px solid {color}">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+                f'<span style="font-weight:700;font-size:.95rem;color:var(--txt)">{label}</span>'
+                f'<span style="font-family:var(--mono);font-size:.8rem;color:var(--txt2)">{status}</span>'
+                f'</div>'
+                f'<div style="display:flex;justify-content:space-between;margin-bottom:8px">'
+                f'<span style="font-family:var(--orb);font-size:1.8rem;font-weight:800;color:{color}'
+                f';text-shadow:0 0 16px {color}66">{pct}%</span>'
+                f'<div style="text-align:left">'
+                f'<div style="font-size:.72rem;color:var(--txt2)">נספרו</div>'
+                f'<div style="font-family:var(--mono);font-size:1rem;color:{color};font-weight:700">{val:,}</div>'
+                f'</div>'
+                f'<div style="text-align:left">'
+                f'<div style="font-size:.72rem;color:var(--txt2)">סה"כ</div>'
+                f'<div style="font-family:var(--mono);font-size:1rem;color:var(--txt);font-weight:700">{total:,}</div>'
+                f'</div>'
+                f'</div>'
+                f'{pbar(pct, color, 8)}'
+                f'</div>',
+                unsafe_allow_html=True)
+
+        detail_row('מק"טים שנספרו', skus_c, skus_t, color_skus)
+        detail_row("איתורים שנספרו", locs_c, locs_t, color_locs)
+        detail_row("איתורים ללא פער", no_gap, locs_c, color_acc)
+
+        # Gap count
+        gap_count = locs_c - no_gap
+        gap_pct   = round(gap_count / max(locs_c, 1) * 100)
+        gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
+        st.markdown(
+            f'<div style="background:var(--card2);border:1px solid rgba(255,45,85,.3);'
+            f'border-radius:12px;padding:14px 18px;border-right:4px solid {gap_color}">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center">'
+            f'<span style="font-weight:700;color:var(--txt)">⚡ איתורים עם פער</span>'
+            f'<span style="font-family:var(--orb);font-size:1.5rem;color:{gap_color};font-weight:800">'
+            f'{gap_count:,}</span>'
+            f'</div>'
+            f'<div style="color:var(--txt2);font-size:.78rem;margin-top:4px">'
+            f'{gap_pct}% מהאיתורים שנספרו — '
+            f'{"⚠️ גבוה" if gap_pct > 10 else "⚡ בינוני" if gap_pct > 5 else "✅ תקין"}'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True)
+
+    with right_col:
+        if HAS_PLOTLY:
+            sec_header("🎯 גרפי ביצוע")
+
+            # 3 donut gauges
+            fig = make_subplots(rows=1, cols=3,
+                specs=[[{"type":"pie"},{"type":"pie"},{"type":"pie"}]],
+                subplot_titles=["מק\"טים","איתורים","דיוק"])
+
+            for col_idx, (val, total, color, label) in enumerate([
+                (skus_c, skus_t, color_skus, "מק\"טים"),
+                (locs_c, locs_t, color_locs, "איתורים"),
+                (no_gap, max(locs_c,1), color_acc, "דיוק"),
+            ], start=1):
+                remain = max(0, total - val)
+                pct_v  = round(val / max(total, 1) * 100)
+                fig.add_trace(go.Pie(
+                    values=[val, remain],
+                    hole=.72,
+                    marker_colors=[color, "rgba(255,255,255,.05)"],
+                    showlegend=False, textinfo="none",
+                    hoverinfo="skip",
+                ), row=1, col=col_idx)
+                fig.add_annotation(
+                    text=f"<b>{pct_v}%</b>",
+                    x=(col_idx - 1) / 3 + 1/6,
+                    y=0.5, xref="paper", yref="paper",
+                    font_size=22, font_family="Orbitron",
+                    font_color=color, showarrow=False)
+
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", height=260,
+                margin=dict(t=40, b=0, l=0, r=0),
+                font=dict(family="Heebo", color="#e2eeff"))
+            for ann in fig.layout.annotations:
+                if ann.text in ["מק\"טים", "איתורים", "דיוק"]:
+                    ann.update(font=dict(color="#7a90b0", size=12, family="Heebo"))
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Stacked bar: counted vs not counted
+            fig2 = go.Figure()
+            cats_bar = ["מק\"טים", "איתורים"]
+            counted  = [skus_c, locs_c]
+            remaining= [skus_t - skus_c, locs_t - locs_c]
+            fig2.add_trace(go.Bar(
+                name="נספרו", x=cats_bar, y=counted,
+                marker_color=["#00ff88", "#00d4ff"],
+                text=[f"{v:,}" for v in counted],
+                textposition="inside", textfont=dict(color="#040d1c", size=13, family="Orbitron")))
+            fig2.add_trace(go.Bar(
+                name="טרם נספרו", x=cats_bar, y=remaining,
+                marker_color=["rgba(0,255,136,.1)", "rgba(0,212,255,.1)"],
+                marker_line_color=["rgba(0,255,136,.3)", "rgba(0,212,255,.3)"],
+                marker_line_width=1,
+                text=[f"{v:,}" for v in remaining],
+                textposition="inside", textfont=dict(color="#7a90b0", size=11)))
+            fig2.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Heebo", color="#e2eeff"), height=260,
+                barmode="stack", margin=dict(t=10, b=30, l=0, r=0),
+                legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12),
+                yaxis=dict(gridcolor="rgba(255,255,255,.04)"),
+                xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
+            st.plotly_chart(fig2, use_container_width=True)
+
+    # ── Historical trend (if multiple months exist) ──
+    if len(st.session_state.inventory) >= 2 and HAS_PLOTLY:
         st.markdown("---")
-        sec_header("📊 גרף ביצועים השוואתי")
-        colors_w = ["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
-                    for v in perf_df["ביצוע"]]
-        fig = go.Figure(go.Bar(
-            x=perf_df["ביצוע"], y=perf_df["עובד"],
-            orientation="h", marker_color=colors_w,
-            text=[f"{v}%" for v in perf_df["ביצוע"]],
-            textposition="outside", textfont=dict(color="#e2eeff", size=12)))
-        fig.add_vline(x=80, line_dash="dot", line_color="rgba(0,255,136,.4)",
-                      annotation_text="יעד 80%", annotation_font_color="#00ff88")
-        fig.update_layout(
+        sec_header("📈 מגמה היסטורית")
+        hist = sorted(st.session_state.inventory, key=lambda x: x["month"])
+        hdf = pd.DataFrame([{
+            "חודש":      f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
+            "מק\"טים %": round(int(r["skus_counted"]) / max(int(r["skus_total"]), 1) * 100),
+            "איתורים %": round(int(r["locs_counted"]) / max(int(r["locs_total"]), 1) * 100),
+            "דיוק %":    round(int(r["no_gap"]) / max(int(r["locs_counted"]), 1) * 100),
+        } for r in hist])
+
+        fig_h = go.Figure()
+        for col_name, color in [("מק\"טים %","#00ff88"),("איתורים %","#00d4ff"),("דיוק %","#bf5af2")]:
+            fig_h.add_trace(go.Scatter(
+                x=hdf["חודש"], y=hdf[col_name],
+                name=col_name, mode="lines+markers",
+                line=dict(color=color, width=2.5),
+                marker=dict(size=9, color=color,
+                            line=dict(color="#040d1c", width=2)),
+                fill="tozeroy" if col_name == "דיוק %" else "none",
+                fillcolor=f"{color}0d"))
+        fig_h.add_hline(y=95, line_dash="dot", line_color="rgba(191,90,242,.4)",
+                        annotation_text="יעד דיוק 95%",
+                        annotation_font_color="#bf5af2", annotation_font_size=11)
+        fig_h.update_layout(
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Heebo", color="#e2eeff"), height=340,
-            margin=dict(t=10, b=10, l=100, r=80),
-            xaxis=dict(range=[0, 120], gridcolor="rgba(255,255,255,.04)"),
-            yaxis=dict(gridcolor="rgba(255,255,255,.03)"), showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+            font=dict(family="Heebo", color="#e2eeff"), height=300,
+            margin=dict(t=10, b=40, l=0, r=0),
+            legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12),
+            yaxis=dict(range=[0,108], gridcolor="rgba(255,255,255,.04)"),
+            xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
+        st.plotly_chart(fig_h, use_container_width=True)
 
-        # Tasks distribution donut per worker
-        st.markdown("---")
-        sec_header("📋 התפלגות משימות לפי עובד")
-        worker_counts = {w: len(df[df["Assigned_To"] == w]) for w in WORKERS}
-        fig2 = go.Figure(go.Pie(
-            labels=list(worker_counts.keys()),
-            values=list(worker_counts.values()),
-            hole=.55, textinfo="label+percent",
-            textfont=dict(size=11, color="#e2eeff"),
-            marker_colors=["#00d4ff","#00ff88","#ffb800","#ff2d55","#bf5af2","#ff6b8a"],
-        ))
-        fig2.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", height=320,
-            margin=dict(t=10, b=0, l=0, r=0),
-            legend=dict(bgcolor="rgba(0,0,0,0)", font_color="#e2eeff"),
-            font=dict(family="Heebo"))
-        st.plotly_chart(fig2, use_container_width=True)
+    # ── Export ──
+    st.markdown("---")
+    if st.session_state.inventory:
+        buf = io.BytesIO()
+        export_data = []
+        for r in sorted(st.session_state.inventory, key=lambda x: x["month"], reverse=True):
+            export_data.append({
+                "חודש":               f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
+                'סך מק"טים':         r["skus_total"],
+                'מק"טים שנספרו':      r["skus_counted"],
+                'אחוז ספירת מק"טים': f"{round(int(r['skus_counted'])/max(int(r['skus_total']),1)*100)}%",
+                "סך איתורים":         r["locs_total"],
+                "איתורים שנספרו":     r["locs_counted"],
+                "אחוז ספירת איתורים": f"{round(int(r['locs_counted'])/max(int(r['locs_total']),1)*100)}%",
+                "ללא פער":            r["no_gap"],
+                "אחוז דיוק":         f"{round(int(r['no_gap'])/max(int(r['locs_counted']),1)*100)}%",
+            })
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            pd.DataFrame(export_data).to_excel(w, index=False, sheet_name="ספירות מלאי")
+        st.download_button(
+            "📥 ייצוא כל הספירות — Excel",
+            buf.getvalue(), "ספירות_מלאי.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1710,9 +1845,9 @@ st.sidebar.markdown(f"""
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "➕ הוספת משימה","⚙️ ניהול משימות","👥 עובדים","🔬 אנליטיקס"],
-    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","👥 עובדים","🔬 אנליטיקס"],
-    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה"],
+                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס"],
+    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס"],
+    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה"],
 }
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
@@ -1731,7 +1866,8 @@ if st.sidebar.button("🚪 התנתקות", use_container_width=True):
 PAGE_ICONS = {
     "📊 דשבורד":"📊 דשבורד בקרה","📋 סידור עבודה":"📋 סידור עבודה שבועי",
     "📅 לוח שנה":"📅 לוח שנה","➕ הוספת משימה":"➕ הוספת משימה חדשה",
-    "⚙️ ניהול משימות":"⚙️ ניהול ועריכת משימות","👥 עובדים":"👥 ביצועי עובדים",
+    "⚙️ ניהול משימות":"⚙️ ניהול ועריכת משימות",
+    "📦 ספירות מלאי":"📦 דשבורד ספירות מלאי",
     "🔬 אנליטיקס":"🔬 אנליטיקס מתקדם",
 }
 st.markdown(
@@ -1744,7 +1880,7 @@ st.markdown(
 if   choice == "📊 דשבורד":          page_dashboard()
 elif choice == "📋 סידור עבודה":     page_work()
 elif choice == "📅 לוח שנה":          page_calendar()
+elif choice == "📦 ספירות מלאי":     page_inventory()
 elif choice == "➕ הוספת משימה":     page_add()
 elif choice == "⚙️ ניהול משימות":    page_manage()
-elif choice == "👥 עובדים":           page_workers()
 elif choice == "🔬 אנליטיקס":        page_analytics()
