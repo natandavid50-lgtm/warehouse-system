@@ -510,10 +510,11 @@ DB_PATH = "wms.db"
 #  DATABASE LAYER — SQLite (persists across refreshes)
 # ═══════════════════════════════════════════════════════════════════════════════
 def get_conn():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
-
+    from supabase import create_client
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+    
 def db_init():
     """Create tables if they don't exist."""
     with get_conn() as conn:
