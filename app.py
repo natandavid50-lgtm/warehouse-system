@@ -1005,7 +1005,8 @@ def page_dashboard():
                     xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
                 st.plotly_chart(fig_m, use_container_width=True)
 st.plotly_chart(fig_c, use_container_width=True)
-        # Excel export
+
+# Excel export
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             mdf.to_excel(w, index=False, sheet_name="ביצועים יומי")
