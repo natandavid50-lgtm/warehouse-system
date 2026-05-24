@@ -1008,7 +1008,7 @@ if HAS_PLOTLY:
                     x=list(cat_day_data.keys()),
                     y=list(cat_day_data.values()),
                     marker_color=["#00ff88" if v >= 80 else "#ffb800" if v >= 50 else "#ff2d55"
-                                  for v in cat_day_data.values()],
+                    for v in cat_day_data.values()],
                     name="אחוז יומי"))
                 fig_c.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
