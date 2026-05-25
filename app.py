@@ -10,6 +10,9 @@ try:
     import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
+    import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
+    
+    pio.templates.default = "plotly_dark"  # 🎯 2. הגדרנו את המצב הכהה כברירת מחדל לכולם
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
