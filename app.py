@@ -10,9 +10,9 @@ try:
     import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
-    import plotly.io as pio  
+    import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
     
-    pio.templates.default = "plotly_dark"  
+    pio.templates.default = "plotly_dark"  # 🎯 2. הגדרנו את המצב הכהה כברירת מחדל לכולם
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -36,10 +36,10 @@ st.set_page_config(
 ADMIN_HASH = hashlib.sha256(b"1234").hexdigest()
 SESSION_MINS = 60
 PRIS  = ["רגיל", "דחוף", "גבוה", "נמוך"]
-CATS  = ["כללי", "בטיחות", "לוגיסטיקה", "ניקיון", "תחזוקה", "ספירה"]
+CATS  = ["כללי", "בטיחות", "לוגיסטיקה", "ניקיון", "תחזוקה", "ספירה", "אחסנה חיצונית"]
 RECUR = ["לא", "יומי", "שבועי", "דו-שבועי", "חודשי"]
 MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני",
-             "יולי","אוקטובר","ספטמבר","אוקטובר","נובמבר","דצמבר"]
+             "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -78,7 +78,8 @@ st.markdown("""
   --glow-r:  0 0 30px rgba(255,45,85,.25);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box;
+}
 html, body, [class*="css"] {
   font-family: var(--heb) !important;
   direction: rtl !important;
@@ -100,7 +101,8 @@ html, body, [class*="css"] {
   border-left: 1px solid var(--b1) !important;
   box-shadow: 4px 0 40px rgba(0,0,0,.5) !important;
 }
-[data-testid="stSidebar"] * { color: var(--txt) !important; }
+[data-testid="stSidebar"] * { color: var(--txt) !important;
+}
 [data-testid="stSidebar"] .stRadio label {
   background: transparent !important;
   border: 1px solid transparent;
@@ -130,7 +132,8 @@ html, body, [class*="css"] {
 [data-testid="stMetric"]::before {
   content: '';
   position: absolute;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   width: 100%; height: 2px;
   background: linear-gradient(90deg, var(--cyan), var(--green));
 }
@@ -205,7 +208,8 @@ html, body, [class*="css"] {
 }
 label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; font-weight: 600 !important; }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar { width: 5px;
+  height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg0); }
 ::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
 
@@ -258,6 +262,8 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
   border-radius: var(--r) !important;
 }
 
+/* ── CUSTOM COMPONENTS ── */
+
 .mega-banner {
   background: linear-gradient(135deg, var(--card) 0%, var(--card2) 50%, var(--card) 100%);
   border: 1px solid var(--b2);
@@ -281,8 +287,8 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
 .mega-banner::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 1px;
+  bottom: 0; left: 0;
+  right: 0; height: 1px;
   background: linear-gradient(90deg, transparent, var(--cyan), transparent);
 }
 .mega-banner h1 {
@@ -302,7 +308,8 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
 }
 .mega-banner .live-dot {
   display: inline-block;
-  width: 8px; height: 8px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--green);
   box-shadow: 0 0 12px var(--green);
@@ -311,7 +318,8 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
 }
 @keyframes pulse-dot {
   0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.5; transform:scale(.7); }
+  50%      { opacity:.5; transform:scale(.7);
+}
 }
 
 .kpi {
@@ -329,15 +337,18 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
 .kpi::before {
   content: '';
   position: absolute;
-  top: 0; right: 0;
-  width: 100%; height: 3px;
+  top: 0;
+  right: 0; width: 100%; height: 3px;
 }
-.kpi-blue::before   { background: linear-gradient(90deg, var(--cyan), #005fa3); }
+.kpi-blue::before   { background: linear-gradient(90deg, var(--cyan), #005fa3);
+}
 .kpi-green::before  { background: linear-gradient(90deg, var(--green), #005f35); }
-.kpi-red::before    { background: linear-gradient(90deg, var(--red), #6b001e); }
+.kpi-red::before    { background: linear-gradient(90deg, var(--red), #6b001e);
+}
 .kpi-amber::before  { background: linear-gradient(90deg, var(--amber), #6b4a00); }
 .kpi-purple::before { background: linear-gradient(90deg, var(--purple), #3d0070); }
-.kpi:hover.kpi-blue  { box-shadow: var(--glow-c); }
+.kpi:hover.kpi-blue  { box-shadow: var(--glow-c);
+}
 .kpi:hover.kpi-green { box-shadow: var(--glow-g); }
 .kpi:hover.kpi-red   { box-shadow: var(--glow-r); }
 .kpi-icon {
@@ -400,9 +411,11 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
   position: relative;
   overflow: hidden;
 }
-.tc:hover { background: var(--card2); border-color: var(--b2); transform: translateX(-3px); }
+.tc:hover { background: var(--card2); border-color: var(--b2); transform: translateX(-3px);
+}
 .tc.done   { border-right-color: var(--green) !important; opacity: .65; }
-.tc.urgent { border-right-color: var(--red)   !important; }
+.tc.urgent { border-right-color: var(--red)   !important;
+}
 .tc.high   { border-right-color: var(--amber) !important; }
 
 .b {
@@ -414,12 +427,16 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
   margin: 1px;
   letter-spacing: .3px;
 }
-.b-blue   { background: rgba(0,212,255,.14);  color: #5dd8ff; border: 1px solid rgba(0,212,255,.25); }
+.b-blue   { background: rgba(0,212,255,.14);  color: #5dd8ff; border: 1px solid rgba(0,212,255,.25);
+}
 .b-green  { background: rgba(0,255,136,.12);  color: #00ff88; border: 1px solid rgba(0,255,136,.2); }
-.b-red    { background: rgba(255,45,85,.14);  color: #ff5577; border: 1px solid rgba(255,45,85,.25); }
+.b-red    { background: rgba(255,45,85,.14);  color: #ff5577;
+  border: 1px solid rgba(255,45,85,.25); }
 .b-amber  { background: rgba(255,184,0,.14);  color: #ffd040; border: 1px solid rgba(255,184,0,.25); }
-.b-purple { background: rgba(191,90,242,.14); color: #d070ff; border: 1px solid rgba(191,90,242,.25); }
-.b-gray   { background: rgba(255,255,255,.07);color: var(--txt2); border: 1px solid var(--b1); }
+.b-purple { background: rgba(191,90,242,.14);
+  color: #d070ff; border: 1px solid rgba(191,90,242,.25); }
+.b-gray   { background: rgba(255,255,255,.07);color: var(--txt2); border: 1px solid var(--b1);
+}
 
 .wchip {
   background: linear-gradient(135deg, var(--card), var(--card2));
@@ -440,18 +457,24 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
   letter-spacing: 1px;
 }
 .wchip .day-date { font-size: .68rem; color: var(--txt2); font-family: var(--mono); margin-top: 2px; }
-.wchip .day-count { font-size: .62rem; color: var(--green); font-weight: 700; margin-top: 4px; }
+.wchip .day-count { font-size: .62rem; color: var(--green); font-weight: 700;
+  margin-top: 4px; }
 
-.al { border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: .9rem; display: flex; align-items: flex-start; gap: 10px; }
+.al { border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: .9rem; display: flex; align-items: flex-start; gap: 10px;
+}
 .al-red    { background: rgba(255,45,85,.1);   border: 1px solid rgba(255,45,85,.4); }
-.al-green  { background: rgba(0,255,136,.07);  border: 1px solid rgba(0,255,136,.25); }
+.al-green  { background: rgba(0,255,136,.07);  border: 1px solid rgba(0,255,136,.25);
+}
 .al-amber  { background: rgba(255,184,0,.08);  border: 1px solid rgba(255,184,0,.3); }
-.al-cyan   { background: rgba(0,212,255,.07);  border: 1px solid rgba(0,212,255,.25); }
+.al-cyan   { background: rgba(0,212,255,.07);  border: 1px solid rgba(0,212,255,.25);
+}
 
 .stat-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--b0); }
-.stat-row:last-child { border-bottom: none; }
+.stat-row:last-child { border-bottom: none;
+}
 .stat-label { color: var(--txt2); font-size: .82rem; flex: 1; }
-.stat-val   { color: var(--txt);  font-size: .85rem; font-weight: 700; font-family: var(--mono); }
+.stat-val   { color: var(--txt);  font-size: .85rem; font-weight: 700; font-family: var(--mono);
+}
 
 .sec-h {
   font-family: var(--orb);
@@ -474,13 +497,17 @@ details > summary { color: var(--cyan) !important; font-weight: 700 !important; 
   box-shadow: var(--glow-c);
 }
 
-.mm { background: var(--card); border: 1px solid var(--b1); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: all .2s; }
-.mm:hover { border-color: var(--b2); transform: translateY(-2px); }
+.mm { background: var(--card); border: 1px solid var(--b1); border-radius: 10px;
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: all .2s; }
+.mm:hover { border-color: var(--b2); transform: translateY(-2px);
+}
 .mm-icon { font-size: 1.5rem; }
 .mm-val  { font-family: var(--orb); font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
-.mm-lbl  { font-size: .72rem; color: var(--txt2); letter-spacing: .5px; }
+.mm-lbl  { font-size: .72rem;
+  color: var(--txt2); letter-spacing: .5px; }
 
-.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+}
 
 div[data-testid="stHorizontalBlock"] .stButton > button {
   min-height: 220px !important;
@@ -495,9 +522,11 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
   white-space: pre-wrap !important;
   text-align: center !important;
 }
-div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important;
+}
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
-div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
+div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -516,6 +545,7 @@ def get_conn():
     return create_client(url, key)
 
 def db_init():
+    """הפונקציה קיימת לצורך תאימות, ב-Supabase הטבלאות מנוהלות ישירות דרך ה-Dashboard שלהם"""
     pass
 
 # ── Tasks ──────────────────────────────────────────────────────────────────────
@@ -613,7 +643,7 @@ init_state()
 def is_scheduled(base, rec, target):
     if target < base: return False
     diff = (target - base).days
-    if rec == "לא":        return diff == 0
+    if rec == "לא":         return diff == 0
     if rec == "יומי":      return diff < 365
     if rec == "שבועי":     return diff % 7 == 0
     if rec == "דו-שבועי":  return diff % 14 == 0
@@ -648,7 +678,7 @@ def mark_done(task_id, dstr):
     existing = [x for x in str(row.iloc[0]["Done_Dates"]).split(",") if x]
     if dstr not in existing:
         existing.append(dstr)
-    db_mark_done(task_id, ",".join(existing))
+        db_mark_done(task_id, ",".join(existing))
 
 def get_overdue(days=7):
     df = db_load_tasks()
@@ -657,7 +687,8 @@ def get_overdue(days=7):
     for i in range(1, days + 1):
         d = today - timedelta(days=i)
         for t in tasks_for_date(df, d):
-            if not t["is_done"]: out.append(t)
+            if not t["is_done"]:
+                out.append(t)
     return out
 
 def week_stats(days=14):
@@ -667,10 +698,13 @@ def week_stats(days=14):
     for i in range(days - 1, -1, -1):
         d = today - timedelta(days=i)
         ts = tasks_for_date(df, d)
-        tot = len(ts); don = sum(1 for t in ts if t["is_done"])
+        tot = len(ts)
+        don = sum(1 for t in ts if t["is_done"])
         rows.append({
-            "date": d, "תאריך": d.strftime("%d/%m"),
-            "בוצע": don, "מתוכנן": tot,
+            "date": d,
+            "תאריך": d.strftime("%d/%m"),
+            "בוצע": don,
+            "מתוכנן": tot,
             "אחוז": round(don / tot * 100) if tot else 0
         })
     return pd.DataFrame(rows)
@@ -684,10 +718,8 @@ def monthly_stats(year, month):
         ts = tasks_for_date(df, d)
         if ts:
             don = sum(1 for t in ts if t["is_done"])
-            rows.append({"יום": day, "בוצע": don, "מתוכנן": len(ts),
-                         "אחוז": round(don / len(ts) * 100)})
+            rows.append({"יום": day, "בוצע": don, "מתוכנן": len(ts), "אחוז": round(don / len(ts) * 100)})
     return pd.DataFrame(rows) if rows else pd.DataFrame()
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  UI HELPERS
@@ -731,7 +763,6 @@ def kpi_card(val, label, sub="", color="var(--cyan)", icon="📊", kind="blue"):
 
 def sec_header(title):
     st.markdown(f'<div class="sec-h">{title}</div>', unsafe_allow_html=True)
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  AUTH
@@ -781,526 +812,8 @@ def login_screen():
     df = db_load_tasks()
     inv_count = len(db_load_inventory())
     c1, c2, c3 = st.columns(3)
-    c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", kind="blue"), unsafe_allow_html=True)
-    c2.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="⚠️", kind="red", color="var(--red)"), unsafe_allow_html=True)
-    c3.markdown(kpi_card(inv_count, "חודשי ספירה", icon="📦", kind="blue"), unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: DASHBOARD
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_dashboard():
-    df = db_load_tasks()
-    today = datetime.now()
-    today_str = today.strftime("%Y-%m-%d")
+    c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", color="var(--cyan)", kind="blue"), unsafe_allow_html=True)
+    c2.markdown(kpi_card(inv_count, "חודשי ספירה מתועדים", icon="📦", color="var(--green)", kind="green"), unsafe_allow_html=True)
     
-    overdue = get_overdue()
-    if overdue:
-        st.markdown(
-            f'<div class="al al-red">🚨 <div><b style="color:var(--red);font-size:1rem">'
-            f'{len(overdue)} משימות שלא בוצעו בשבוע האחרון</b>'
-            f'<div style="color:var(--txt2);font-size:.8rem;margin-top:2px">'
-            f'לחץ להצגה וסגירה</div></div></div>', unsafe_allow_html=True)
-        with st.expander("📋 פירוט פיגורים וסגירתם"):
-            for t in overdue:
-                c1, c2 = st.columns([5, 1])
-                c1.markdown(task_card_html(t), unsafe_allow_html=True)
-                if c2.button("✓", key=f"ov_{t['id']}_{t['date']}"):
-                    mark_done(t["id"], t["date"]); st.rerun()
-                    
-    dc, _ = st.columns([1, 3])
-    sel = dc.date_input("📅 תאריך", today)
-    dstr = sel.strftime("%Y-%m-%d")
-    
-    ts = tasks_for_date(df, sel)
-    tot = len(ts); don = sum(1 for t in ts if t["is_done"])
-    pct = round(don / tot * 100) if tot else 0
-    
-    c1, c2 = st.columns([7, 3])
-    with c1:
-        sec_header(f"📋 משימות ליום {sel.strftime('%d/%m/%Y')}")
-        if not ts:
-            st.info("🌴 אין משימות מתוכננות ליום זה")
-        else:
-            for t in ts:
-                col_card, col_btn = st.columns([6, 1])
-                col_card.markdown(task_card_html(t), unsafe_allow_html=True)
-                if not t["is_done"]:
-                    if col_btn.button("בצע", key=f"d_{t['id']}_{dstr}", use_container_width=True):
-                        mark_done(t["id"], dstr); st.rerun()
-                        
-    with c2:
-        sec_header("📊 סטטוס יומי")
-        st.markdown(kpi_card(f"{don}/{tot}", f"הושלמו היום ({pct}%)", sub=sel.strftime("%B"), color="var(--green)" if pct>=80 else "var(--cyan)", icon="🎯"), unsafe_allow_html=True)
-        st.markdown(pbar(pct, height=12), unsafe_allow_html=True)
-        
-        st.markdown('<div style="margin-top:20px"></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="stat-row"><span class="stat-label">משימות פתוחות:</span><span class="stat-val" style="color:var(--amber)">{tot-don}</span></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="stat-row"><span class="stat-label">סגורות:</span><span class="stat-val" style="color:var(--green)">{don}</span></div>', unsafe_allow_html=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: EXTERNAL STORAGE
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_external_storage():
-    st.markdown("### 🏠 ניהול ובקרת אחסנה חיצונית")
-    st.markdown('<div style="color:var(--txt2);font-size:.85rem;margin-bottom:15px">מעקב מלא אחר מלאי משטחים המאוחסנים במחסנים חיצוניים</div>', unsafe_allow_html=True)
-    
-    role = st.session_state.get("user_role")
-    is_admin = (role == "מנהל WMS")
-    supabase = get_conn()
-    
-    try:
-        res = supabase.table("external_storage").select("*").order("warehouse_name").execute()
-        warehouses = res.data if res.data else []
-    except Exception as e:
-        st.error(f"שגיאה בטעינת נתוני מחסנים: {e}")
-        warehouses = []
-
-    total_warehouses = len(warehouses)
-    total_pallets = sum(int(w.get("pallets_count", 0)) for w in warehouses)
-    
-    k1, k2 = st.columns(2)
-    k1.markdown(kpi_card(total_warehouses, "סך הכל מחסנים חיצוניים", icon="🏢", kind="blue"), unsafe_allow_html=True)
-    k2.markdown(kpi_card(total_pallets, "סך הכל משטחים באחסנה חיצוני", icon="📦", color="var(--amber)", kind="blue"), unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    if is_admin:
-        tab1, tab2, tab3 = st.columns([4, 4, 4])
-        
-        with tab1:
-            sec_header("➕ הוספת מחסן חיצוני חדש")
-            with st.form("add_warehouse_form", clear_on_submit=True):
-                w_name = st.text_input("שם המחסן / אתר האחסון")
-                w_pallets = st.number_input("כמות משטחים ראשונית", min_value=0, step=1, value=0)
-                submit_add = st.form_submit_button("🚀 צור מחסן חדש")
-                
-                if submit_add:
-                    if not w_name.strip():
-                        st.error("⚠️ חובה להזין שם מחסן תקין")
-                    else:
-                        try:
-                            supabase.table("external_storage").insert({
-                                "warehouse_name": w_name.strip(),
-                                "pallets_count": int(w_pallets)
-                            }).execute()
-                            st.success(f"✅ מחסן '{w_name}' נוצר בהצלחה!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ שגיאה: ייתכן שהמחסן כבר קיים במערכת ({e})")
-                            
-        with tab2:
-            sec_header("⚙️ עדכון כמות משטחים")
-            if not warehouses:
-                st.info("אין מחסנים לעדכון")
-            else:
-                w_options = [w["warehouse_name"] for w in warehouses]
-                selected_w = st.selectbox("בחר מחסן לעדכון", w_options)
-                
-                current_pallets = next(w["pallets_count"] for w in warehouses if w["warehouse_name"] == selected_w)
-                updated_pallets = st.number_input("כמות משטחים חדשה", min_value=0, step=1, value=int(current_pallets), key="update_pal_input")
-                
-                if st.button("💾 שמור עדכון מלאי", use_container_width=True):
-                    try:
-                        supabase.table("external_storage").update({
-                            "pallets_count": int(updated_pallets),
-                            "updated_at": datetime.now().isoformat()
-                        }).eq("warehouse_name", selected_w).execute()
-                        st.success(f"✅ המלאי במחסן '{selected_w}' עודכן ל-{updated_pallets} משטחים!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ שגיאה בעדכון כמות המשטחים: {e}")
-                        
-        with tab3:
-            sec_header("🗑️ הסרת מחסן מהמערכת")
-            if not warehouses:
-                st.info("אין מחסנים להסרה")
-            else:
-                w_delete_options = [w["warehouse_name"] for w in warehouses]
-                to_delete = st.selectbox("בחר מחסן למחיקה לצמיתות", w_delete_options, key="del_selectbox")
-                
-                if st.button("🚨 מחק מחסן לחלוטין", use_container_width=True):
-                    try:
-                        supabase.table("external_storage").delete().eq("warehouse_name", to_delete).execute()
-                        st.success(f"🗑️ המחסן '{to_delete}' הוסר בהצלחה מהרשימה")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ שגיאה במחיקת המחסן: {e}")
-                        
-        st.markdown("---")
-        sec_header("📋 מצב מלאי נוכחי (תצוגת מנהל)")
-    else:
-        sec_header("📋 מצב מלאי נוכחי באחסנה חיצונית")
-        
-    if not warehouses:
-        st.info("הטבלה ריקה. אין נתוני אחסנה חיצונית במערכת כרגע.")
-    else:
-        table_data = []
-        for w in warehouses:
-            raw_date = w.get("updated_at")
-            formatted_date = "-"
-            if raw_date:
-                try:
-                    formatted_date = datetime.fromisoformat(raw_date.split(".")[0].replace("Z", "")).strftime("%d/%m/%Y %H:%M")
-                except:
-                    formatted_date = str(raw_date)
-                    
-            table_data.append({
-                "שם המחסן / אתר": w.get("warehouse_name"),
-                "כמות משטחים במלאי": w.get("pallets_count"),
-                "עדכון אחרון": formatted_date
-            })
-            
-        df_display = pd.DataFrame(table_data)
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: WORK (SCHEDULE)
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_work():
-    df = db_load_tasks()
-    today = datetime.now().date()
-    start_week = today - timedelta(days=today.weekday())
-    
-    sec_header(f"📋 סידור עבודה שבועי — משימות פתוחות")
-    
-    cols = st.columns(7)
-    DAYS_HE = ["שני","שלישי","רביעי","חמישי","שישי","שבת","ראשון"]
-    for i in range(7):
-        d = start_week + timedelta(days=i)
-        ts = tasks_for_date(df, d, skip_weekend=False)
-        open_count = sum(1 for t in ts if not t["is_done"])
-        
-        with cols[i]:
-            st.markdown(
-                f'<div class="wchip">'
-                f'<div class="day-name">{DAYS_HE[i]}</div>'
-                f'<div class="day-date">{d.strftime("%d/%m")}</div>'
-                f'<div class="day-count" style="color:var(--{"green" if not open_count else "amber"})">'
-                f'{open_count} פתוחות</div>'
-                f'</div>', unsafe_allow_html=True)
-                
-    st.markdown('<div style="margin-top:20px"></div>', unsafe_allow_html=True)
-    
-    for i in range(7):
-        d = start_week + timedelta(days=i)
-        ts = [t for t in tasks_for_date(df, d, skip_weekend=False) if not t["is_done"]]
-        
-        if ts:
-            with st.expander(f"📅 {DAYS_HE[i]} ({d.strftime('%d/%m')}) — {len(ts)} משימות פתוחות", expanded=(d==today)):
-                for t in ts:
-                    c1, c2 = st.columns([6, 1])
-                    c1.markdown(task_card_html(t), unsafe_allow_html=True)
-                    if c2.button("בצע", key=f"wk_{t['id']}_{t['date']}", use_container_width=True):
-                        mark_done(t["id"], t["date"]); st.rerun()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: CALENDAR
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_calendar():
-    if not HAS_CAL:
-        st.warning("⚠️ streamlit-calendar אינו מותקן. לא ניתן להציג לוח שנה אינטראקטיבי.")
-        return
-        
-    df = db_load_tasks()
-    sec_header("📅 לוח שנה משימות")
-    
-    events = []
-    today = datetime.now().date()
-    for i in range(-30, 60):
-        d = today + timedelta(days=i)
-        ts = tasks_for_date(df, d, skip_weekend=False)
-        for t in ts:
-            color = "#00ff88" if t["is_done"] else ("#ff2d55" if t["priority"] == "דחוף" else "#00d4ff")
-            events.append({
-                "id": f"{t['id']}_{t['date']}",
-                "title": f"{'✅' if t['is_done'] else '⏳'} {t['name']}",
-                "start": t["date"],
-                "end": t["date"],
-                "backgroundColor": color,
-                "borderColor": color,
-                "allDay": True
-            })
-            
-    cal_options = {
-        "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listWeek"},
-        "initialView": "dayGridMonth",
-        "direction": "rtl",
-        "locale": "he"
-    }
-    
-    st_calendar(events=events, options=cal_options, custom_css="""
-        .fc { font-family: var(--heb); background: var(--card); padding:20px; border-radius:14px; border:1px solid var(--b1); }
-        .fc-col-header-cell { background: var(--bg2); color: var(--cyan); padding: 8px 0; }
-        .fc-daygrid-day:hover { background: rgba(0,212,255,.03); }
-        .fc-event { cursor:pointer; font-weight:600; padding: 2px 4px; }
-    """)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: INVENTORY COUNT
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_inventory():
-    sec_header("📦 דשבורד ובקרת ספירות מלאי")
-    
-    if st.session_state.user_role == "מנהל WMS":
-        with st.expander("➕ הזנת נתוני ספירת מלאי חודשית חדשה / עדכון"):
-            with st.form("inv_form"):
-                c1, c2 = st.columns(2)
-                y_sel = c1.selectbox("שנה", [2025, 2026, 2027], index=1)
-                m_sel = c2.selectbox("חודש", list(range(1, 13)), format_func=lambda x: MONTHS_HE[x-1])
-                
-                st.markdown("---")
-                c1, c2, c3 = st.columns(3)
-                skus_t = c1.number_input("סך פריטים במחסן (SKUs)", min_value=1, value=1500)
-                skus_c = c1.number_input("פריטים שנספרו בפועל", min_value=0, value=1500)
-                
-                locs_t = c2.number_input("סך מיקומים במחסן", min_value=1, value=3000)
-                locs_c = c2.number_input("מיקומים שנספרו בפועל", min_value=0, value=3000)
-                
-                no_g   = c3.number_input("מיקומים שנמצאו ללא פער (פיקס)", min_value=0, value=2950)
-                
-                if st.form_submit_button("💾 שמור נתוני ספירה"):
-                    m_str = f"{y_sel}-{m_sel:02d}"
-                    db_save_inventory(m_str, skus_t, skus_c, locs_t, locs_c, no_g)
-                    st.success(f"✅ נתוני הספירה לחודש {MONTHS_HE[m_sel-1]} {y_sel} נשמרו בהצלחה!")
-                    st.rerun()
-                    
-    hist = db_load_inventory()
-    if not hist:
-        st.info("אין נתוני ספירות מלאי במערכת")
-        return
-        
-    latest = hist[0]
-    
-    st.markdown(f"### 📊 סטטוס ספירה אחרונה: {latest['month']}")
-    c1, c2, c3, c4 = st.columns(4)
-    
-    sku_pct = round(latest["skus_counted"] / latest["skus_total"] * 100)
-    loc_pct = round(latest["locs_counted"] / latest["locs_total"] * 100)
-    acc_pct = round(latest["no_gap"] / latest["locs_counted"] * 100) if latest["locs_counted"] else 0
-    
-    c1.markdown(kpi_card(f"{sku_pct}%", "התקדמות פריטים", f"{latest['skus_counted']:,} / {latest['skus_total']:,}", color="var(--cyan)", icon="🔬"), unsafe_allow_html=True)
-    c2.markdown(kpi_card(f"{loc_pct}%", "התקדמות מיקומים", f"{latest['locs_counted']:,} / {latest['locs_total']:,}", color="var(--cyan)", icon="📍"), unsafe_allow_html=True)
-    c3.markdown(kpi_card(f"{acc_pct}%", "דיוק מלאי (מבוסס מיקום)", f"{latest['no_gap']:,} פיקס", color="var(--green)" if acc_pct>=95 else "var(--amber)", icon="🎯", kind="green" if acc_pct>=95 else "blue"), unsafe_allow_html=True)
-    c4.markdown(kpi_card(f"{latest['locs_counted'] - latest['no_gap']:,}", "מיקומים עם פער", "דורש בדיקה / התאמה", color="var(--red)" if (latest['locs_counted'] - latest['no_gap'])>0 else "var(--txt2)", icon="🚨", kind="red" if (latest['locs_counted'] - latest['no_gap'])>0 else "blue"), unsafe_allow_html=True)
-    
-    st.markdown('<div style="margin-top:25px"></div>', unsafe_allow_html=True)
-    sec_header("⏳ היסטוריית ספירות מלאי")
-    
-    rows = []
-    for h in hist:
-        stot = h["skus_total"]; scnt = h["skus_counted"]
-        ltot = h["locs_total"]; lcnt = h["locs_counted"]
-        ng   = h["no_gap"]
-        rows.append({
-            "חודש":       h["month"],
-            "פריטים במחסן":   f"{stot:,}",
-            "נספרו (פריטים)": f"{scnt:,} ({round(scnt/stot*100)}%)",
-            "סך מיקומים":     f"{ltot:,}",
-            "נספרו (מיקומים)": f"{lcnt:,} ({round(lcnt/ltot*100)}%)",
-            "מיקומים תקינים": f"{ng:,}",
-            "דיוק מלאי":      f"{round(ng/lcnt*100) if lcnt else 0}%"
-        })
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: ADD TASK
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_add():
-    if st.session_state.user_role != "מנהל WMS":
-        st.warning("🔒 מדור זה פתוח למנהל מערכת בלבד")
-        return
-        
-    sec_header("➕ הוספת משימת תפעול / תחזוקה חדשה")
-    
-    with st.form("add_form", clear_on_submit=True):
-        name = st.text_input("🎯 שם המשימה", placeholder="לדוגמה: ביקורת מטפים, ריענון מלאי...")
-        desc = st.text_area("📝 תיאור והנחיות לביצוע")
-        
-        c1, c2, c3 = st.columns(3)
-        recurring = c1.selectbox("🔁 מחזוריות", RECUR)
-        priority  = c2.selectbox("🚨 עדיפות", PRIS)
-        category  = c3.selectbox("📦 קטגוריה", CATS)
-        
-        start_date = st.date_input("📅 תאריך תחילת תוקף / ביצוע", datetime.now())
-        
-        if st.form_submit_button("🚀 צור משימה והפץ למערכת"):
-            if not name.strip(): st.error("❌ לא ניתן ליצור משימה ללא שם")
-            else:
-                new_id = db_add_task(name, desc, recurring, start_date, priority, category)
-                st.success(f"🎉 המשימה נוצרה בהצלחה במערכת! (ID: {new_id})")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: MANAGE TASKS
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_manage():
-    if st.session_state.user_role != "מנהל WMS":
-        st.warning("🔒 מדור זה פתוח למנהל מערכת בלבד")
-        return
-        
-    sec_header("⚙️ ניהול, עריכה ומחיקת משימות")
-    df = db_load_tasks()
-    
-    if df.empty:
-        st.info("אין משימות לניהול")
-        return
-        
-    for idx, row in df.iterrows():
-        with st.expander(f"⚙️ {row['Task_Name']} [{row['Priority']}] — {row['Recurring']}"):
-            with st.form(f"ed_{row['ID']}"):
-                ename = st.text_input("שם המשימה", row["Task_Name"])
-                edesc = st.text_area("תיאור", row["Description"])
-                
-                c1, c2, c3 = st.columns(3)
-                erec  = c1.selectbox("מחזוריות", RECUR, index=RECUR.index(row["Recurring"]) if row["Recurring"] in RECUR else 0)
-                epri  = c2.selectbox("עדיפות", PRIS, index=PRIS.index(row["Priority"]) if row["Priority"] in PRIS else 0)
-                ecat  = c3.selectbox("קטגוריה", CATS, index=CATS.index(row["Category"]) if row["Category"] in CATS else 0)
-                
-                edat  = st.date_input("תאריך", pd.to_datetime(row["Date"]))
-                
-                cc1, cc2 = st.columns(2)
-                if cc1.form_submit_button("💾 שמור שינויים", use_container_width=True):
-                    db_update_task(row["ID"], ename, edesc, erec, edat, epri, ecat)
-                    st.success("העדכון נשמר")
-                    st.rerun()
-                if cc2.form_submit_button("🗑️ מחק משימה לחלוטין", use_container_width=True):
-                    db_delete_task(row["ID"])
-                    st.success("המשימה נמחקה")
-                    st.rerun()
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  PAGE: ANALYTICS
-# ═══════════════════════════════════════════════════════════════════════════════
-def page_analytics():
-    sec_header("🔬 אנליטיקס מתקדם וניתוח מגמות ביצוע")
-    
-    if not HAS_PLOTLY:
-        st.warning("⚠️ ספריית Plotly אינה מותקנת. לא ניתן להציג גרפים מתקדמים.")
-        return
-        
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("#### 📈 קצב ביצוע משימות (14 ימים אחרונים)")
-        w_df = week_stats(14)
-        if not w_df.empty:
-            fig = px.line(w_df, x="תאריך", y="אחוז", text="אחוז", markers=True,
-                          labels={"אחוז":"אחוז ביצוע (%)"})
-            fig.update_traces(line_color= "#00d4ff", line_width=3, marker_size=8, textposition="top center")
-            fig.update_layout(height=300, margin=dict(l=20,r=20,t=20,b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            
-    with c2:
-        st.markdown("#### 📊 מפת קטגוריות משימות")
-        df = db_load_tasks()
-        if not df.empty:
-            cat_counts = df["Category"].value_counts().reset_index()
-            cat_counts.columns = ["קטגוריה", "כמות"]
-            fig2 = px.bar(cat_counts, x="קטגוריה", y="כמות", color="קטגוריה",
-                          color_discrete_sequence=px.colors.qualitative.Pastel)
-            fig2.update_layout(height=300, showlegend=False, margin=dict(l=20,r=20,t=20,b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-#  MAIN APPLICATION ROUTER
-# ═══════════════════════════════════════════════════════════════════════════════
-def main():
-    check_timeout()
-    
-    role = st.session_state.user_role
-    if not role:
-        login_screen()
-        return
-        
-    st.sidebar.markdown(
-        f'<div style="text-align:center;padding:10px 0;margin-bottom:15px">'
-        f'<h3 style="color:var(--cyan);font-family:var(--orb);margin:0">📦 WMS PANEL</h3>'
-        f'<span class="b b-blue" style="font-size:.7rem">{role}</span>'
-        f'</div>', unsafe_allow_html=True)
-        
-    lt = st.session_state.get("login_time", datetime.now())
-    elapsed_min = int((datetime.now() - lt).total_seconds() // 60)
-    
-    MENUS = {
-        "מנהל WMS": [
-            "📊 דשבורד",
-            "🏠 אחסנה חיצונית",  
-            "📋 סידור עבודה",
-            "📅 לוח שנה",
-            "📦 ספירות מלאי",
-            "➕ הוספת משימה",
-            "⚙️ ניהול משימות",
-            "🔬 אנליטיקס",
-        ],
-        "צוות מחסן": [
-            "📊 דשבורד",
-            "🏠 אחסנה חיצונית",  
-            "📋 סידור עבודה",
-            "📅 לוח שנה",
-            "📦 ספירות מלאי",
-        ],
-        "הנהלה": [
-            "📊 דשבורד",
-            "🏠 אחסנה חיצונית",  
-            "📦 ספירות מלאי",
-            "🔬 אנליטיקס",
-        ]
-    }
-    
-    choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
-    
-    st.sidebar.markdown("---")
-    if elapsed_min >= 50:
-        st.sidebar.markdown(
-            f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
-            f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
-            unsafe_allow_html=True)
-    if st.sidebar.button("🚪 התנתקות", use_container_width=True):
-        st.session_state.user_role = None
-        st.session_state.login_time = None
-        st.rerun()
-        
-    PAGE_ICONS = {
-        "📊 דשבורד":        "📊 דשבורד בקרה",
-        "🏠 אחסנה חיצונית": "🏠 אחסנה חיצונית",
-        "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
-        "📅 לוח שנה":       "📅 לוח שנה",
-        "➕ הוספת משימה":   "➕ הוספת משימה חדשה",
-        "⚙️ ניהול משימות":  "⚙️ ניהול ועריכת משימות",
-        "📦 ספירות מלאי":   "📦 דשבורד ספירות מלאי",
-        "🔬 אנליטיקס":      "🔬 אנליטיקס מתקדם",
-    }
-    
-    st.markdown(
-        f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
-        f'<h1 style="font-size:1.4rem !important;letter-spacing:2px !important">{PAGE_ICONS.get(choice, choice)}</h1>'
-        f'<div class="sub"><span class="live-dot"></span> מחובר כעת: {role}</div>'
-        f'</div>', unsafe_allow_html=True)
-        
-    if choice == "📊 דשבורד":
-        page_dashboard()
-    elif choice == "🏠 אחסנה חיצונית":
-        page_external_storage()
-    elif choice == "📋 סידור עבודה":
-        page_work()
-    elif choice == "📅 לוח שנה":
-        page_calendar()
-    elif choice == "📦 ספירות מלאי":
-        page_inventory()
-    elif choice == "➕ הוספת משימה":
-        page_add()
-    elif choice == "⚙️ ניהול משימות":
-        page_manage()
-    elif choice == "🔬 אנליטיקס":
-        page_analytics()
-
-
-if __name__ == "__main__":
-    main()
+    overdue_tasks = get_overdue()
+    c3.markdown(kpi_card(len(overdue_tasks), "משימות באיחור (שבוע אחרון)", icon="🚨", color="var(--red)", kind="red"), unsafe_allow_html=True)
