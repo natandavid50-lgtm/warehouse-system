@@ -598,7 +598,46 @@ def db_save_inventory(month, skus_total, skus_counted, locs_total, locs_counted,
         "no_gap": int(no_gap)
     }
     supabase.table("inventory").upsert(data, on_conflict="month").execute()
-    
+
+# ── External Storage ────────────────────────────────────────────────────────────
+def db_load_external_storage() -> list:
+    try:
+        supabase = get_conn()
+        res = supabase.table("external_storage").select("*").order("id").execute()
+        return res.data if res.data else []
+    except Exception:
+        return []
+
+def db_add_external_storage(supplier, location, item_desc, quantity, unit, arrival_date, notes):
+    supabase = get_conn()
+    data = {
+        "supplier":     supplier,
+        "location":     location,
+        "item_desc":    item_desc,
+        "quantity":     int(quantity),
+        "unit":         unit,
+        "arrival_date": str(arrival_date),
+        "notes":        notes,
+    }
+    supabase.table("external_storage").insert(data).execute()
+
+def db_update_external_storage(record_id, supplier, location, item_desc, quantity, unit, arrival_date, notes):
+    supabase = get_conn()
+    data = {
+        "supplier":     supplier,
+        "location":     location,
+        "item_desc":    item_desc,
+        "quantity":     int(quantity),
+        "unit":         unit,
+        "arrival_date": str(arrival_date),
+        "notes":        notes,
+    }
+    supabase.table("external_storage").update(data).eq("id", record_id).execute()
+
+def db_delete_external_storage(record_id):
+    supabase = get_conn()
+    supabase.table("external_storage").delete().eq("id", record_id).execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1670,6 +1709,151 @@ def page_analytics():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  PAGE: EXTERNAL STORAGE  (אחסנה חיצונית)
+# ═══════════════════════════════════════════════════════════════════════════════
+def page_external_storage():
+    is_admin = st.session_state.user_role == "מנהל WMS"
+    sec_header("🏭 אחסנה חיצונית")
+
+    records = db_load_external_storage()
+
+    # ── READ-ONLY NOTICE for non-admins ────────────────────────────────────────
+    if not is_admin:
+        st.markdown(
+            '<div class="al al-cyan">👁️ <b>מצב צפייה בלבד</b> — '
+            'רק מנהל WMS רשאי להוסיף, לערוך או למחוק רשומות.</div>',
+            unsafe_allow_html=True)
+
+    # ── SUMMARY KPIs ───────────────────────────────────────────────────────────
+    total_records  = len(records)
+    total_qty      = sum(int(r.get("quantity", 0)) for r in records)
+    suppliers_set  = {r.get("supplier", "") for r in records if r.get("supplier")}
+    unique_suppliers = len(suppliers_set)
+
+    k1, k2, k3 = st.columns(3)
+    k1.markdown(kpi_card(total_records,    "רשומות פעילות",    icon="📦", kind="blue"),  unsafe_allow_html=True)
+    k2.markdown(kpi_card(total_qty,        "סה\"כ כמות",        icon="🔢", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    k3.markdown(kpi_card(unique_suppliers, "ספקים",            icon="🏢", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── ADD NEW RECORD FORM (Admin only) ───────────────────────────────────────
+    if is_admin:
+        sec_header("➕ הוספת רשומה חדשה")
+        with st.form("ext_storage_add_form", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                new_supplier    = st.text_input("🏢 ספק", placeholder="שם הספק / מחסן חיצוני")
+                new_location    = st.text_input("📍 מיקום", placeholder="כתובת / שם מחסן חיצוני")
+                new_item_desc   = st.text_area("📝 תיאור הפריט / הסחורה", placeholder="תאר את הסחורה המאוחסנת", height=100)
+            with c2:
+                new_quantity    = st.number_input("🔢 כמות", min_value=0, step=1, value=0)
+                new_unit        = st.selectbox("📐 יחידה", ["יחידות", "פלטות", "קרטונים", "ק\"ג", "טון", "מ\"ר", "אחר"])
+                new_arrival     = st.date_input("📅 תאריך כניסה", datetime.now().date())
+                new_notes       = st.text_area("🗒️ הערות", placeholder="הערות נוספות...", height=80)
+            submitted = st.form_submit_button("💾 שמור רשומה", use_container_width=True)
+            if submitted:
+                if not new_supplier.strip() or not new_item_desc.strip():
+                    st.error("⚠️ שם ספק ותיאור פריט הם שדות חובה.")
+                else:
+                    db_add_external_storage(
+                        new_supplier.strip(), new_location.strip(),
+                        new_item_desc.strip(), new_quantity, new_unit,
+                        new_arrival, new_notes.strip())
+                    st.success("✅ הרשומה נשמרה בהצלחה!")
+                    st.rerun()
+
+    # ── DATA TABLE ─────────────────────────────────────────────────────────────
+    sec_header("📋 רשומות קיימות")
+
+    if not records:
+        st.markdown('<div class="al al-cyan">ℹ️ <b>אין רשומות אחסנה חיצונית כרגע.</b></div>', unsafe_allow_html=True)
+        return
+
+    # Build display dataframe for all roles
+    display_rows = []
+    for r in records:
+        display_rows.append({
+            "מזהה":          r.get("id", ""),
+            "ספק":           r.get("supplier", ""),
+            "מיקום":         r.get("location", ""),
+            "תיאור פריט":    r.get("item_desc", ""),
+            "כמות":          r.get("quantity", ""),
+            "יחידה":         r.get("unit", ""),
+            "תאריך כניסה":   r.get("arrival_date", ""),
+            "הערות":         r.get("notes", ""),
+        })
+    df_ext = pd.DataFrame(display_rows)
+
+    # ── READ-ONLY TABLE for non-admins ─────────────────────────────────────────
+    if not is_admin:
+        st.dataframe(
+            df_ext.drop(columns=["מזהה"]),
+            use_container_width=True,
+            hide_index=True)
+        return
+
+    # ── ADMIN: inline edit / delete per row ────────────────────────────────────
+    # Show the table for reference
+    st.dataframe(
+        df_ext.drop(columns=["מזהה"]),
+        use_container_width=True,
+        hide_index=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    sec_header("✏️ עריכה / מחיקה")
+
+    for r in records:
+        rec_id = r.get("id")
+        with st.expander(
+            f"📦  {r.get('supplier','—')} · {r.get('item_desc','—')} "
+            f"· {r.get('quantity','')} {r.get('unit','')}"):
+
+            with st.form(f"ext_edit_{rec_id}"):
+                ec1, ec2 = st.columns(2)
+                with ec1:
+                    e_supplier  = st.text_input("🏢 ספק",    value=r.get("supplier",""),  key=f"sup_{rec_id}")
+                    e_location  = st.text_input("📍 מיקום",  value=r.get("location",""),  key=f"loc_{rec_id}")
+                    e_item_desc = st.text_area("📝 תיאור",   value=r.get("item_desc",""), key=f"itm_{rec_id}", height=90)
+                with ec2:
+                    e_quantity  = st.number_input("🔢 כמות", min_value=0, step=1,
+                                                  value=int(r.get("quantity", 0)),        key=f"qty_{rec_id}")
+                    e_unit      = st.selectbox("📐 יחידה",
+                                              ["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"],
+                                              index=["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"].index(
+                                                  r.get("unit","יחידות"))
+                                              if r.get("unit","יחידות") in
+                                              ["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"] else 0,
+                                              key=f"unt_{rec_id}")
+                    try:
+                        arr_val = datetime.strptime(str(r.get("arrival_date", "")), "%Y-%m-%d").date()
+                    except Exception:
+                        arr_val = datetime.now().date()
+                    e_arrival   = st.date_input("📅 תאריך כניסה", value=arr_val,          key=f"arr_{rec_id}")
+                    e_notes     = st.text_area("🗒️ הערות",  value=r.get("notes",""),      key=f"nts_{rec_id}", height=72)
+
+                btn_col1, btn_col2 = st.columns(2)
+                save_btn   = btn_col1.form_submit_button("💾 שמור שינויים", use_container_width=True)
+                delete_btn = btn_col2.form_submit_button("🗑️ מחק רשומה",   use_container_width=True)
+
+                if save_btn:
+                    if not e_supplier.strip() or not e_item_desc.strip():
+                        st.error("⚠️ שם ספק ותיאור פריט הם שדות חובה.")
+                    else:
+                        db_update_external_storage(
+                            rec_id, e_supplier.strip(), e_location.strip(),
+                            e_item_desc.strip(), e_quantity, e_unit,
+                            e_arrival, e_notes.strip())
+                        st.success("✅ הרשומה עודכנה!")
+                        st.rerun()
+
+                if delete_btn:
+                    db_delete_external_storage(rec_id)
+                    st.success("🗑️ הרשומה נמחקה.")
+                    st.rerun()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 check_timeout()
@@ -1715,9 +1899,9 @@ st.sidebar.markdown(f"""
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס"],
-    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס"],
-    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה"],
+                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
@@ -1733,13 +1917,14 @@ if st.sidebar.button("🚪 התנתקות", use_container_width=True):
     st.rerun()
 
 PAGE_ICONS = {
-    "📊 דשבורד":        "📊 דשבורד בקרה",
-    "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
-    "📅 לוח שנה":       "📅 לוח שנה",
-    "➕ הוספת משימה":   "➕ הוספת משימה חדשה",
-    "⚙️ ניהול משימות":  "⚙️ ניהול ועריכת משימות",
-    "📦 ספירות מלאי":   "📦 דשבורד ספירות מלאי",
-    "🔬 אנליטיקס":      "🔬 אנליטיקס מתקדם",
+    "📊 דשבורד":          "📊 דשבורד בקרה",
+    "📋 סידור עבודה":     "📋 סידור עבודה שבועי",
+    "📅 לוח שנה":         "📅 לוח שנה",
+    "➕ הוספת משימה":     "➕ הוספת משימה חדשה",
+    "⚙️ ניהול משימות":    "⚙️ ניהול ועריכת משימות",
+    "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
+    "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
+    "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
 st.markdown(
     f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
@@ -1747,10 +1932,11 @@ st.markdown(
     f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
     f'</div>', unsafe_allow_html=True)
 
-if   choice == "📊 דשבורד":        page_dashboard()
-elif choice == "📋 סידור עבודה":   page_work()
-elif choice == "📅 לוח שנה":       page_calendar()
-elif choice == "📦 ספירות מלאי":   page_inventory()
-elif choice == "➕ הוספת משימה":   page_add()
-elif choice == "⚙️ ניהול משימות":  page_manage()
-elif choice == "🔬 אנליטיקס":      page_analytics()
+if   choice == "📊 דשבורד":          page_dashboard()
+elif choice == "📋 סידור עבודה":     page_work()
+elif choice == "📅 לוח שנה":         page_calendar()
+elif choice == "📦 ספירות מלאי":     page_inventory()
+elif choice == "➕ הוספת משימה":     page_add()
+elif choice == "⚙️ ניהול משימות":    page_manage()
+elif choice == "🔬 אנליטיקס":        page_analytics()
+elif choice == "🏭 אחסנה חיצונית":  page_external_storage()
