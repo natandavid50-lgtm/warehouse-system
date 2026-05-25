@@ -1520,7 +1520,7 @@ def page_inventory():
                 marker=dict(size=9, color=color,
                             line=dict(color="#040d1c", width=2)),
                 fill="tozeroy" if col_name == "דיוק %" else "none",
-                fillcolor=f"{color}0d"))
+                fillcolor="rgba(0, 123, 255, 0.1)"
         fig_h.add_hline(y=95, line_dash="dot", line_color="rgba(191,90,242,.4)",
                         annotation_text="יעד דיוק 95%",
                         annotation_font_color="#c084fc", annotation_font_size=11)
