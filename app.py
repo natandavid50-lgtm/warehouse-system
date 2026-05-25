@@ -1560,85 +1560,6 @@ def page_inventory():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
-def page_external_storage():
-    st.title("📦 דשבורד אחסנה חיצונית")
-    
-    # 1. שליפת הנתונים הנוכחיים מ-Supabase
-    try:
-        # שנה את 'supabase' לשם המשתנה של החיבור שלך בקוד
-        response = supabase.table("external_storage").select("*").order("warehouse_name").execute()
-        data = response.data
-        df = pd.DataFrame(data)
-    except Exception as e:
-        st.error(f"שגיאה בטעינת נתוני אחסנה חיצונית: {e}")
-        df = pd.DataFrame()
-
-    # 2. תצוגה לכלל המשתמשים (צפייה בלבד)
-    if not df.empty:
-        st.subheader("מצב המלאי במחסנים החיצוניים")
-        
-        # עיצוב הטבלה בצורה נקייה
-        formatted_df = df.rename(columns={
-            "warehouse_name": "שם המחסן",
-            "pallets_count": "מספר משטחים",
-            "updated_at": "עדכון אחרון"
-        })
-        st.dataframe(formatted_df[["שם המחסן", "מספר משטחים", "עדכון אחרון"]], use_container_width=True)
-        
-        # בונוס: גרף ברים קטן ונקי (שיקבל אוטומטית את העיצוב הלבן הבוהק שהגדרנו!)
-        fig = px.bar(df, x="warehouse_name", y="pallets_count", 
-                     labels={"warehouse_name": "מחסן", "pallets_count": "משטחים"},
-                     title="תמונת מצב כמותית")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("אין כרגע נתונים להצגה באחסנה חיצונית.")
-
-    st.markdown("---")
-
-    # 3. אזור ניהול - מוצג למנהלים בלבד (Admin)
-    # ודא שזה המשתנה שאתה משתמש בו בקוד לבדיקת מנהל (למשל st.session_state.role == "admin")
-    if st.session_state.get("role") == "admin":
-        st.subheader("🛠️ אזור ניהול ועדכון מלאי (מנהל בלבד)")
-        
-        tab1, tab2 = st.tabs(["➕ הוספת מחסן חדש", "🔄 עדכון מלאי קיים"])
-        
-        with tab1:
-            with st.form("add_warehouse_form"):
-                new_name = st.text_input("שם המחסן החיצוני:")
-                new_pallets = st.number_input("מספר משטחים התחלתי:", min_value=0, step=1)
-                submit_add = st.form_submit_button("הוסף מחסן")
-                
-                if submit_add and new_name:
-                    try:
-                        supabase.table("external_storage").insert({
-                            "warehouse_name": new_name,
-                            "pallets_count": new_pallets
-                        }).execute()
-                        st.success(f"المחסן '{new_name}' נוסף בהצלחה!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"שגיאה בהוספת המחסן: {e}")
-                        
-        with tab2:
-            if not df.empty:
-                with st.form("update_warehouse_form"):
-                    warehouse_to_update = st.selectbox("בחר מחסן לעדכון:", df["warehouse_name"].tolist())
-                    updated_pallets = st.number_input("מספר משטחים עדכני:", min_value=0, step=1)
-                    submit_update = st.form_submit_button("עדכן מלאי")
-                    
-                    if submit_update:
-                        try:
-                            supabase.table("external_storage").update({
-                                "pallets_count": updated_pallets,
-                                "updated_at": datetime.now().isoformat()
-                            }).eq("warehouse_name", warehouse_to_update).execute()
-                            st.success(f"מלאי מחסן '{warehouse_to_update}' עודכן ל-{updated_pallets} משטחים!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"שגיאה בעדכון המלאי: {e}")
-            else:
-                st.write("אין מחסנים קיימים לעדכון.")
-
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE: ANALYTICS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1791,11 +1712,12 @@ st.sidebar.markdown(f"""
   </div>
 </div>
 """, unsafe_allow_html=True)
+
 MENUS = {
-    "מנהל WMS":  ["📊 דשבורד", "🏠 אחסנה חיצונית", "📋 סידור עבודה", "📅 לוח שנה",
-                  "📦 ספירות מלאי", "➕ הוספת משימה", "⚙️ ניהול משימות", "🔬 אנליטיקס"],
-    "הנהלה":      ["📊 דשבורד", "🏠 אחסנה חיצונית", "📅 לוח שנה", "📦 ספירות מלאי", "🔬 אנליטיקס"],
-    "צוות מחסן": ["📊 דשבורד", "🏠 אחסנה חיצונית", "📋 סידור עבודה", "📦 ספירות מלאי", "📅 לוח שנה"],
+    "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
+                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס"],
+    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס"],
+    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה"],
 }
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
@@ -1812,7 +1734,6 @@ if st.sidebar.button("🚪 התנתקות", use_container_width=True):
 
 PAGE_ICONS = {
     "📊 דשבורד":        "📊 דשבורד בקרה",
-    "🏠 אחסנה חיצונית": "📦 דשבורד אחסנה חיצונית",
     "📋 סידור עבודה":   "📋 סידור עבודה שבועי",
     "📅 לוח שנה":       "📅 לוח שנה",
     "➕ הוספת משימה":   "➕ הוספת משימה חדשה",
@@ -1825,19 +1746,11 @@ st.markdown(
     f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
     f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
     f'</div>', unsafe_allow_html=True)
-if choice == "📊 דשבורד":
-    page_dashboard()
-elif choice == "🏠 אחסנה חיצונית":  # 🎯 הניתוב החדש והנקי שהוספנו כאן
-    page_external_storage()
-elif choice == "📋 סידור עבודה":
-    page_work()
-elif choice == "📅 לוח שנה":
-    page_calendar()
-elif choice == "📦 ספירות מלאי":
-    page_inventory()
-elif choice == "➕ הוספת משימה":
-    page_add()
-elif choice == "⚙️ ניהול משימות":
-    page_manage()
-elif choice == "🔬 אנליטיקס":
-    page_analytics()
+
+if   choice == "📊 דשבורד":        page_dashboard()
+elif choice == "📋 סידור עבודה":   page_work()
+elif choice == "📅 לוח שנה":       page_calendar()
+elif choice == "📦 ספירות מלאי":   page_inventory()
+elif choice == "➕ הוספת משימה":   page_add()
+elif choice == "⚙️ ניהול משימות":  page_manage()
+elif choice == "🔬 אנליטיקס":      page_analytics()
