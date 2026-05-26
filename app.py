@@ -29,7 +29,7 @@ except ImportError:
 st.set_page_config(
     page_title="WMS • אחים כהן",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
     page_icon="📦",
 )
 
@@ -499,6 +499,204 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR — OVERLAY MODE (mobile + improved desktop feel)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Sidebar slides in from the right (RTL layout) */
+[data-testid="stSidebar"] {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  height: 100vh !important;
+  width: 270px !important;
+  min-width: 270px !important;
+  max-width: 270px !important;
+  z-index: 999 !important;
+  transform: translateX(0) !important;
+  transition: transform .32s cubic-bezier(.4,0,.2,1),
+              box-shadow .32s ease !important;
+  box-shadow: -6px 0 48px rgba(0,0,0,.7),
+              -1px 0 0 var(--b1) !important;
+  overflow-y: auto !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background: linear-gradient(160deg,
+    rgba(4,13,28,.97) 0%,
+    rgba(2,8,16,.99) 100%) !important;
+  border-left: 1px solid var(--b2) !important;
+  border-right: none !important;
+}
+
+/* When Streamlit collapses the sidebar it adds aria-expanded=false */
+[data-testid="stSidebar"][aria-expanded="false"] {
+  transform: translateX(110%) !important;
+  box-shadow: none !important;
+}
+
+/* Thin glowing edge line at the top of sidebar */
+[data-testid="stSidebar"]::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--green), transparent);
+  box-shadow: 0 0 12px var(--cyan);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+/* Main content — full width always, never pushed by sidebar */
+[data-testid="stAppViewContainer"] > section:first-child,
+.main .block-container {
+  margin-right: 0 !important;
+  padding-right: 1rem !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  transition: none !important;
+}
+
+/* Dim overlay behind open sidebar on mobile */
+[data-testid="stSidebar"][aria-expanded="true"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  right: 270px;
+  background: rgba(0,0,0,.55);
+  z-index: -1;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+/* Sidebar toggle button — make it visible and styled */
+[data-testid="stSidebarCollapsedControl"],
+button[kind="header"] {
+  position: fixed !important;
+  top: 14px !important;
+  right: 14px !important;
+  z-index: 1000 !important;
+  background: var(--card2) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: var(--glow-c) !important;
+  transition: all .2s !important;
+  color: var(--cyan) !important;
+}
+[data-testid="stSidebarCollapsedControl"]:hover,
+button[kind="header"]:hover {
+  background: rgba(0,212,255,.18) !important;
+  transform: scale(1.08) !important;
+}
+
+/* Nav items — larger tap targets on mobile */
+[data-testid="stSidebar"] .stRadio label {
+  padding: 12px 16px !important;
+  margin: 4px 0 !important;
+  border-radius: 12px !important;
+  font-size: .92rem !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+[data-testid="stSidebar"] .stRadio [aria-checked="true"] + label,
+[data-testid="stSidebar"] .stRadio input:checked + div label {
+  background: rgba(0,212,255,.13) !important;
+  border-color: var(--b2) !important;
+  color: var(--cyan) !important;
+  box-shadow: inset 3px 0 0 var(--cyan) !important;
+}
+
+/* Sidebar scrollbar thinner */
+[data-testid="stSidebar"]::-webkit-scrollbar { width: 3px; }
+[data-testid="stSidebar"]::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE  (max-width: 768px)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Main content full width with breathing room */
+  .main .block-container {
+    padding: 0.5rem 0.6rem 2rem !important;
+    max-width: 100vw !important;
+  }
+
+  /* Banner smaller on mobile */
+  .mega-banner {
+    padding: 16px 14px !important;
+    margin-bottom: 14px !important;
+    border-radius: 14px !important;
+  }
+  .mega-banner h1 {
+    font-size: 1rem !important;
+    letter-spacing: 1px !important;
+  }
+  .mega-banner .sub { font-size: .68rem !important; }
+
+  /* KPI cards: 2-column grid on mobile */
+  .kpi {
+    padding: 14px 10px !important;
+    border-radius: 14px !important;
+  }
+  .kpi-val  { font-size: 1.9rem !important; }
+  .kpi-lbl  { font-size: .62rem !important; }
+  .kpi-icon { font-size: 1.4rem !important; }
+
+  /* Streamlit columns → stack vertically on mobile */
+  [data-testid="stHorizontalBlock"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  [data-testid="stHorizontalBlock"] > div {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: unset !important;
+  }
+
+  /* Login buttons full width */
+  div[data-testid="stPopover"] > button {
+    min-height: 70px !important;
+    font-size: 1rem !important;
+  }
+
+  /* Task cards */
+  .tc { padding: 10px 12px !important; font-size: .85rem !important; }
+
+  /* Section headers */
+  .sec-h { font-size: .75rem !important; letter-spacing: 1px !important; }
+
+  /* Metrics font size */
+  [data-testid="stMetricValue"] { font-size: 1.6rem !important; }
+
+  /* Forms full width */
+  [data-testid="stForm"] { padding: 16px !important; }
+
+  /* Badges smaller */
+  .b { font-size: .6rem !important; padding: 2px 6px !important; }
+
+  /* Dataframe scroll on mobile */
+  [data-testid="stDataFrame"] { overflow-x: auto !important; }
+
+  /* Alerts */
+  .al { font-size: .8rem !important; padding: 10px 12px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLET  (769px – 1024px)
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main .block-container { padding: 1rem 1.2rem 2rem !important; }
+  .kpi-val { font-size: 2.2rem !important; }
+  .mega-banner h1 { font-size: 1.3rem !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
