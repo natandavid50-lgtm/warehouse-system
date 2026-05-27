@@ -499,197 +499,6 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
-
-/* ═══════════════════════════════════════════════════════
-   HIDE STREAMLIT SIDEBAR COMPLETELY
-   ═══════════════════════════════════════════════════════ */
-[data-testid="stSidebar"],
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"],
-button[kind="header"] {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  min-width: 0 !important;
-}
-.main .block-container {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-  max-width: 100% !important;
-}
-
-/* ═══════════════════════════════════════════════════════
-   HAMBURGER MENU
-   ═══════════════════════════════════════════════════════ */
-#wms-fab {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 99999;
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: var(--card2);
-  border: 1px solid var(--b2);
-  box-shadow: var(--glow-c), var(--shadow);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all .2s;
-  flex-direction: column;
-  gap: 5px;
-  padding: 13px 12px;
-}
-#wms-fab:hover {
-  background: rgba(0,212,255,.18);
-  transform: scale(1.08);
-}
-#wms-fab span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: var(--cyan);
-  border-radius: 2px;
-  transition: all .3s;
-  box-shadow: 0 0 6px var(--cyan);
-}
-#wms-fab.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-#wms-fab.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-#wms-fab.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-#wms-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 99990;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-#wms-overlay.open { display: block; }
-
-#wms-menu {
-  position: fixed;
-  top: 0;
-  right: -320px;
-  width: 300px;
-  height: 100vh;
-  z-index: 99998;
-  background: linear-gradient(160deg, var(--bg1) 0%, var(--bg0) 100%);
-  border-left: 1px solid var(--b2);
-  box-shadow: -8px 0 48px rgba(0,0,0,.7);
-  transition: right .32s cubic-bezier(.4,0,.2,1);
-  overflow-y: auto;
-  padding: 0 0 24px;
-  display: flex;
-  flex-direction: column;
-}
-#wms-menu.open { right: 0; }
-#wms-menu::before {
-  content: '';
-  display: block;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--cyan), var(--green), transparent);
-  box-shadow: 0 0 12px var(--cyan);
-  flex-shrink: 0;
-}
-
-.wms-menu-header {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--b1);
-  margin-bottom: 8px;
-}
-.wms-menu-role {
-  font-family: var(--orb);
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--cyan);
-  letter-spacing: 1px;
-}
-.wms-menu-stats {
-  background: var(--card2);
-  border: 1px solid var(--b1);
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin: 10px 20px 0;
-  font-family: var(--mono);
-  font-size: .7rem;
-  display: flex;
-  gap: 16px;
-}
-.wms-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  margin: 2px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: .9rem;
-  font-weight: 600;
-  color: var(--txt);
-  transition: all .18s;
-  border: 1px solid transparent;
-  text-decoration: none;
-}
-.wms-nav-item:hover {
-  background: rgba(0,212,255,.1);
-  border-color: var(--b1);
-  color: var(--cyan);
-  padding-right: 24px;
-}
-.wms-nav-item.active {
-  background: rgba(0,212,255,.13);
-  border-color: var(--b2);
-  color: var(--cyan);
-  box-shadow: inset -3px 0 0 var(--cyan);
-}
-.wms-menu-footer {
-  margin-top: auto;
-  padding: 16px 20px 0;
-  border-top: 1px solid var(--b1);
-}
-.wms-logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(255,45,85,.08);
-  border: 1px solid rgba(255,45,85,.3);
-  color: var(--red);
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
-  margin-bottom: 8px;
-}
-.wms-logout-btn:hover {
-  background: rgba(255,45,85,.18);
-  box-shadow: 0 0 16px rgba(255,45,85,.2);
-}
-.wms-theme-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 9px;
-  border-radius: 10px;
-  background: rgba(0,212,255,.07);
-  border: 1px solid var(--b1);
-  color: var(--txt2);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-  font-size: .85rem;
-}
-.wms-theme-btn:hover { background: rgba(0,212,255,.14); color: var(--cyan); }
-
-/* Page content top padding so it's not behind the FAB */
-.main .block-container { padding-top: 72px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -857,7 +666,6 @@ def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
     if "theme"      not in st.session_state: st.session_state.theme      = "dark"
-    if "page"       not in st.session_state: st.session_state.page       = "📊 דשבורד"
 
 init_state()
 
@@ -2239,9 +2047,35 @@ lt   = st.session_state.login_time
 elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
 
 ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
-df_side    = db_load_tasks()
+df_side = db_load_tasks()
 today_side = len(tasks_for_date(df_side, datetime.now()))
 ov_side    = len(get_overdue())
+
+st.sidebar.markdown(f"""
+<div style="padding:20px 0 12px;text-align:center">
+  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
+  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
+              color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
+    ● מחובר {elapsed_min} דק'
+  </div>
+</div>
+<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
+            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">להיום:</span>
+    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">פיגורים:</span>
+    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between">
+    <span style="color:var(--txt2)">סה"כ:</span>
+    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
@@ -2250,102 +2084,28 @@ MENUS = {
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 
-# Inject theme CSS
+# Theme toggle button
+_is_dark = st.session_state.theme == "dark"
+if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+                     use_container_width=True, key="theme_toggle"):
+    st.session_state.theme = "light" if _is_dark else "dark"
+    st.rerun()
+
+# Inject theme CSS (light overrides dark defaults)
 inject_theme()
 
-# Ensure current page valid for role
-if st.session_state.page not in MENUS[role]:
-    st.session_state.page = MENUS[role][0]
-choice = st.session_state.page
+choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
-# Handle nav/logout/theme via query params
-qp = st.query_params
-if "nav" in qp and qp["nav"] in MENUS[role]:
-    st.session_state.page = qp["nav"]
-    st.query_params.clear()
-    st.rerun()
-if "logout" in qp:
-    st.session_state.user_role  = None
+st.sidebar.markdown("---")
+if elapsed_min >= 50:
+    st.sidebar.markdown(
+        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
+        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
+        unsafe_allow_html=True)
+if st.sidebar.button("🚪 התנתקות", use_container_width=True):
+    st.session_state.user_role = None
     st.session_state.login_time = None
-    st.session_state.page       = "📊 דשבורד"
-    st.query_params.clear()
     st.rerun()
-if "theme_switch" in qp:
-    st.session_state.theme = qp["theme_switch"]
-    st.query_params.clear()
-    st.rerun()
-
-_is_dark    = st.session_state.theme == "dark"
-_next_theme = "light" if _is_dark else "dark"
-_theme_lbl  = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
-_warn_html  = (f'<div style="background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.35);'
-               f'border-radius:8px;padding:6px 10px;font-size:.68rem;color:#ffb800;margin-bottom:8px">'
-               f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>') if elapsed_min >= 50 else ""
-
-# Build nav items
-_nav_html = ""
-for item in MENUS[role]:
-    _cls = "wms-nav-item active" if item == choice else "wms-nav-item"
-    _nav_html += f'<div class="{_cls}" onclick="navTo(\'{item}\')">{item}</div>\n'
-
-st.markdown(f"""
-<div id="wms-overlay" onclick="closeMenu()"></div>
-
-<div id="wms-fab" onclick="toggleMenu()">
-  <span></span><span></span><span></span>
-</div>
-
-<div id="wms-menu">
-  <div class="wms-menu-header">
-    <div style="font-size:1.8rem;margin-bottom:4px">{ROLE_ICONS.get(role,"👤")}</div>
-    <div class="wms-menu-role">{role}</div>
-    <div style="font-size:.7rem;color:var(--txt2);margin-top:3px;font-family:var(--mono)">
-      ● מחובר {elapsed_min} דק'
-    </div>
-  </div>
-
-  <div class="wms-menu-stats">
-    <span style="color:var(--txt2)">היום: </span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-    &nbsp;
-    <span style="color:var(--txt2)">פיגורים: </span>
-    <span style="color:{"var(--red)" if ov_side else "var(--green)"};font-weight:700">{ov_side}</span>
-    &nbsp;
-    <span style="color:var(--txt2)">סה"כ: </span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-
-  <div style="margin-top:12px">
-    {_nav_html}
-  </div>
-
-  <div class="wms-menu-footer">
-    {_warn_html}
-    <div class="wms-theme-btn" onclick="window.location.search='?theme_switch={_next_theme}'">{_theme_lbl}</div>
-    <div style="margin-top:8px">
-      <div class="wms-logout-btn" onclick="window.location.search='?logout=1'">🚪 התנתקות</div>
-    </div>
-  </div>
-</div>
-
-<script>
-function navTo(page) {{
-  var url = new URL(window.location.href);
-  url.searchParams.set("nav", page);
-  window.location.href = url.toString();
-}}
-function toggleMenu() {{
-  document.getElementById("wms-fab").classList.toggle("open");
-  document.getElementById("wms-menu").classList.toggle("open");
-  document.getElementById("wms-overlay").classList.toggle("open");
-}}
-function closeMenu() {{
-  document.getElementById("wms-fab").classList.remove("open");
-  document.getElementById("wms-menu").classList.remove("open");
-  document.getElementById("wms-overlay").classList.remove("open");
-}}
-</script>
-""", unsafe_allow_html=True)
 
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
@@ -2357,7 +2117,6 @@ PAGE_ICONS = {
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
-
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
 
