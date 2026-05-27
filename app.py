@@ -1831,8 +1831,19 @@ def page_external_storage():
                 st.dataframe(df_upload.head(10), use_container_width=True, hide_index=True)
 
                 if st.button("💾 שמור טבלה לכולם", key="save_excel_btn", use_container_width=True):
-                    # Convert to JSON-serialisable list of dicts
-                    table_json = df_upload.astype(str).to_dict(orient="records")
+                    # נקה NaN/Inf לפני המרה ל-JSON
+                    import numpy as np, math
+                    df_clean = df_upload.copy()
+                    df_clean = df_clean.where(pd.notnull(df_clean), None)
+                    df_clean = df_clean.replace([np.inf, -np.inf], None)
+                    for col in df_clean.select_dtypes(include=["datetime64[ns]"]).columns:
+                        df_clean[col] = df_clean[col].astype(str)
+                    table_json = df_clean.to_dict(orient="records")
+                    def _clean(v):
+                        if v is None: return None
+                        if isinstance(v, float) and (math.isnan(v) or math.isinf(v)): return None
+                        return v
+                    table_json = [{k: _clean(v) for k, v in row.items()} for row in table_json]
                     db_save_excel_table(
                         file_name   = uploaded_file.name,
                         table_data  = table_json,
