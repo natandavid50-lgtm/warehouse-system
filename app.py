@@ -741,6 +741,12 @@ header[data-testid="stHeader"],
   color: var(--red);
 }
 .cp-btn-logout:hover { background: rgba(255,45,85,.18); }
+
+/* ── Hide invisible nav buttons ── */
+#st-nav-btns { display: none !important; }
+div[data-testid="stVerticalBlockBorderWrapper"] > div > div > div > div > button[kind="secondary"] {
+  display: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -2307,22 +2313,19 @@ if st.session_state.page not in MENUS[role]:
     st.session_state.page = MENUS[role][0]
 choice = st.session_state.page
 
-# ── Hidden Streamlit buttons — JS clicks these for navigation ─────────────────
-# They are invisible; the Command Palette CSS hides the container
-st.markdown('<div id="st-nav-btns" style="position:absolute;opacity:0;pointer-events:none;height:0;overflow:hidden">', unsafe_allow_html=True)
+# ── Hidden Streamlit buttons in sidebar (which is hidden via CSS) ─────────────
 for _item in MENUS[role]:
-    if st.button(_item, key=f"nav__{_item}"):
+    if st.sidebar.button(_item, key=f"nav__{_item}"):
         st.session_state.page = _item
         st.rerun()
-if st.button("__logout__", key="nav__logout"):
+if st.sidebar.button("__logout__", key="nav__logout"):
     st.session_state.user_role  = None
     st.session_state.login_time = None
     st.session_state.page       = "📊 דשבורד"
     st.rerun()
-if st.button("__theme__", key="nav__theme"):
+if st.sidebar.button("__theme__", key="nav__theme"):
     st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
     st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
 
 _is_dark   = st.session_state.theme == "dark"
 _theme_lbl = "☀️ בהיר" if _is_dark else "🌙 כהה"
