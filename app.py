@@ -2421,6 +2421,35 @@ div[data-testid="stPopoverBody"] hr {{
 """, unsafe_allow_html=True)
 
 with st.popover(f"☰  {choice}", use_container_width=False):
+    # Force dark background inside popover via injected style
+    st.markdown("""
+<style>
+div[data-testid="stPopoverBody"],
+div[data-testid="stPopoverBody"] > div,
+div[data-testid="stPopoverBody"] > div > div {
+  background-color: #040d1c !important;
+  background: #040d1c !important;
+}
+div[data-testid="stPopoverBody"] * { color: #e2eeff !important; }
+div[data-testid="stPopoverBody"] .stButton > button {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  color: #e2eeff !important;
+  font-size: .9rem !important;
+  font-weight: 600 !important;
+  padding: 10px 14px !important;
+  width: 100% !important;
+  text-align: right !important;
+}
+div[data-testid="stPopoverBody"] .stButton > button:hover {
+  background: rgba(0,212,255,.1) !important;
+  border-color: rgba(0,212,255,.3) !important;
+  color: #00d4ff !important;
+}
+div[data-testid="stPopoverBody"] hr { border-color: rgba(0,212,255,.2) !important; }
+</style>
+""", unsafe_allow_html=True)
     # Info header
     st.markdown(f"""
     <div class="pop-info">
