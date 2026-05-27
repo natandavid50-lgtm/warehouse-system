@@ -12,7 +12,7 @@ try:
     from plotly.subplots import make_subplots
     import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
     
-    pio.templates.default = "plotly_dark"  # 🎯 2. הגדרנו את המצב הכהה כברירת מחדל לכולם
+    pio.templates.default = "plotly_dark"  # updated dynamically per theme below
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -49,7 +49,8 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-:root {
+/* ── DARK theme (default) ── */
+:root, [data-theme="dark"] {
   --bg0:     #020810;
   --bg1:     #040d1c;
   --bg2:     #071526;
@@ -79,6 +80,32 @@ st.markdown("""
   --glow-r:  0 0 30px rgba(255,45,85,.25);
 }
 
+/* ── LIGHT theme ── */
+[data-theme="light"] {
+  --bg0:     #f0f4f8;
+  --bg1:     #e8eef5;
+  --bg2:     #dce5ef;
+  --card:    #ffffff;
+  --card2:   #f5f8fc;
+  --card3:   #eaf0f8;
+  --b0:      rgba(0,120,200,.07);
+  --b1:      rgba(0,120,200,.18);
+  --b2:      rgba(0,120,200,.4);
+  --b3:      rgba(0,120,200,.65);
+  --cyan:    #0077cc;
+  --green:   #00995a;
+  --red:     #e0002b;
+  --amber:   #b87800;
+  --purple:  #8833cc;
+  --txt:     #0d1f33;
+  --txt2:    #4a6a8a;
+  --txt3:    #8aaac5;
+  --shadow:  0 4px 20px rgba(0,60,120,.12);
+  --glow-c:  0 0 20px rgba(0,120,200,.18);
+  --glow-g:  0 0 20px rgba(0,153,90,.15);
+  --glow-r:  0 0 20px rgba(220,0,43,.15);
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 html, body, [class*="css"] {
   font-family: var(--heb) !important;
@@ -94,6 +121,67 @@ html, body, [class*="css"] {
     radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0,212,255,.07) 0%, transparent 65%),
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,255,136,.04) 0%, transparent 60%);
   background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
+  transition: background-color .4s, color .4s;
+}
+
+/* Light mode background — softer grid */
+[data-theme="light"] .stApp {
+  background-image:
+    linear-gradient(rgba(0,120,200,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,120,200,.04) 1px, transparent 1px),
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0,120,200,.07) 0%, transparent 65%);
+  background-size: 48px 48px, 48px 48px, 100% 100%;
+}
+
+/* Light mode — text inputs, forms, expanders */
+[data-theme="light"] .stTextInput > div > div > input,
+[data-theme="light"] .stTextArea > div > div > textarea,
+[data-theme="light"] .stSelectbox > div > div,
+[data-theme="light"] .stNumberInput > div > div > input,
+[data-theme="light"] .stDateInput > div > div > input {
+  background: #ffffff !important;
+  color: var(--txt) !important;
+  border-color: var(--b1) !important;
+}
+[data-theme="light"] label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; }
+[data-theme="light"] [data-testid="stSidebar"] * { color: var(--txt) !important; }
+[data-theme="light"] [data-testid="stSidebar"] {
+  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%) !important;
+  border-left: 1px solid var(--b1) !important;
+}
+[data-theme="light"] details > summary { color: var(--cyan) !important; }
+[data-theme="light"] [data-testid="stMetricValue"] { color: var(--cyan) !important; text-shadow: none !important; }
+[data-theme="light"] [data-testid="stMetric"] { background: var(--card) !important; box-shadow: var(--shadow) !important; }
+[data-theme="light"] [data-testid="stExpander"] { background: var(--card) !important; }
+[data-theme="light"] .stButton > button { color: var(--cyan) !important; background: rgba(0,120,200,.08) !important; }
+[data-theme="light"] [data-testid="stTabs"] [role="tab"] { color: var(--txt2) !important; }
+[data-theme="light"] [data-testid="stTabs"] [role="tab"][aria-selected="true"] { color: var(--cyan) !important; }
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg1); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--b2); }
+
+/* Toggle button style */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--b2);
+  border-radius: 24px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-family: var(--heb);
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--txt);
+  transition: all .2s;
+  margin: 8px auto;
+  width: 100%;
+  justify-content: center;
+}
+.theme-toggle-btn:hover {
+  background: rgba(0,212,255,.12);
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
 [data-testid="stSidebar"] {
@@ -500,6 +588,26 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 </style>
+<script>
+(function(){
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    document.body.setAttribute('data-theme', t);
+    // also tag stApp wrapper
+    var app = document.querySelector('.stApp');
+    if(app) app.setAttribute('data-theme', t);
+  }
+  // Read from sessionStorage so it survives Streamlit reruns
+  var saved = window.sessionStorage.getItem('wms_theme') || 'dark';
+  applyTheme(saved);
+  // Watch for DOM changes (Streamlit re-renders)
+  var obs = new MutationObserver(function(){
+    var t = window.sessionStorage.getItem('wms_theme') || 'dark';
+    applyTheme(t);
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -665,6 +773,7 @@ def db_save_excel_table(file_name, table_data, uploaded_by):
 def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
+    if "theme"      not in st.session_state: st.session_state.theme      = "dark"
 
 init_state()
 
@@ -1996,12 +2105,34 @@ st.sidebar.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-MENUS = {
+# ── Theme toggle ───────────────────────────────────────────────────────────────
+is_dark = st.session_state.theme == "dark"
+toggle_label = "☀️ מצב בהיר" if is_dark else "🌙 מצב כהה"
+if st.sidebar.button(toggle_label, use_container_width=True, key="theme_toggle"):
+    st.session_state.theme = "light" if is_dark else "dark"
+    st.rerun()
+
+# Inject JS to apply theme to DOM immediately
+_theme_val = st.session_state.theme
+st.markdown(f"""
+<script>
+(function(){{
+  var t = '{_theme_val}';
+  window.sessionStorage.setItem('wms_theme', t);
+  document.documentElement.setAttribute('data-theme', t);
+  document.body.setAttribute('data-theme', t);
+  var app = document.querySelector('.stApp');
+  if(app) app.setAttribute('data-theme', t);
+}})();
+</script>
+""", unsafe_allow_html=True)
+
+MENUS = {{
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
                   "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
-}
+}}
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
@@ -2025,6 +2156,10 @@ PAGE_ICONS = {
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
+# Apply plotly theme dynamically
+if HAS_PLOTLY:
+    pio.templates.default = "plotly_white" if st.session_state.theme == "light" else "plotly_dark"
+
 st.markdown(
     f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
     f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
