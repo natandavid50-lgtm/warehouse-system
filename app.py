@@ -608,29 +608,25 @@ def db_load_external_storage() -> list:
     except Exception:
         return []
 
-def db_add_external_storage(supplier, location, item_desc, quantity, unit, arrival_date, notes):
+def db_add_external_storage(warehouse_name, location, pallets, contact_name, contact_phone):
     supabase = get_conn()
     data = {
-        "supplier":     supplier,
-        "location":     location,
-        "item_desc":    item_desc,
-        "quantity":     int(quantity),
-        "unit":         unit,
-        "arrival_date": str(arrival_date),
-        "notes":        notes,
+        "warehouse_name": warehouse_name,
+        "location":       location,
+        "pallets":        int(pallets),
+        "contact_name":   contact_name,
+        "contact_phone":  contact_phone,
     }
     supabase.table("external_storage").insert(data).execute()
 
-def db_update_external_storage(record_id, supplier, location, item_desc, quantity, unit, arrival_date, notes):
+def db_update_external_storage(record_id, warehouse_name, location, pallets, contact_name, contact_phone):
     supabase = get_conn()
     data = {
-        "supplier":     supplier,
-        "location":     location,
-        "item_desc":    item_desc,
-        "quantity":     int(quantity),
-        "unit":         unit,
-        "arrival_date": str(arrival_date),
-        "notes":        notes,
+        "warehouse_name": warehouse_name,
+        "location":       location,
+        "pallets":        int(pallets),
+        "contact_name":   contact_name,
+        "contact_phone":  contact_phone,
     }
     supabase.table("external_storage").update(data).eq("id", record_id).execute()
 
@@ -1750,13 +1746,13 @@ def page_external_storage():
             unsafe_allow_html=True)
 
     # ── SUMMARY KPIs ───────────────────────────────────────────────────────────
-    total_qty        = sum(int(r.get("quantity", 0)) for r in records)
-    warehouses_set   = {r.get("location", "") for r in records if r.get("location")}
+    total_pallets    = sum(int(r.get("pallets", 0)) for r in records)
+    warehouses_set   = {r.get("warehouse_name", "") for r in records if r.get("warehouse_name")}
     unique_warehouses = len(warehouses_set)
 
     k1, k2 = st.columns(2)
-    k1.markdown(kpi_card(total_qty,         "סה\"כ משטחים",     icon="🔢", kind="green", color="var(--green)"), unsafe_allow_html=True)
-    k2.markdown(kpi_card(unique_warehouses, "מחסן חיצוני",      icon="🏭", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
+    k1.markdown(kpi_card(total_pallets,      "סה\"כ משטחים",  icon="🔢", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    k2.markdown(kpi_card(unique_warehouses,  "מחסנים חיצוניים", icon="🏭", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1766,23 +1762,21 @@ def page_external_storage():
         with st.form("ext_storage_add_form", clear_on_submit=True):
             c1, c2 = st.columns(2)
             with c1:
-                new_supplier    = st.text_input("🏢 ספק", placeholder="שם הספק / מחסן חיצוני")
-                new_location    = st.text_input("📍 מיקום", placeholder="כתובת / שם מחסן חיצוני")
-                new_item_desc   = st.text_area("📝 תיאור הפריט / הסחורה", placeholder="תאר את הסחורה המאוחסנת", height=100)
+                new_warehouse = st.text_input("🏭 שם מחסן", placeholder="שם המחסן החיצוני")
+                new_location  = st.text_input("📍 מיקום",   placeholder="כתובת / עיר")
+                new_pallets   = st.number_input("📦 מספר משטחים", min_value=0, step=1, value=0)
             with c2:
-                new_quantity    = st.number_input("🔢 כמות", min_value=0, step=1, value=0)
-                new_unit        = st.selectbox("📐 יחידה", ["יחידות", "פלטות", "קרטונים", "ק\"ג", "טון", "מ\"ר", "אחר"])
-                new_arrival     = st.date_input("📅 תאריך כניסה", datetime.now().date())
-                new_notes       = st.text_area("🗒️ הערות", placeholder="הערות נוספות...", height=80)
+                new_contact_name  = st.text_input("👤 איש קשר (רשות)", placeholder="שם איש הקשר")
+                new_contact_phone = st.text_input("📞 טלפון (רשות)",    placeholder="050-0000000")
             submitted = st.form_submit_button("💾 שמור רשומה", use_container_width=True)
             if submitted:
-                if not new_supplier.strip() or not new_item_desc.strip():
-                    st.error("⚠️ שם ספק ותיאור פריט הם שדות חובה.")
+                if not new_warehouse.strip():
+                    st.error("⚠️ שם מחסן הוא שדה חובה.")
                 else:
                     db_add_external_storage(
-                        new_supplier.strip(), new_location.strip(),
-                        new_item_desc.strip(), new_quantity, new_unit,
-                        new_arrival, new_notes.strip())
+                        new_warehouse.strip(), new_location.strip(),
+                        new_pallets,
+                        new_contact_name.strip(), new_contact_phone.strip())
                     st.success("✅ הרשומה נשמרה בהצלחה!")
                     st.rerun()
 
@@ -1876,94 +1870,86 @@ def page_external_storage():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── DATA TABLE ─────────────────────────────────────────────────────────────
-    sec_header("📋 רשומות קיימות")
+    # ── WAREHOUSE CARDS ────────────────────────────────────────────────────────
+    sec_header("📋 מחסנים רשומים")
 
     if not records:
-        st.markdown('<div class="al al-cyan">ℹ️ <b>אין רשומות אחסנה חיצונית כרגע.</b></div>', unsafe_allow_html=True)
+        st.markdown('<div class="al al-cyan">ℹ️ <b>אין מחסנים רשומים כרגע.</b></div>', unsafe_allow_html=True)
         return
 
-    # Build display dataframe for all roles
-    display_rows = []
-    for r in records:
-        display_rows.append({
-            "מזהה":          r.get("id", ""),
-            "ספק":           r.get("supplier", ""),
-            "מיקום":         r.get("location", ""),
-            "תיאור פריט":    r.get("item_desc", ""),
-            "כמות":          r.get("quantity", ""),
-            "יחידה":         r.get("unit", ""),
-            "תאריך כניסה":   r.get("arrival_date", ""),
-            "הערות":         r.get("notes", ""),
-        })
-    df_ext = pd.DataFrame(display_rows)
+    # ── Floating cards — 2 per row ─────────────────────────────────────────────
+    cols = st.columns(2)
+    for idx, r in enumerate(records):
+        rec_id       = r.get("id")
+        wname        = r.get("warehouse_name") or r.get("supplier") or "—"
+        location     = r.get("location", "")
+        pallets      = r.get("pallets") or r.get("quantity") or 0
+        contact_name = r.get("contact_name", "")
+        contact_phone= r.get("contact_phone", "")
 
-    # ── READ-ONLY TABLE for non-admins ─────────────────────────────────────────
-    if not is_admin:
-        st.dataframe(
-            df_ext.drop(columns=["מזהה"]),
-            use_container_width=True,
-            hide_index=True)
-        return
+        contact_html = ""
+        if contact_name or contact_phone:
+            contact_html = f"""
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(0,212,255,.12)">
+              <span style="color:var(--txt2);font-size:.72rem;letter-spacing:1px">👤 איש קשר</span><br>
+              <span style="color:var(--txt);font-weight:600">{contact_name or "—"}</span>
+              {"&nbsp;&nbsp;<span style='color:var(--cyan);font-family:var(--mono);font-size:.85rem'>📞 " + contact_phone + "</span>" if contact_phone else ""}
+            </div>"""
 
-    # ── ADMIN: inline edit / delete per row ────────────────────────────────────
-    # Show the table for reference
-    st.dataframe(
-        df_ext.drop(columns=["מזהה"]),
-        use_container_width=True,
-        hide_index=True)
+        with cols[idx % 2]:
+            st.markdown(f"""
+            <div style="background:var(--card);border:1px solid var(--b1);border-radius:18px;
+                        padding:22px 24px;margin-bottom:16px;position:relative;overflow:hidden;
+                        transition:all .3s;box-shadow:var(--shadow);">
+              <div style="position:absolute;top:0;right:0;width:100%;height:3px;
+                          background:linear-gradient(90deg,var(--cyan),var(--green))"></div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+                <div>
+                  <div style="font-family:var(--orb);font-size:1rem;font-weight:700;
+                              color:var(--cyan);letter-spacing:1px">{wname}</div>
+                  {"<div style='color:var(--txt2);font-size:.78rem;margin-top:3px'>📍 " + location + "</div>" if location else ""}
+                </div>
+                <div style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);
+                            border-radius:10px;padding:6px 14px;text-align:center">
+                  <div style="font-family:var(--orb);font-size:1.4rem;font-weight:800;
+                              color:var(--green)">{pallets}</div>
+                  <div style="font-size:.6rem;color:var(--txt2);letter-spacing:1px">משטחים</div>
+                </div>
+              </div>
+              {contact_html}
+            </div>""", unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    sec_header("✏️ עריכה / מחיקה")
+            # Admin edit expander below each card
+            if is_admin:
+                with st.expander(f"✏️ ערוך / מחק — {wname}"):
+                    with st.form(f"ext_edit_{rec_id}"):
+                        ef1, ef2 = st.columns(2)
+                        with ef1:
+                            e_warehouse = st.text_input("🏭 שם מחסן",  value=wname,        key=f"wn_{rec_id}")
+                            e_location  = st.text_input("📍 מיקום",    value=location,     key=f"lo_{rec_id}")
+                            e_pallets   = st.number_input("📦 משטחים", min_value=0, step=1,
+                                                          value=int(pallets),               key=f"pl_{rec_id}")
+                        with ef2:
+                            e_cname  = st.text_input("👤 איש קשר",  value=contact_name,  key=f"cn_{rec_id}")
+                            e_cphone = st.text_input("📞 טלפון",     value=contact_phone, key=f"cp_{rec_id}")
 
-    for r in records:
-        rec_id = r.get("id")
-        with st.expander(
-            f"📦  {r.get('supplier','—')} · {r.get('item_desc','—')} "
-            f"· {r.get('quantity','')} {r.get('unit','')}"):
+                        bc1, bc2 = st.columns(2)
+                        save_btn   = bc1.form_submit_button("💾 שמור", use_container_width=True)
+                        delete_btn = bc2.form_submit_button("🗑️ מחק",  use_container_width=True)
 
-            with st.form(f"ext_edit_{rec_id}"):
-                ec1, ec2 = st.columns(2)
-                with ec1:
-                    e_supplier  = st.text_input("🏢 ספק",    value=r.get("supplier",""),  key=f"sup_{rec_id}")
-                    e_location  = st.text_input("📍 מיקום",  value=r.get("location",""),  key=f"loc_{rec_id}")
-                    e_item_desc = st.text_area("📝 תיאור",   value=r.get("item_desc",""), key=f"itm_{rec_id}", height=90)
-                with ec2:
-                    e_quantity  = st.number_input("🔢 כמות", min_value=0, step=1,
-                                                  value=int(r.get("quantity", 0)),        key=f"qty_{rec_id}")
-                    e_unit      = st.selectbox("📐 יחידה",
-                                              ["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"],
-                                              index=["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"].index(
-                                                  r.get("unit","יחידות"))
-                                              if r.get("unit","יחידות") in
-                                              ["יחידות","פלטות","קרטונים","ק\"ג","טון","מ\"ר","אחר"] else 0,
-                                              key=f"unt_{rec_id}")
-                    try:
-                        arr_val = datetime.strptime(str(r.get("arrival_date", "")), "%Y-%m-%d").date()
-                    except Exception:
-                        arr_val = datetime.now().date()
-                    e_arrival   = st.date_input("📅 תאריך כניסה", value=arr_val,          key=f"arr_{rec_id}")
-                    e_notes     = st.text_area("🗒️ הערות",  value=r.get("notes",""),      key=f"nts_{rec_id}", height=72)
-
-                btn_col1, btn_col2 = st.columns(2)
-                save_btn   = btn_col1.form_submit_button("💾 שמור שינויים", use_container_width=True)
-                delete_btn = btn_col2.form_submit_button("🗑️ מחק רשומה",   use_container_width=True)
-
-                if save_btn:
-                    if not e_supplier.strip() or not e_item_desc.strip():
-                        st.error("⚠️ שם ספק ותיאור פריט הם שדות חובה.")
-                    else:
-                        db_update_external_storage(
-                            rec_id, e_supplier.strip(), e_location.strip(),
-                            e_item_desc.strip(), e_quantity, e_unit,
-                            e_arrival, e_notes.strip())
-                        st.success("✅ הרשומה עודכנה!")
-                        st.rerun()
-
-                if delete_btn:
-                    db_delete_external_storage(rec_id)
-                    st.success("🗑️ הרשומה נמחקה.")
-                    st.rerun()
+                        if save_btn:
+                            if not e_warehouse.strip():
+                                st.error("⚠️ שם מחסן הוא שדה חובה.")
+                            else:
+                                db_update_external_storage(
+                                    rec_id, e_warehouse.strip(), e_location.strip(),
+                                    e_pallets, e_cname.strip(), e_cphone.strip())
+                                st.success("✅ עודכן!")
+                                st.rerun()
+                        if delete_btn:
+                            db_delete_external_storage(rec_id)
+                            st.success("🗑️ נמחק.")
+                            st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
