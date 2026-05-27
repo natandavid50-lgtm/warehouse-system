@@ -2301,59 +2301,55 @@ MENUS = {
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 
-# Inject theme CSS
 inject_theme()
 
-# Ensure page is valid
 if st.session_state.page not in MENUS[role]:
     st.session_state.page = MENUS[role][0]
 choice = st.session_state.page
 
-# Handle query param navigation
-qp = st.query_params
-if "nav" in qp and qp["nav"] in MENUS[role]:
-    st.session_state.page = qp["nav"]
-    st.query_params.clear()
-    st.rerun()
-if "logout" in qp:
+# ── Hidden Streamlit buttons — JS clicks these for navigation ─────────────────
+# They are invisible; the Command Palette CSS hides the container
+st.markdown('<div id="st-nav-btns" style="position:absolute;opacity:0;pointer-events:none;height:0;overflow:hidden">', unsafe_allow_html=True)
+for _item in MENUS[role]:
+    if st.button(_item, key=f"nav__{_item}"):
+        st.session_state.page = _item
+        st.rerun()
+if st.button("__logout__", key="nav__logout"):
     st.session_state.user_role  = None
     st.session_state.login_time = None
     st.session_state.page       = "📊 דשבורד"
-    st.query_params.clear()
     st.rerun()
-if "theme_switch" in qp:
-    st.session_state.theme = qp["theme_switch"]
-    st.query_params.clear()
+if st.button("__theme__", key="nav__theme"):
+    st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
     st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
-_is_dark    = st.session_state.theme == "dark"
-_next_theme = "light" if _is_dark else "dark"
-_theme_lbl  = "☀️ בהיר" if _is_dark else "🌙 כהה"
-_warn_html  = (
+_is_dark   = st.session_state.theme == "dark"
+_theme_lbl = "☀️ בהיר" if _is_dark else "🌙 כהה"
+_warn_html = (
     f'<div style="background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.4);'
     f'border-radius:8px;padding:5px 10px;font-size:.65rem;color:#ffb800;margin-bottom:6px">'
     f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>'
 ) if elapsed_min >= 50 else ""
 
-# Build nav items HTML for the palette
 _items_html = ""
 for item in MENUS[role]:
-    _cls = "cp-item active-page" if item == choice else "cp-item"
+    _cls   = "cp-item active-page" if item == choice else "cp-item"
     _badge = '<span class="cp-badge">פעיל</span>' if item == choice else ""
-    _items_html += '<div class="' + _cls + '" onclick="cpNav(\"' + item + '\")"><span>' + item + '</span>' + _badge + '</div>\n'
-
+    # data-page attr used by JS to find the matching hidden button
+    _items_html += (
+        f'<div class="{_cls}" data-page="{item}" onclick="cpNav(this)">' +
+        f'<span>{item}</span>{_badge}</div>\n'
+    )
 
 st.markdown(f"""
-<!-- Overlay -->
 <div id="cp-overlay" onclick="cpClose()"></div>
 
-<!-- Trigger button -->
 <div id="cp-trigger" onclick="cpToggle()">
   <div class="cp-icon"><span></span><span></span><span></span></div>
   <span id="cp-trigger-label">{choice}</span>
 </div>
 
-<!-- Command Palette -->
 <div id="cp-panel">
   <div id="cp-topbar">
     <div id="cp-role-info">
@@ -2382,11 +2378,11 @@ st.markdown(f"""
   <div id="cp-footer">
     <div>
       {_warn_html}
-      <span class="cp-footer-hint">↑↓ ניווט &nbsp; Enter בחר &nbsp; Esc סגור</span>
+      <span class="cp-footer-hint">Esc סגור &nbsp;|&nbsp; Enter בחר</span>
     </div>
     <div class="cp-footer-btns">
-      <div class="cp-footer-btn cp-btn-theme" onclick="window.location.search='?theme_switch={_next_theme}'">{_theme_lbl}</div>
-      <div class="cp-footer-btn cp-btn-logout" onclick="window.location.search='?logout=1'">🚪 יציאה</div>
+      <div class="cp-footer-btn cp-btn-theme" onclick="cpClickHidden('nav__theme')">{_theme_lbl}</div>
+      <div class="cp-footer-btn cp-btn-logout" onclick="cpClickHidden('nav__logout')">🚪 יציאה</div>
     </div>
   </div>
 </div>
@@ -2394,44 +2390,75 @@ st.markdown(f"""
 <script>
 var cpOpen = false;
 
-function cpToggle() {{
-  cpOpen ? cpClose() : cpShow();
+function cpClickHidden(key) {{
+  // Find hidden Streamlit button by key suffix and click it
+  var btns = window.parent.document.querySelectorAll("button");
+  for (var i = 0; i < btns.length; i++) {{
+    if (btns[i].getAttribute("data-testid") === key || btns[i].innerText.trim() === key) {{
+      btns[i].click(); return;
+    }}
+  }}
+  // fallback: search in iframe
+  btns = document.querySelectorAll("#st-nav-btns button");
+  btns.forEach(function(b) {{ if (b.innerText.trim() === key) b.click(); }});
 }}
+
+function cpNav(el) {{
+  var page = el.getAttribute("data-page");
+  // Find the matching hidden Streamlit button and click it
+  var allBtns = window.parent.document.querySelectorAll("button[kind='secondary']");
+  for (var i = 0; i < allBtns.length; i++) {{
+    if (allBtns[i].innerText.trim() === page) {{
+      allBtns[i].click();
+      cpClose();
+      return;
+    }}
+  }}
+  // fallback: search in current doc
+  var allBtns2 = document.querySelectorAll("button");
+  for (var i = 0; i < allBtns2.length; i++) {{
+    if (allBtns2[i].innerText.trim() === page) {{
+      allBtns2[i].click();
+      cpClose();
+      return;
+    }}
+  }}
+}}
+
+function cpToggle() {{ cpOpen ? cpClose() : cpShow(); }}
+
 function cpShow() {{
   cpOpen = true;
   document.getElementById("cp-trigger").classList.add("active");
   document.getElementById("cp-panel").classList.add("open");
   document.getElementById("cp-overlay").classList.add("open");
-  setTimeout(function(){{ document.getElementById("cp-search").focus(); }}, 80);
+  setTimeout(function() {{ document.getElementById("cp-search").focus(); }}, 80);
 }}
+
 function cpClose() {{
   cpOpen = false;
   document.getElementById("cp-trigger").classList.remove("active");
   document.getElementById("cp-panel").classList.remove("open");
   document.getElementById("cp-overlay").classList.remove("open");
-  document.getElementById("cp-search").value = "";
-  cpFilter("");
+  var s = document.getElementById("cp-search");
+  if (s) {{ s.value = ""; cpFilter(""); }}
 }}
-function cpNav(page) {{
-  var url = new URL(window.location.href);
-  url.searchParams.set("nav", page);
-  window.location.href = url.toString();
-}}
+
 function cpFilter(q) {{
-  var items = document.querySelectorAll(".cp-item");
-  items.forEach(function(el) {{
+  document.querySelectorAll(".cp-item").forEach(function(el) {{
     el.style.display = el.textContent.includes(q) ? "" : "none";
   }});
 }}
+
 document.addEventListener("keydown", function(e) {{
   if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {{
     e.preventDefault(); cpOpen ? cpClose() : cpShow();
   }}
-  if (e.key === "Escape") cpClose();
+  if (e.key === "Escape" && cpOpen) cpClose();
   if (e.key === "Enter" && cpOpen) {{
     var visible = Array.from(document.querySelectorAll(".cp-item"))
-      .filter(function(el){{ return el.style.display !== "none"; }});
-    if (visible.length > 0) visible[0].click();
+      .filter(function(el) {{ return el.style.display !== "none"; }});
+    if (visible.length) cpNav(visible[0]);
   }}
 }});
 </script>
