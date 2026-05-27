@@ -1750,15 +1750,13 @@ def page_external_storage():
             unsafe_allow_html=True)
 
     # ── SUMMARY KPIs ───────────────────────────────────────────────────────────
-    total_records  = len(records)
-    total_qty      = sum(int(r.get("quantity", 0)) for r in records)
-    suppliers_set  = {r.get("supplier", "") for r in records if r.get("supplier")}
-    unique_suppliers = len(suppliers_set)
+    total_qty        = sum(int(r.get("quantity", 0)) for r in records)
+    warehouses_set   = {r.get("location", "") for r in records if r.get("location")}
+    unique_warehouses = len(warehouses_set)
 
-    k1, k2, k3 = st.columns(3)
-    k1.markdown(kpi_card(total_records,    "רשומות פעילות",    icon="📦", kind="blue"),  unsafe_allow_html=True)
-    k2.markdown(kpi_card(total_qty,        "סה\"כ כמות",        icon="🔢", kind="green", color="var(--green)"), unsafe_allow_html=True)
-    k3.markdown(kpi_card(unique_suppliers, "ספקים",            icon="🏢", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
+    k1, k2 = st.columns(2)
+    k1.markdown(kpi_card(total_qty,         "סה\"כ משטחים",     icon="🔢", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    k2.markdown(kpi_card(unique_warehouses, "מחסן חיצוני",      icon="🏭", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -2044,7 +2042,7 @@ PAGE_ICONS = {
 st.markdown(
     f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
     f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
-    f'<div class="sub"><span class="live-dot"></span> {datetime.now().strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
+    f'<div class="sub"><span class="live-dot"></span> {(datetime.now() + timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")} &nbsp;|&nbsp; {role}</div>'
     f'</div>', unsafe_allow_html=True)
 
 if   choice == "📊 דשבורד":          page_dashboard()
