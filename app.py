@@ -1861,21 +1861,16 @@ def page_external_storage():
             except Exception as e:
                 st.error(f"❌ שגיאה בקריאת הקובץ: {e}")
 
-    # ── Display saved table (all roles) ───────────────────────────────────────
+    # ── Download button only — all roles ──────────────────────────────────────
     if excel_rec and excel_rec.get("table_data"):
         df_saved = pd.DataFrame(excel_rec["table_data"])
-        st.markdown("<br>", unsafe_allow_html=True)
-        sec_header("📋 טבלת האחסנה החיצונית הנוכחית")
-        st.dataframe(df_saved, use_container_width=True, hide_index=True)
-
-        # Download button — all roles
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             df_saved.to_excel(writer, index=False, sheet_name="אחסנה חיצונית")
         st.download_button(
-            label="📥 הורד כאקסל",
+            label="📥 ייצא נתוני אחסנה חיצונית לאקסל",
             data=output.getvalue(),
-            file_name="external_storage.xlsx",
+            file_name="אחסנה_חיצונית.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
             key="dl_excel_btn",
