@@ -500,16 +500,63 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* Hide Streamlit top header bar */
+/* ── Hide header/footer/toolbar only ── */
 header[data-testid="stHeader"],
-#MainMenu,
-footer,
-[data-testid="stToolbar"] {
-  display: none !important;
-  height: 0 !important;
-  visibility: hidden !important;
+#MainMenu, footer,
+[data-testid="stToolbar"] { display: none !important; }
+
+.main .block-container {
+  padding-top: 0.5rem !important;
+  max-width: 100% !important;
 }
-.main .block-container { padding-top: 1rem !important; }
+
+/* ── Sidebar dark styling ── */
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, #040d1c 0%, #020810 100%) !important;
+  border-left: 1px solid rgba(0,212,255,.25) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,.6) !important;
+}
+[data-testid="stSidebar"]::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00d4ff, #00ff88, transparent);
+  box-shadow: 0 0 12px #00d4ff;
+}
+[data-testid="stSidebar"] * { color: var(--txt) !important; }
+[data-testid="stSidebar"] .stRadio label {
+  padding: 11px 16px !important;
+  margin: 3px 0 !important;
+  border-radius: 12px !important;
+  font-size: .9rem !important;
+  font-weight: 600 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  transition: all .18s !important;
+  border: 1px solid transparent !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+  background: rgba(0,212,255,.1) !important;
+  border-color: rgba(0,212,255,.2) !important;
+  color: var(--cyan) !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  transition: all .15s !important;
+}
+[data-testid="stSidebar"]::-webkit-scrollbar { width: 3px; }
+[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
+  background: rgba(0,212,255,.3); border-radius: 3px;
+}
+[data-testid="collapsedControl"] button {
+  background: #040d1c !important;
+  color: #00d4ff !important;
+  border: 1px solid rgba(0,212,255,.4) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -677,6 +724,7 @@ def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
     if "theme"      not in st.session_state: st.session_state.theme      = "dark"
+    if "page"       not in st.session_state: st.session_state.page       = "📊 דשבורד"
 
 init_state()
 
@@ -2058,35 +2106,9 @@ lt   = st.session_state.login_time
 elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
 
 ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
-df_side = db_load_tasks()
+df_side    = db_load_tasks()
 today_side = len(tasks_for_date(df_side, datetime.now()))
 ov_side    = len(get_overdue())
-
-st.sidebar.markdown(f"""
-<div style="padding:20px 0 12px;text-align:center">
-  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
-  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
-              color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
-    ● מחובר {elapsed_min} דק'
-  </div>
-</div>
-<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
-            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">להיום:</span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">פיגורים:</span>
-    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between">
-    <span style="color:var(--txt2)">סה"כ:</span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
@@ -2095,29 +2117,60 @@ MENUS = {
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 
-# Theme toggle button
-_is_dark = st.session_state.theme == "dark"
-if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
-                     use_container_width=True, key="theme_toggle"):
-    st.session_state.theme = "light" if _is_dark else "dark"
-    st.rerun()
-
-# Inject theme CSS (light overrides dark defaults)
 inject_theme()
+
+# ── Sidebar ────────────────────────────────────────────────────────────────────
+_ov_color = "var(--red)" if ov_side else "var(--green)"
+st.sidebar.markdown(f"""
+<div style="padding:16px 4px 12px;text-align:center;
+            border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
+  <div style="font-size:2rem;margin-bottom:6px">{ROLE_ICONS.get(role,"👤")}</div>
+  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;
+              color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;
+              font-family:var(--mono)">מחובר {elapsed_min} דק</div>
+</div>
+<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
+            border-radius:10px;padding:8px 12px;margin:0 8px 12px;
+            font-family:var(--mono);font-size:.68rem">
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+    <span style="color:var(--txt2)">היום:</span>
+    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+    <span style="color:var(--txt2)">פיגורים:</span>
+    <span style="color:{_ov_color};font-weight:700">{ov_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between">
+    <span style="color:var(--txt2)">סה"כ:</span>
+    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
+
+_is_dark = st.session_state.theme == "dark"
+if st.sidebar.button(
+    "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+    use_container_width=True, key="theme_btn"):
+    st.session_state.theme = "light" if _is_dark else "dark"
+    st.rerun()
+
 if elapsed_min >= 50:
     st.sidebar.markdown(
-        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
-        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
+        f'<div class="al al-amber" style="font-size:.7rem;padding:6px 10px;margin:4px 0">'
+        f'הסשן יפוג בעוד {60-elapsed_min} דק</div>',
         unsafe_allow_html=True)
-if st.sidebar.button("🚪 התנתקות", use_container_width=True):
-    st.session_state.user_role = None
+
+if st.sidebar.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
+    st.session_state.user_role  = None
     st.session_state.login_time = None
     st.rerun()
 
+# ── Page render ───────────────────────────────────────────────────────────────
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
     "📋 סידור עבודה":     "📋 סידור עבודה שבועי",
@@ -2128,6 +2181,7 @@ PAGE_ICONS = {
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
+
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
 
