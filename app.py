@@ -741,12 +741,6 @@ header[data-testid="stHeader"],
   color: var(--red);
 }
 .cp-btn-logout:hover { background: rgba(255,45,85,.18); }
-
-/* ── Hide invisible nav buttons ── */
-#st-nav-btns { display: none !important; }
-div[data-testid="stVerticalBlockBorderWrapper"] > div > div > div > div > button[kind="secondary"] {
-  display: none !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -2313,159 +2307,150 @@ if st.session_state.page not in MENUS[role]:
     st.session_state.page = MENUS[role][0]
 choice = st.session_state.page
 
-# ── Hidden Streamlit buttons in sidebar (which is hidden via CSS) ─────────────
-for _item in MENUS[role]:
-    if st.sidebar.button(_item, key=f"nav__{_item}"):
-        st.session_state.page = _item
-        st.rerun()
-if st.sidebar.button("__logout__", key="nav__logout"):
-    st.session_state.user_role  = None
-    st.session_state.login_time = None
-    st.session_state.page       = "📊 דשבורד"
-    st.rerun()
-if st.sidebar.button("__theme__", key="nav__theme"):
-    st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
-    st.rerun()
-
+# ── Top-right nav bar with popover ────────────────────────────────────────────
 _is_dark   = st.session_state.theme == "dark"
-_theme_lbl = "☀️ בהיר" if _is_dark else "🌙 כהה"
-_warn_html = (
-    f'<div style="background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.4);'
-    f'border-radius:8px;padding:5px 10px;font-size:.65rem;color:#ffb800;margin-bottom:6px">'
-    f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>'
-) if elapsed_min >= 50 else ""
-
-_items_html = ""
-for item in MENUS[role]:
-    _cls   = "cp-item active-page" if item == choice else "cp-item"
-    _badge = '<span class="cp-badge">פעיל</span>' if item == choice else ""
-    # data-page attr used by JS to find the matching hidden button
-    _items_html += (
-        f'<div class="{_cls}" data-page="{item}" onclick="cpNav(this)">' +
-        f'<span>{item}</span>{_badge}</div>\n'
-    )
+_theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
 
 st.markdown(f"""
-<div id="cp-overlay" onclick="cpClose()"></div>
+<style>
+/* Style the popover trigger button */
+div[data-testid="stPopover"] > button {{
+  position: fixed !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 99999 !important;
+  background: rgba(10,28,53,.88) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 12px !important;
+  color: var(--txt) !important;
+  font-family: var(--heb) !important;
+  font-size: .85rem !important;
+  font-weight: 700 !important;
+  padding: 8px 18px !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: var(--glow-c), 0 4px 24px rgba(0,0,0,.5) !important;
+  transition: all .2s !important;
+  min-height: unset !important;
+  height: auto !important;
+  width: auto !important;
+  line-height: 1.4 !important;
+}}
+div[data-testid="stPopover"] > button:hover {{
+  border-color: var(--cyan) !important;
+  color: var(--cyan) !important;
+  box-shadow: 0 0 20px rgba(0,212,255,.35), 0 4px 24px rgba(0,0,0,.5) !important;
+}}
+/* Style the popover panel */
+div[data-testid="stPopover"] div[data-testid="stPopoverBody"] {{
+  background: rgba(7,21,38,.96) !important;
+  border: 1px solid var(--b2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 0 0 1px rgba(0,212,255,.1), 0 24px 64px rgba(0,0,0,.8), var(--glow-c) !important;
+  backdrop-filter: blur(32px) !important;
+  padding: 8px 6px !important;
+  min-width: 240px !important;
+}}
+/* Nav buttons inside popover */
+div[data-testid="stPopoverBody"] .stButton > button {{
+  width: 100% !important;
+  text-align: right !important;
+  direction: rtl !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  color: var(--txt) !important;
+  font-size: .9rem !important;
+  font-weight: 600 !important;
+  padding: 10px 14px !important;
+  margin: 2px 0 !important;
+  transition: all .15s !important;
+  justify-content: flex-start !important;
+  box-shadow: none !important;
+}}
+div[data-testid="stPopoverBody"] .stButton > button:hover {{
+  background: rgba(0,212,255,.1) !important;
+  border-color: var(--b1) !important;
+  color: var(--cyan) !important;
+}}
+/* Active page button */
+div[data-testid="stPopoverBody"] .stButton > button[data-active="true"],
+div[data-testid="stPopoverBody"] .active-nav-btn > button {{
+  background: rgba(0,212,255,.13) !important;
+  border-color: var(--b2) !important;
+  color: var(--cyan) !important;
+  box-shadow: inset -3px 0 0 var(--cyan) !important;
+}}
+/* Divider in popover */
+div[data-testid="stPopoverBody"] hr {{
+  border-color: var(--b1) !important;
+  margin: 6px 0 !important;
+}}
+/* Info box in popover */
+.pop-info {{
+  padding: 8px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--b1);
+  font-family: var(--mono);
+  font-size: .68rem;
+  color: var(--txt2);
+  direction: rtl;
+}}
+.pop-role {{
+  font-family: var(--orb);
+  font-size: .78rem;
+  color: var(--cyan);
+  font-weight: 700;
+  margin-bottom: 4px;
+}}
+.pop-stats {{
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}}
+</style>
+""", unsafe_allow_html=True)
 
-<div id="cp-trigger" onclick="cpToggle()">
-  <div class="cp-icon"><span></span><span></span><span></span></div>
-  <span id="cp-trigger-label">{choice}</span>
-</div>
-
-<div id="cp-panel">
-  <div id="cp-topbar">
-    <div id="cp-role-info">
-      <div style="font-size:1.5rem">{ROLE_ICONS.get(role,"👤")}</div>
-      <div>
-        <div id="cp-role-name">{role}</div>
-        <div id="cp-session">● מחובר {elapsed_min} דק'</div>
+with st.popover(f"☰  {choice}", use_container_width=False):
+    # Info header
+    st.markdown(f"""
+    <div class="pop-info">
+      <div class="pop-role">{ROLE_ICONS.get(role,"👤")} {role}</div>
+      <div>● מחובר {elapsed_min} דק'</div>
+      <div class="pop-stats">
+        <span style="color:var(--txt2)">היום: <b style="color:var(--cyan)">{today_side}</b></span>
+        <span style="color:var(--txt2)">פיגורים: <b style="color:{"var(--red)" if ov_side else "var(--green)"}">{ov_side}</b></span>
       </div>
     </div>
-    <div id="cp-stats">
-      <div><span class="cp-stat-lbl">היום </span><span class="cp-stat-val" style="color:var(--cyan)">{today_side}</span></div>
-      <div><span class="cp-stat-lbl">פיגורים </span><span class="cp-stat-val" style="color:{"var(--red)" if ov_side else "var(--green)"}">{ov_side}</span></div>
-      <div><span class="cp-stat-lbl">סה"כ </span><span class="cp-stat-val">{len(df_side)}</span></div>
-    </div>
-  </div>
+    """, unsafe_allow_html=True)
 
-  <div id="cp-search-wrap">
-    <span class="cp-search-icon">🔍</span>
-    <input id="cp-search" type="text" placeholder="חפש דף..." oninput="cpFilter(this.value)" autocomplete="off" />
-  </div>
+    # Nav buttons — one per page
+    for _item in MENUS[role]:
+        _label = ("▶ " if _item == choice else "   ") + _item
+        if st.button(_label, key=f"pop_nav_{_item}", use_container_width=True):
+            st.session_state.page = _item
+            st.rerun()
 
-  <div id="cp-list">
-    {_items_html}
-  </div>
+    st.divider()
 
-  <div id="cp-footer">
-    <div>
-      {_warn_html}
-      <span class="cp-footer-hint">Esc סגור &nbsp;|&nbsp; Enter בחר</span>
-    </div>
-    <div class="cp-footer-btns">
-      <div class="cp-footer-btn cp-btn-theme" onclick="cpClickHidden('nav__theme')">{_theme_lbl}</div>
-      <div class="cp-footer-btn cp-btn-logout" onclick="cpClickHidden('nav__logout')">🚪 יציאה</div>
-    </div>
-  </div>
-</div>
+    # Theme + logout
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(_theme_lbl, key="pop_theme", use_container_width=True):
+            st.session_state.theme = "light" if _is_dark else "dark"
+            st.rerun()
+    with col2:
+        if st.button("🚪 יציאה", key="pop_logout", use_container_width=True):
+            st.session_state.user_role  = None
+            st.session_state.login_time = None
+            st.session_state.page       = "📊 דשבורד"
+            st.rerun()
 
-<script>
-var cpOpen = false;
-
-function cpClickHidden(key) {{
-  // Find hidden Streamlit button by key suffix and click it
-  var btns = window.parent.document.querySelectorAll("button");
-  for (var i = 0; i < btns.length; i++) {{
-    if (btns[i].getAttribute("data-testid") === key || btns[i].innerText.trim() === key) {{
-      btns[i].click(); return;
-    }}
-  }}
-  // fallback: search in iframe
-  btns = document.querySelectorAll("#st-nav-btns button");
-  btns.forEach(function(b) {{ if (b.innerText.trim() === key) b.click(); }});
-}}
-
-function cpNav(el) {{
-  var page = el.getAttribute("data-page");
-  // Find the matching hidden Streamlit button and click it
-  var allBtns = window.parent.document.querySelectorAll("button[kind='secondary']");
-  for (var i = 0; i < allBtns.length; i++) {{
-    if (allBtns[i].innerText.trim() === page) {{
-      allBtns[i].click();
-      cpClose();
-      return;
-    }}
-  }}
-  // fallback: search in current doc
-  var allBtns2 = document.querySelectorAll("button");
-  for (var i = 0; i < allBtns2.length; i++) {{
-    if (allBtns2[i].innerText.trim() === page) {{
-      allBtns2[i].click();
-      cpClose();
-      return;
-    }}
-  }}
-}}
-
-function cpToggle() {{ cpOpen ? cpClose() : cpShow(); }}
-
-function cpShow() {{
-  cpOpen = true;
-  document.getElementById("cp-trigger").classList.add("active");
-  document.getElementById("cp-panel").classList.add("open");
-  document.getElementById("cp-overlay").classList.add("open");
-  setTimeout(function() {{ document.getElementById("cp-search").focus(); }}, 80);
-}}
-
-function cpClose() {{
-  cpOpen = false;
-  document.getElementById("cp-trigger").classList.remove("active");
-  document.getElementById("cp-panel").classList.remove("open");
-  document.getElementById("cp-overlay").classList.remove("open");
-  var s = document.getElementById("cp-search");
-  if (s) {{ s.value = ""; cpFilter(""); }}
-}}
-
-function cpFilter(q) {{
-  document.querySelectorAll(".cp-item").forEach(function(el) {{
-    el.style.display = el.textContent.includes(q) ? "" : "none";
-  }});
-}}
-
-document.addEventListener("keydown", function(e) {{
-  if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {{
-    e.preventDefault(); cpOpen ? cpClose() : cpShow();
-  }}
-  if (e.key === "Escape" && cpOpen) cpClose();
-  if (e.key === "Enter" && cpOpen) {{
-    var visible = Array.from(document.querySelectorAll(".cp-item"))
-      .filter(function(el) {{ return el.style.display !== "none"; }});
-    if (visible.length) cpNav(visible[0]);
-  }}
-}});
-</script>
-""", unsafe_allow_html=True)
+    if elapsed_min >= 50:
+        st.markdown(
+            f'<div style="background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.4);'
+            f'border-radius:8px;padding:5px 10px;font-size:.65rem;color:#ffb800;margin-top:6px;direction:rtl">'
+            f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
+            unsafe_allow_html=True)
 
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
