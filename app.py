@@ -210,7 +210,8 @@ label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; font-weight
 ::-webkit-scrollbar-track { background: var(--bg0); }
 ::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
 
-div[data-testid="stPopover"] > button {
+/* Generic popover buttons (login etc) */
+div[data-testid="stPopover"]:not(#nav-popover) > button {
   width: 100% !important;
   min-height: 58px !important;
   margin-bottom: 6px !important;
@@ -222,7 +223,7 @@ div[data-testid="stPopover"] > button {
   text-align: right !important;
   transition: all .2s !important;
 }
-div[data-testid="stPopover"] > button:hover {
+div[data-testid="stPopover"]:not(#nav-popover) > button:hover {
   border-color: var(--b2) !important;
   background: var(--card2) !important;
 }
@@ -512,7 +513,7 @@ header[data-testid="stHeader"],
   height: 0 !important;
 }
 .main .block-container {
-  padding-top: 16px !important;
+  padding-top: 4px !important;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
   max-width: 100% !important;
@@ -2313,13 +2314,14 @@ _theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
 
 st.markdown(f"""
 <style>
-/* Style the popover trigger button */
-div[data-testid="stPopover"] > button {{
+/* ── NAV POPOVER TRIGGER — fixed top-right ── */
+#nav-popover-container div[data-testid="stPopover"] > button,
+.nav-popover-wrap div[data-testid="stPopover"] > button {{
   position: fixed !important;
   top: 12px !important;
   right: 12px !important;
   z-index: 99999 !important;
-  background: rgba(10,28,53,.88) !important;
+  background: rgba(4,13,28,.92) !important;
   border: 1px solid var(--b2) !important;
   border-radius: 12px !important;
   color: var(--txt) !important;
@@ -2335,30 +2337,29 @@ div[data-testid="stPopover"] > button {{
   width: auto !important;
   line-height: 1.4 !important;
 }}
-div[data-testid="stPopover"] > button:hover {{
-  border-color: var(--cyan) !important;
-  color: var(--cyan) !important;
-  box-shadow: 0 0 20px rgba(0,212,255,.35), 0 4px 24px rgba(0,0,0,.5) !important;
-}}
-/* Style the popover panel */
-div[data-testid="stPopover"] div[data-testid="stPopoverBody"],
-[data-baseweb="popover"] > div > div,
-[data-baseweb="popover"] [role="listbox"] {{
+/* Popover panel dark */
+div[data-testid="stPopoverBody"] {{
   background: #040d1c !important;
   border: 1px solid var(--b2) !important;
   border-radius: 16px !important;
-  box-shadow: 0 0 0 1px rgba(0,212,255,.1), 0 24px 64px rgba(0,0,0,.8), var(--glow-c) !important;
+  box-shadow: 0 0 0 1px rgba(0,212,255,.12),
+              0 24px 64px rgba(0,0,0,.85),
+              var(--glow-c) !important;
   backdrop-filter: blur(32px) !important;
   -webkit-backdrop-filter: blur(32px) !important;
-  padding: 8px 6px !important;
-  min-width: 240px !important;
-  color: var(--txt) !important;
+  padding: 6px !important;
+  min-width: 250px !important;
+  max-width: 280px !important;
 }}
-div[data-testid="stPopoverBody"] p,
-div[data-testid="stPopoverBody"] span,
-div[data-testid="stPopoverBody"] label,
-div[data-testid="stPopoverBody"] div {{
+/* Force all text dark in popover */
+div[data-testid="stPopoverBody"],
+div[data-testid="stPopoverBody"] * {{
   color: var(--txt) !important;
+  background-color: transparent !important;
+}}
+div[data-testid="stPopoverBody"] > div,
+div[data-testid="stPopoverBody"] > div > div {{
+  background: #040d1c !important;
 }}
 /* Nav buttons inside popover */
 div[data-testid="stPopoverBody"] .stButton > button {{
@@ -2421,17 +2422,17 @@ div[data-testid="stPopoverBody"] hr {{
 """, unsafe_allow_html=True)
 
 with st.popover(f"☰  {choice}", use_container_width=False):
-    # Force dark background inside popover via injected style
     st.markdown("""
 <style>
-div[data-testid="stPopoverBody"],
-div[data-testid="stPopoverBody"] > div,
-div[data-testid="stPopoverBody"] > div > div {
-  background-color: #040d1c !important;
-  background: #040d1c !important;
-}
-div[data-testid="stPopoverBody"] * { color: #e2eeff !important; }
-div[data-testid="stPopoverBody"] .stButton > button {
+/* Dark background — target every wrapper layer Streamlit creates */
+[data-testid="stPopoverBody"] { background:#040d1c !important; }
+[data-testid="stPopoverBody"] > div { background:#040d1c !important; }
+[data-testid="stPopoverBody"] > div > div { background:#040d1c !important; }
+[data-testid="stPopoverBody"] > div > div > div { background:#040d1c !important; }
+/* All text white */
+[data-testid="stPopoverBody"] * { color:#e2eeff !important; }
+/* Nav buttons */
+[data-testid="stPopoverBody"] .stButton > button {
   background: transparent !important;
   border: 1px solid transparent !important;
   border-radius: 10px !important;
@@ -2441,13 +2442,16 @@ div[data-testid="stPopoverBody"] .stButton > button {
   padding: 10px 14px !important;
   width: 100% !important;
   text-align: right !important;
+  direction: rtl !important;
+  box-shadow: none !important;
 }
-div[data-testid="stPopoverBody"] .stButton > button:hover {
+[data-testid="stPopoverBody"] .stButton > button:hover {
   background: rgba(0,212,255,.1) !important;
   border-color: rgba(0,212,255,.3) !important;
   color: #00d4ff !important;
 }
-div[data-testid="stPopoverBody"] hr { border-color: rgba(0,212,255,.2) !important; }
+[data-testid="stPopoverBody"] hr { border-color: rgba(0,212,255,.18) !important; margin: 4px 0 !important; }
+[data-testid="stPopoverBody"] [data-testid="stHorizontalBlock"] { gap: 6px !important; }
 </style>
 """, unsafe_allow_html=True)
     # Info header
