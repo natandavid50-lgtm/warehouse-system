@@ -499,6 +499,17 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
 div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px solid var(--cyan) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
+
+/* Hide Streamlit top header bar */
+header[data-testid="stHeader"],
+#MainMenu,
+footer,
+[data-testid="stToolbar"] {
+  display: none !important;
+  height: 0 !important;
+  visibility: hidden !important;
+}
+.main .block-container { padding-top: 1rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
