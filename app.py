@@ -500,16 +500,247 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* Hide Streamlit top header bar */
+/* ── Hide everything Streamlit ── */
 header[data-testid="stHeader"],
-#MainMenu,
-footer,
+[data-testid="stSidebar"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+#MainMenu, footer,
 [data-testid="stToolbar"] {
   display: none !important;
+  width: 0 !important;
   height: 0 !important;
-  visibility: hidden !important;
 }
-.main .block-container { padding-top: 1rem !important; }
+.main .block-container {
+  padding-top: 72px !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  max-width: 100% !important;
+}
+
+/* ── Trigger button (top-right) ── */
+#cp-trigger {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 14px;
+  background: rgba(10,28,53,.82);
+  border: 1px solid var(--b2);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: var(--heb);
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--txt);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glow-c), 0 4px 24px rgba(0,0,0,.5);
+  transition: all .2s;
+  user-select: none;
+}
+#cp-trigger:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0,212,255,.35), 0 4px 24px rgba(0,0,0,.5);
+  transform: translateY(-1px);
+}
+#cp-trigger .cp-icon {
+  display: flex; flex-direction: column; gap: 4px;
+}
+#cp-trigger .cp-icon span {
+  display: block; width: 18px; height: 2px;
+  background: var(--cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--cyan);
+  transition: all .25s;
+}
+#cp-trigger.active .cp-icon span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+#cp-trigger.active .cp-icon span:nth-child(2) { opacity: 0; }
+#cp-trigger.active .cp-icon span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* ── Overlay ── */
+#cp-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,4,12,.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 99990;
+  animation: fadeIn .18s ease;
+}
+#cp-overlay.open { display: block; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ── Command Palette panel ── */
+#cp-panel {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -48%) scale(.96);
+  width: min(480px, 92vw);
+  z-index: 99998;
+  background: rgba(7,21,38,.92);
+  border: 1px solid var(--b2);
+  border-radius: 20px;
+  box-shadow: 0 0 0 1px rgba(0,212,255,.1),
+              0 24px 80px rgba(0,0,0,.8),
+              var(--glow-c);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  overflow: hidden;
+  opacity: 0;
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              opacity .18s ease;
+}
+#cp-panel.open {
+  display: block;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* Panel top bar */
+#cp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--b1);
+}
+#cp-role-info { display: flex; align-items: center; gap: 10px; }
+#cp-role-name {
+  font-family: var(--orb);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+#cp-session {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--txt2);
+  margin-top: 2px;
+}
+#cp-stats {
+  display: flex;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: .7rem;
+}
+.cp-stat-lbl { color: var(--txt2); }
+.cp-stat-val { font-weight: 700; }
+
+/* Search box */
+#cp-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--b1);
+  background: rgba(0,212,255,.04);
+}
+#cp-search-wrap .cp-search-icon { font-size: 1rem; opacity: .5; }
+#cp-search {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--heb);
+  font-size: .95rem;
+  color: var(--txt);
+  direction: rtl;
+}
+#cp-search::placeholder { color: var(--txt3); }
+
+/* Nav items list */
+#cp-list {
+  padding: 8px 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+#cp-list::-webkit-scrollbar { width: 3px; }
+#cp-list::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
+
+.cp-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--txt);
+  transition: all .14s;
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  direction: rtl;
+}
+.cp-item:hover, .cp-item.selected {
+  background: rgba(0,212,255,.1);
+  border-color: var(--b1);
+  color: var(--cyan);
+}
+.cp-item.active-page {
+  background: rgba(0,212,255,.13);
+  border-color: var(--b2);
+  color: var(--cyan);
+}
+.cp-item .cp-badge {
+  font-size: .6rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(0,212,255,.12);
+  border: 1px solid var(--b1);
+  color: var(--txt2);
+  font-family: var(--mono);
+}
+.cp-item.active-page .cp-badge {
+  background: rgba(0,212,255,.22);
+  color: var(--cyan);
+}
+
+/* Footer */
+#cp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-top: 1px solid var(--b1);
+  background: rgba(0,0,0,.2);
+}
+.cp-footer-hint {
+  font-size: .65rem;
+  color: var(--txt3);
+  font-family: var(--mono);
+}
+.cp-footer-btns { display: flex; gap: 8px; }
+.cp-footer-btn {
+  font-size: .72rem;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  border: 1px solid;
+  transition: all .15s;
+}
+.cp-btn-theme {
+  background: rgba(0,212,255,.07);
+  border-color: var(--b1);
+  color: var(--txt2);
+}
+.cp-btn-theme:hover { background: rgba(0,212,255,.15); color: var(--cyan); }
+.cp-btn-logout {
+  background: rgba(255,45,85,.08);
+  border-color: rgba(255,45,85,.3);
+  color: var(--red);
+}
+.cp-btn-logout:hover { background: rgba(255,45,85,.18); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -2058,35 +2289,9 @@ lt   = st.session_state.login_time
 elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
 
 ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
-df_side = db_load_tasks()
+df_side    = db_load_tasks()
 today_side = len(tasks_for_date(df_side, datetime.now()))
 ov_side    = len(get_overdue())
-
-st.sidebar.markdown(f"""
-<div style="padding:20px 0 12px;text-align:center">
-  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
-  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
-              color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
-    ● מחובר {elapsed_min} דק'
-  </div>
-</div>
-<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
-            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">להיום:</span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="color:var(--txt2)">פיגורים:</span>
-    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between">
-    <span style="color:var(--txt2)">סה"כ:</span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
@@ -2095,30 +2300,143 @@ MENUS = {
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 
-# Theme toggle button
-_is_dark = st.session_state.theme == "dark"
-if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
-                     use_container_width=True, key="theme_toggle"):
-    st.session_state.theme = "light" if _is_dark else "dark"
-    st.rerun()
-
-# Inject theme CSS (light overrides dark defaults)
+# Inject theme CSS
 inject_theme()
 
-choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
+# Ensure page is valid
+if st.session_state.page not in MENUS[role]:
+    st.session_state.page = MENUS[role][0]
+choice = st.session_state.page
 
-st.sidebar.markdown("---")
-if elapsed_min >= 50:
-    st.sidebar.markdown(
-        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
-        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
-        unsafe_allow_html=True)
-if st.sidebar.button("🚪 התנתקות", use_container_width=True):
-    st.session_state.user_role = None
+# Handle query param navigation
+qp = st.query_params
+if "nav" in qp and qp["nav"] in MENUS[role]:
+    st.session_state.page = qp["nav"]
+    st.query_params.clear()
+    st.rerun()
+if "logout" in qp:
+    st.session_state.user_role  = None
     st.session_state.login_time = None
+    st.session_state.page       = "📊 דשבורד"
+    st.query_params.clear()
+    st.rerun()
+if "theme_switch" in qp:
+    st.session_state.theme = qp["theme_switch"]
+    st.query_params.clear()
     st.rerun()
 
-PAGE_ICONS = {
+_is_dark    = st.session_state.theme == "dark"
+_next_theme = "light" if _is_dark else "dark"
+_theme_lbl  = "☀️ בהיר" if _is_dark else "🌙 כהה"
+_warn_html  = (
+    f'<div style="background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.4);'
+    f'border-radius:8px;padding:5px 10px;font-size:.65rem;color:#ffb800;margin-bottom:6px">'
+    f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>'
+) if elapsed_min >= 50 else ""
+
+# Build nav items HTML for the palette
+_items_html = ""
+for item in MENUS[role]:
+    _cls = "cp-item active-page" if item == choice else "cp-item"
+    _badge = '<span class="cp-badge">פעיל</span>' if item == choice else ""
+    _items_html += '<div class="' + _cls + '" onclick="cpNav(\"' + item + '\")"><span>' + item + '</span>' + _badge + '</div>\n'
+
+
+st.markdown(f"""
+<!-- Overlay -->
+<div id="cp-overlay" onclick="cpClose()"></div>
+
+<!-- Trigger button -->
+<div id="cp-trigger" onclick="cpToggle()">
+  <div class="cp-icon"><span></span><span></span><span></span></div>
+  <span id="cp-trigger-label">{choice}</span>
+</div>
+
+<!-- Command Palette -->
+<div id="cp-panel">
+  <div id="cp-topbar">
+    <div id="cp-role-info">
+      <div style="font-size:1.5rem">{ROLE_ICONS.get(role,"👤")}</div>
+      <div>
+        <div id="cp-role-name">{role}</div>
+        <div id="cp-session">● מחובר {elapsed_min} דק'</div>
+      </div>
+    </div>
+    <div id="cp-stats">
+      <div><span class="cp-stat-lbl">היום </span><span class="cp-stat-val" style="color:var(--cyan)">{today_side}</span></div>
+      <div><span class="cp-stat-lbl">פיגורים </span><span class="cp-stat-val" style="color:{"var(--red)" if ov_side else "var(--green)"}">{ov_side}</span></div>
+      <div><span class="cp-stat-lbl">סה"כ </span><span class="cp-stat-val">{len(df_side)}</span></div>
+    </div>
+  </div>
+
+  <div id="cp-search-wrap">
+    <span class="cp-search-icon">🔍</span>
+    <input id="cp-search" type="text" placeholder="חפש דף..." oninput="cpFilter(this.value)" autocomplete="off" />
+  </div>
+
+  <div id="cp-list">
+    {_items_html}
+  </div>
+
+  <div id="cp-footer">
+    <div>
+      {_warn_html}
+      <span class="cp-footer-hint">↑↓ ניווט &nbsp; Enter בחר &nbsp; Esc סגור</span>
+    </div>
+    <div class="cp-footer-btns">
+      <div class="cp-footer-btn cp-btn-theme" onclick="window.location.search='?theme_switch={_next_theme}'">{_theme_lbl}</div>
+      <div class="cp-footer-btn cp-btn-logout" onclick="window.location.search='?logout=1'">🚪 יציאה</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var cpOpen = false;
+
+function cpToggle() {{
+  cpOpen ? cpClose() : cpShow();
+}}
+function cpShow() {{
+  cpOpen = true;
+  document.getElementById("cp-trigger").classList.add("active");
+  document.getElementById("cp-panel").classList.add("open");
+  document.getElementById("cp-overlay").classList.add("open");
+  setTimeout(function(){{ document.getElementById("cp-search").focus(); }}, 80);
+}}
+function cpClose() {{
+  cpOpen = false;
+  document.getElementById("cp-trigger").classList.remove("active");
+  document.getElementById("cp-panel").classList.remove("open");
+  document.getElementById("cp-overlay").classList.remove("open");
+  document.getElementById("cp-search").value = "";
+  cpFilter("");
+}}
+function cpNav(page) {{
+  var url = new URL(window.location.href);
+  url.searchParams.set("nav", page);
+  window.location.href = url.toString();
+}}
+function cpFilter(q) {{
+  var items = document.querySelectorAll(".cp-item");
+  items.forEach(function(el) {{
+    el.style.display = el.textContent.includes(q) ? "" : "none";
+  }});
+}}
+document.addEventListener("keydown", function(e) {{
+  if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {{
+    e.preventDefault(); cpOpen ? cpClose() : cpShow();
+  }}
+  if (e.key === "Escape") cpClose();
+  if (e.key === "Enter" && cpOpen) {{
+    var visible = Array.from(document.querySelectorAll(".cp-item"))
+      .filter(function(el){{ return el.style.display !== "none"; }});
+    if (visible.length > 0) visible[0].click();
+  }}
+}});
+</script>
+""", unsafe_allow_html=True)
+
+PAGE_ICONS = {{
     "📊 דשבורד":          "📊 דשבורד בקרה",
     "📋 סידור עבודה":     "📋 סידור עבודה שבועי",
     "📅 לוח שנה":         "📅 לוח שנה",
@@ -2127,7 +2445,8 @@ PAGE_ICONS = {
     "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
-}
+}}
+
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
 
