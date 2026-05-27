@@ -638,6 +638,31 @@ def db_delete_external_storage(record_id):
     supabase = get_conn()
     supabase.table("external_storage").delete().eq("id", record_id).execute()
 
+# ── External Storage Excel ──────────────────────────────────────────────────────
+def db_load_excel_table():
+    """טוען את הטבלה השמורה מה-Supabase. מחזיר dict או None"""
+    try:
+        supabase = get_conn()
+        res = supabase.table("external_storage_excel").select("*").order("id", desc=True).limit(1).execute()
+        if res.data:
+            return res.data[0]
+        return None
+    except Exception:
+        return None
+
+def db_save_excel_table(file_name, table_data, uploaded_by):
+    """שומר (מחליף) את טבלת האקסל ב-Supabase — רשומה אחת בלבד"""
+    supabase = get_conn()
+    try:
+        supabase.table("external_storage_excel").delete().neq("id", 0).execute()
+    except Exception:
+        pass
+    supabase.table("external_storage_excel").insert({
+        "file_name":   file_name,
+        "uploaded_by": uploaded_by,
+        "table_data":  table_data,
+    }).execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1762,6 +1787,83 @@ def page_external_storage():
                         new_arrival, new_notes.strip())
                     st.success("✅ הרשומה נשמרה בהצלחה!")
                     st.rerun()
+
+    # ── EXCEL UPLOAD SECTION ───────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    sec_header("📊 טבלת אקסל — אחסנה חיצונית")
+
+    excel_rec = db_load_excel_table()
+
+    # ── Info bar: last upload ──────────────────────────────────────────────────
+    if excel_rec:
+        fname    = excel_rec.get("file_name", "—")
+        uploader = excel_rec.get("uploaded_by", "—")
+        utime    = excel_rec.get("uploaded_at", "")
+        try:
+            utime_fmt = datetime.fromisoformat(utime.replace("Z","")).strftime("%d/%m/%Y %H:%M")
+        except Exception:
+            utime_fmt = utime
+        st.markdown(
+            f'<div class="al al-green">✅ <b>קובץ פעיל:</b> {fname} &nbsp;|&nbsp; '
+            f'הועלה על-ידי <b>{uploader}</b> &nbsp;|&nbsp; {utime_fmt}</div>',
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="al al-amber">⚠️ <b>טרם הועלה קובץ אקסל.</b> '
+            'המנהל יכול להעלות קובץ למטה.</div>',
+            unsafe_allow_html=True)
+
+    # ── Admin: upload widget ───────────────────────────────────────────────────
+    if is_admin:
+        uploaded_file = st.file_uploader(
+            "📤 העלה קובץ אקסל (.xlsx / .xls)",
+            type=["xlsx", "xls"],
+            key="excel_uploader",
+            help="כל העלאה חדשה תחליף את הקובץ הקודם לכולם")
+
+        if uploaded_file is not None:
+            try:
+                df_upload = pd.read_excel(uploaded_file, engine="openpyxl")
+                st.markdown(
+                    f'<div class="al al-cyan">👁️ <b>תצוגה מקדימה</b> — '
+                    f'{len(df_upload)} שורות, {len(df_upload.columns)} עמודות</div>',
+                    unsafe_allow_html=True)
+                st.dataframe(df_upload.head(10), use_container_width=True, hide_index=True)
+
+                if st.button("💾 שמור טבלה לכולם", key="save_excel_btn", use_container_width=True):
+                    # Convert to JSON-serialisable list of dicts
+                    table_json = df_upload.astype(str).to_dict(orient="records")
+                    db_save_excel_table(
+                        file_name   = uploaded_file.name,
+                        table_data  = table_json,
+                        uploaded_by = st.session_state.user_role,
+                    )
+                    st.success("✅ הטבלה נשמרה בהצלחה ותוצג לכולם!")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"❌ שגיאה בקריאת הקובץ: {e}")
+
+    # ── Display saved table (all roles) ───────────────────────────────────────
+    if excel_rec and excel_rec.get("table_data"):
+        df_saved = pd.DataFrame(excel_rec["table_data"])
+        st.markdown("<br>", unsafe_allow_html=True)
+        sec_header("📋 טבלת האחסנה החיצונית הנוכחית")
+        st.dataframe(df_saved, use_container_width=True, hide_index=True)
+
+        # Download button — all roles
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df_saved.to_excel(writer, index=False, sheet_name="אחסנה חיצונית")
+        st.download_button(
+            label="📥 הורד כאקסל",
+            data=output.getvalue(),
+            file_name="external_storage.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            key="dl_excel_btn",
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # ── DATA TABLE ─────────────────────────────────────────────────────────────
     sec_header("📋 רשומות קיימות")
