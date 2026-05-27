@@ -12,7 +12,7 @@ try:
     from plotly.subplots import make_subplots
     import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
     
-    pio.templates.default = "plotly_dark"  # 🎯 2. הגדרנו את המצב הכהה כברירת מחדל לכולם
+    pio.templates.default = "plotly_dark"
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -665,8 +665,89 @@ def db_save_excel_table(file_name, table_data, uploaded_by):
 def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
+    if "theme"      not in st.session_state: st.session_state.theme      = "dark"
 
 init_state()
+
+
+# ── Dynamic theme CSS — pure CSS injection, no JS needed ───────────────────────
+def inject_theme():
+    if st.session_state.get("theme", "dark") != "light":
+        return  # dark is the default static CSS — nothing to inject
+    st.markdown("""<style>
+:root {
+  --bg0:    #f0f4f8;
+  --bg1:    #e4eaf2;
+  --bg2:    #d8e2ee;
+  --card:   #ffffff;
+  --card2:  #f5f8fc;
+  --card3:  #eaf0f8;
+  --b0:     rgba(0,100,180,.07);
+  --b1:     rgba(0,100,180,.18);
+  --b2:     rgba(0,100,180,.38);
+  --b3:     rgba(0,100,180,.6);
+  --cyan:   #0070c0;
+  --green:  #007a45;
+  --red:    #cc0022;
+  --amber:  #a06000;
+  --purple: #7722bb;
+  --txt:    #0d1e33;
+  --txt2:   #456080;
+  --txt3:   #8aaac5;
+  --shadow: 0 4px 20px rgba(0,60,120,.10);
+  --glow-c: 0 0 16px rgba(0,112,192,.15);
+  --glow-g: 0 0 16px rgba(0,122,69,.12);
+  --glow-r: 0 0 16px rgba(204,0,34,.12);
+}
+.stApp {
+  background-color: #f0f4f8 !important;
+  background-image:
+    linear-gradient(rgba(0,100,180,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,100,180,.04) 1px, transparent 1px),
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(0,100,180,.06) 0%, transparent 65%) !important;
+  background-size: 48px 48px, 48px 48px, 100% 100% !important;
+}
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg,#e4eaf2 0%,#f0f4f8 100%) !important;
+  border-left: 1px solid rgba(0,100,180,.2) !important;
+  box-shadow: 4px 0 24px rgba(0,60,120,.08) !important;
+}
+[data-testid="stSidebar"] * { color: #0d1e33 !important; }
+[data-testid="stSidebar"] .stRadio label:hover { background: rgba(0,100,180,.08) !important; }
+.stTextInput>div>div>input,
+.stTextArea>div>div>textarea,
+.stSelectbox>div>div,
+.stNumberInput>div>div>input,
+.stDateInput>div>div>input {
+  background: #ffffff !important;
+  border-color: rgba(0,100,180,.25) !important;
+  color: #0d1e33 !important;
+}
+label[data-testid="stWidgetLabel"] p { color: #0d1e33 !important; }
+[data-testid="stMetric"] { background:#ffffff !important; border-color:rgba(0,100,180,.18) !important; box-shadow:0 4px 16px rgba(0,60,120,.1) !important; }
+[data-testid="stMetricValue"] { color:#0070c0 !important; text-shadow:none !important; }
+[data-testid="stMetricLabel"] { color:#456080 !important; }
+[data-testid="stForm"] { background:#ffffff !important; border-color:rgba(0,100,180,.18) !important; }
+[data-testid="stForm"] .stButton>button { background:linear-gradient(135deg,#0070c0,#004f99) !important; }
+.stButton>button { background:rgba(0,100,180,.08) !important; border-color:rgba(0,100,180,.3) !important; color:#0070c0 !important; }
+.stButton>button:hover { background:rgba(0,100,180,.16) !important; }
+[data-testid="stExpander"] { background:#ffffff !important; border-color:rgba(0,100,180,.18) !important; }
+details>summary { color:#0070c0 !important; }
+[data-testid="stTabs"] [role="tab"] { color:#456080 !important; }
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] { color:#0070c0 !important; border-bottom-color:#0070c0 !important; }
+[data-testid="stDownloadButton"]>button { background:rgba(0,122,69,.1) !important; border-color:rgba(0,122,69,.3) !important; color:#007a45 !important; }
+[data-testid="stDataFrame"] { border-color:rgba(0,100,180,.18) !important; }
+.kpi { background:#ffffff !important; border-color:rgba(0,100,180,.18) !important; }
+div[data-testid="stPopover"]>button { background:#ffffff !important; border-color:rgba(0,100,180,.2) !important; color:#0d1e33 !important; }
+.mega-banner { background:linear-gradient(135deg,#ffffff 0%,#eef4ff 50%,#ffffff 100%) !important; border-color:rgba(0,100,180,.25) !important; box-shadow:0 4px 24px rgba(0,60,120,.1) !important; }
+.mega-banner h1 { color:#0070c0 !important; text-shadow:none !important; }
+.mega-banner .sub { color:#456080 !important; }
+::-webkit-scrollbar-track { background:#e4eaf2 !important; }
+::-webkit-scrollbar-thumb { background:rgba(0,100,180,.3) !important; }
+.tc { background:#ffffff !important; border-color:rgba(0,100,180,.15) !important; }
+.mm { background:#ffffff !important; border-color:rgba(0,100,180,.15) !important; }
+.sec-h { color:#456080 !important; border-bottom-color:rgba(0,100,180,.2) !important; }
+</style>""", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2002,6 +2083,17 @@ MENUS = {
     "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
+
+# Theme toggle button
+_is_dark = st.session_state.theme == "dark"
+if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+                     use_container_width=True, key="theme_toggle"):
+    st.session_state.theme = "light" if _is_dark else "dark"
+    st.rerun()
+
+# Inject theme CSS (light overrides dark defaults)
+inject_theme()
+
 choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
@@ -2025,6 +2117,9 @@ PAGE_ICONS = {
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
+if HAS_PLOTLY:
+    pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
+
 st.markdown(
     f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
     f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
