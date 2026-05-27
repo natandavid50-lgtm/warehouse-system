@@ -1823,7 +1823,7 @@ def page_external_storage():
 
         if uploaded_file is not None:
             try:
-                df_upload = pd.read_excel(uploaded_file, engine="openpyxl")
+                df_upload = pd.read_excel(uploaded_file, engine="openpyxl", header=1)
                 st.markdown(
                     f'<div class="al al-cyan">👁️ <b>תצוגה מקדימה</b> — '
                     f'{len(df_upload)} שורות, {len(df_upload.columns)} עמודות</div>',
@@ -1831,17 +1831,24 @@ def page_external_storage():
                 st.dataframe(df_upload.head(10), use_container_width=True, hide_index=True)
 
                 if st.button("💾 שמור טבלה לכולם", key="save_excel_btn", use_container_width=True):
-                    # נקה NaN/Inf לפני המרה ל-JSON
-                    import numpy as np, math
+                    import numpy as np, math, datetime as _dt
                     df_clean = df_upload.copy()
+                    # הסר עמודות ריקות לגמרי
+                    df_clean = df_clean.dropna(axis=1, how="all")
+                    # המר כל סוגי datetime/date/time למחרוזת
+                    for col in df_clean.columns:
+                        df_clean[col] = df_clean[col].apply(
+                            lambda v: v.strftime("%Y-%m-%d") if isinstance(v, (_dt.datetime, _dt.date)) else
+                                      str(v) if isinstance(v, _dt.time) else v
+                        )
+                    # נקה NaN / Inf
                     df_clean = df_clean.where(pd.notnull(df_clean), None)
                     df_clean = df_clean.replace([np.inf, -np.inf], None)
-                    for col in df_clean.select_dtypes(include=["datetime64[ns]"]).columns:
-                        df_clean[col] = df_clean[col].astype(str)
                     table_json = df_clean.to_dict(orient="records")
                     def _clean(v):
                         if v is None: return None
                         if isinstance(v, float) and (math.isnan(v) or math.isinf(v)): return None
+                        if isinstance(v, (_dt.datetime, _dt.date, _dt.time)): return str(v)
                         return v
                     table_json = [{k: _clean(v) for k, v in row.items()} for row in table_json]
                     db_save_excel_table(
