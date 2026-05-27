@@ -2437,7 +2437,7 @@ document.addEventListener("keydown", function(e) {{
 </script>
 """, unsafe_allow_html=True)
 
-PAGE_ICONS = {{
+PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
     "📋 סידור עבודה":     "📋 סידור עבודה שבועי",
     "📅 לוח שנה":         "📅 לוח שנה",
@@ -2446,7 +2446,7 @@ PAGE_ICONS = {{
     "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
-}}
+}
 
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
