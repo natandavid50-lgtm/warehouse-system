@@ -29,7 +29,7 @@ except ImportError:
 st.set_page_config(
     page_title="WMS • אחים כהן",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
     page_icon="📦",
 )
 
@@ -500,94 +500,110 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* ── Hide header/footer/toolbar ── */
+/* ── Hide header/footer/toolbar + Streamlit sidebar completely ── */
 header[data-testid="stHeader"],
 #MainMenu, footer,
-[data-testid="stToolbar"] { display: none !important; }
-
-/* ── Hide Streamlit's own collapse button (we replace it) ── */
+[data-testid="stToolbar"],
+[data-testid="stSidebar"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
-/* ── Main content full width ── */
 .main .block-container {
   padding-top: 1rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
   max-width: 100% !important;
 }
 
-/* ── Sidebar dark styling ── */
-[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, #040d1c 0%, #020810 100%) !important;
-  border-left: 1px solid rgba(0,212,255,.25) !important;
-  box-shadow: 4px 0 32px rgba(0,0,0,.6) !important;
+/* ── Overlay ── */
+#wms-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(3px);
+  z-index: 9998;
 }
-[data-testid="stSidebar"]::before {
-  content: "";
-  display: block;
-  height: 3px;
+#wms-overlay.open { display: block; }
+
+/* ── Slide-in menu ── */
+#wms-menu {
+  position: fixed; top: 0; right: -300px;
+  width: 270px; height: 100vh; z-index: 9999;
+  background: linear-gradient(160deg, #040d1c 0%, #020810 100%);
+  border-left: 1px solid rgba(0,212,255,.3);
+  box-shadow: -8px 0 40px rgba(0,0,0,.7);
+  transition: right .28s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto; padding-bottom: 24px;
+}
+#wms-menu.open { right: 0; }
+#wms-menu::before {
+  content: ""; display: block; height: 3px;
   background: linear-gradient(90deg, transparent, #00d4ff, #00ff88, transparent);
   box-shadow: 0 0 12px #00d4ff;
 }
-[data-testid="stSidebar"] * { color: var(--txt) !important; }
-[data-testid="stSidebar"] .stRadio label {
-  padding: 11px 16px !important;
-  margin: 3px 0 !important;
-  border-radius: 12px !important;
-  font-size: .9rem !important;
-  font-weight: 600 !important;
-  min-height: 44px !important;
-  display: flex !important;
-  align-items: center !important;
-  cursor: pointer !important;
-  transition: all .18s !important;
-  border: 1px solid transparent !important;
-}
-[data-testid="stSidebar"] .stRadio label:hover {
-  background: rgba(0,212,255,.1) !important;
-  border-color: rgba(0,212,255,.2) !important;
-  color: var(--cyan) !important;
-}
-[data-testid="stSidebar"]::-webkit-scrollbar { width: 3px; }
-[data-testid="stSidebar"]::-webkit-scrollbar-thumb { background: rgba(0,212,255,.3); border-radius: 3px; }
+#wms-menu::-webkit-scrollbar { width: 3px; }
+#wms-menu::-webkit-scrollbar-thumb { background: rgba(0,212,255,.3); border-radius: 3px; }
 
-/* ── Custom hamburger FAB ── */
+/* ── Nav items inside menu ── */
+.wms-nav-item {
+  display: flex; align-items: center;
+  padding: 12px 18px; margin: 2px 10px;
+  border-radius: 11px; cursor: pointer;
+  font-size: .9rem; font-weight: 600;
+  color: #e2eeff; direction: rtl;
+  border: 1px solid transparent;
+  transition: all .15s;
+}
+.wms-nav-item:hover {
+  background: rgba(0,212,255,.1);
+  border-color: rgba(0,212,255,.2);
+  color: #00d4ff;
+}
+.wms-nav-item.active {
+  background: rgba(0,212,255,.13);
+  border-color: rgba(0,212,255,.35);
+  color: #00d4ff;
+  box-shadow: inset -3px 0 0 #00d4ff;
+}
+.wms-menu-divider { border: none; border-top: 1px solid rgba(0,212,255,.15); margin: 8px 16px; }
+.wms-action-btn {
+  display: flex; align-items: center; justify-content: center;
+  margin: 4px 10px; padding: 9px 14px;
+  border-radius: 10px; cursor: pointer;
+  font-size: .82rem; font-weight: 700;
+  border: 1px solid; transition: all .15s;
+}
+.wms-btn-theme {
+  background: rgba(0,212,255,.07); border-color: rgba(0,212,255,.25); color: #8aaac5;
+}
+.wms-btn-theme:hover { background: rgba(0,212,255,.15); color: #00d4ff; }
+.wms-btn-logout {
+  background: rgba(255,45,85,.08); border-color: rgba(255,45,85,.3); color: #ff2d55;
+}
+.wms-btn-logout:hover { background: rgba(255,45,85,.18); }
+
+/* ── Hamburger button ── */
 #wms-hamburger {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 99999;
-  width: 44px;
-  height: 44px;
+  position: fixed; top: 14px; right: 14px; z-index: 10000;
+  width: 44px; height: 44px;
   background: rgba(4,13,28,.92);
-  border: 1px solid rgba(0,212,255,.45);
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
+  border: 1px solid rgba(0,212,255,.45); border-radius: 12px;
+  cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
   box-shadow: 0 0 20px rgba(0,212,255,.2), 0 4px 16px rgba(0,0,0,.5);
-  transition: all .2s;
-  backdrop-filter: blur(12px);
+  transition: all .2s; backdrop-filter: blur(12px);
 }
 #wms-hamburger:hover {
   border-color: rgba(0,212,255,.8);
-  box-shadow: 0 0 28px rgba(0,212,255,.4), 0 4px 16px rgba(0,0,0,.5);
+  box-shadow: 0 0 28px rgba(0,212,255,.4);
   transform: scale(1.06);
 }
 #wms-hamburger span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: #00d4ff;
-  border-radius: 2px;
-  box-shadow: 0 0 6px #00d4ff;
-  transition: all .25s;
+  display: block; width: 20px; height: 2px;
+  background: #00d4ff; border-radius: 2px;
+  box-shadow: 0 0 6px #00d4ff; transition: all .25s;
 }
-#wms-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-#wms-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-#wms-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+#wms-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+#wms-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+#wms-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -2150,78 +2166,106 @@ MENUS = {
 
 inject_theme()
 
-# ── Hamburger button — clicks Streamlit sidebar toggle ─────────────────────────
-st.markdown("""
-<div id="wms-hamburger" onclick="toggleSidebar()">
-  <span></span><span></span><span></span>
-</div>
-<script>
-var sidebarOpen = true;
-function toggleSidebar() {
-  var ham = document.getElementById("wms-hamburger");
-  // Find Streamlit's hidden sidebar toggle button and click it
-  var btn = window.parent.document.querySelector('[data-testid="collapsedControl"] button, button[aria-label="Close sidebar"], button[aria-label="Open sidebar"], [data-testid="stSidebarCollapseButton"] button');
-  if (!btn) {
-    // fallback: find any button inside stSidebar header area
-    var btns = window.parent.document.querySelectorAll('[data-testid="stSidebar"] button');
-    if (btns.length) btn = btns[0];
-  }
-  if (btn) { btn.click(); }
-  sidebarOpen = !sidebarOpen;
-  ham.classList.toggle("is-open", !sidebarOpen);
-}
-</script>
-""", unsafe_allow_html=True)
+# Ensure page is valid
+if st.session_state.page not in MENUS[role]:
+    st.session_state.page = MENUS[role][0]
+choice = st.session_state.page
 
-# ── Sidebar content ────────────────────────────────────────────────────────────
-_ov_color = "var(--red)" if ov_side else "var(--green)"
-st.sidebar.markdown(f"""
-<div style="padding:18px 4px 14px;text-align:center;
-            border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
-  <div style="font-size:2rem;margin-bottom:6px">{ROLE_ICONS.get(role,"👤")}</div>
-  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;
-              color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;
-              font-family:var(--mono)">מחובר {elapsed_min} דק</div>
-</div>
-<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
-            border-radius:10px;padding:8px 12px;margin:0 8px 12px;
-            font-family:var(--mono);font-size:.68rem">
-  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-    <span style="color:var(--txt2)">היום:</span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-    <span style="color:var(--txt2)">פיגורים:</span>
-    <span style="color:{_ov_color};font-weight:700">{ov_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between">
-    <span style="color:var(--txt2)">סה"כ:</span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
-
-st.sidebar.markdown("---")
+# ── Handle nav clicks from hidden buttons ─────────────────────────────────────
+for _item in MENUS[role]:
+    if st.sidebar.button(_item, key=f"nav_{_item}"):
+        st.session_state.page = _item
+        st.rerun()
 
 _is_dark = st.session_state.theme == "dark"
-if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
-                     use_container_width=True, key="theme_toggle"):
+if st.sidebar.button("__theme__", key="nav_theme"):
     st.session_state.theme = "light" if _is_dark else "dark"
     st.rerun()
-
-if elapsed_min >= 50:
-    st.sidebar.markdown(
-        f'<div class="al al-amber" style="font-size:.7rem;padding:6px 10px;margin:4px 0">'
-        f'הסשן יפוג בעוד {60-elapsed_min} דק</div>',
-        unsafe_allow_html=True)
-
-if st.sidebar.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
+if st.sidebar.button("__logout__", key="nav_logout"):
     st.session_state.user_role  = None
     st.session_state.login_time = None
+    st.session_state.page       = "📊 דשבורד"
     st.rerun()
+
+# ── Build nav items HTML ───────────────────────────────────────────────────────
+_ov_color  = "#ff2d55" if ov_side else "#00ff88"
+_theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
+
+_nav_html = ""
+for item in MENUS[role]:
+    _cls = "wms-nav-item active" if item == choice else "wms-nav-item"
+    _nav_html += f'<div class="{_cls}" onclick="wmsNav(\"{item}\")">{item}</div>\n'
+
+# ── Render hamburger + custom menu panel ──────────────────────────────────────
+st.markdown(f"""
+<div id="wms-overlay" onclick="wmsClose()"></div>
+
+<div id="wms-hamburger" onclick="wmsToggle()">
+  <span></span><span></span><span></span>
+</div>
+
+<div id="wms-menu">
+  <div style="padding:18px 16px 12px;text-align:center;
+              border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:8px">
+    <div style="font-size:1.8rem;margin-bottom:4px">{ROLE_ICONS.get(role,"👤")}</div>
+    <div style="font-family:Orbitron,monospace;font-weight:700;font-size:.8rem;
+                color:#00d4ff;letter-spacing:1px">{role}</div>
+    <div style="font-size:.65rem;color:#6b8aaa;margin-top:3px;font-family:monospace">
+      מחובר {elapsed_min} דק
+    </div>
+    <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;
+                font-family:monospace;font-size:.68rem">
+      <span style="color:#6b8aaa">היום: <b style="color:#00d4ff">{today_side}</b></span>
+      <span style="color:#6b8aaa">פיגורים: <b style="color:{_ov_color}">{ov_side}</b></span>
+      <span style="color:#6b8aaa">סה"כ: <b style="color:#e2eeff">{len(df_side)}</b></span>
+    </div>
+  </div>
+
+  {_nav_html}
+
+  <hr class="wms-menu-divider">
+
+  <div class="wms-action-btn wms-btn-theme" onclick="wmsClickSidebar('nav_theme')">{_theme_lbl}</div>
+  <div class="wms-action-btn wms-btn-logout" onclick="wmsClickSidebar('nav_logout')">🚪 התנתקות</div>
+</div>
+
+<script>
+var wmsOpen = false;
+
+function wmsToggle() {{
+  wmsOpen ? wmsClose() : wmsShow();
+}}
+function wmsShow() {{
+  wmsOpen = true;
+  document.getElementById("wms-hamburger").classList.add("open");
+  document.getElementById("wms-menu").classList.add("open");
+  document.getElementById("wms-overlay").classList.add("open");
+}}
+function wmsClose() {{
+  wmsOpen = false;
+  document.getElementById("wms-hamburger").classList.remove("open");
+  document.getElementById("wms-menu").classList.remove("open");
+  document.getElementById("wms-overlay").classList.remove("open");
+}}
+function wmsNav(page) {{
+  // Click the matching hidden Streamlit sidebar button
+  var btns = window.parent.document.querySelectorAll("[data-testid=\"stSidebar\"] button");
+  for (var i = 0; i < btns.length; i++) {{
+    if (btns[i].innerText.trim() === page) {{ btns[i].click(); wmsClose(); return; }}
+  }}
+}}
+function wmsClickSidebar(key) {{
+  var btns = window.parent.document.querySelectorAll("[data-testid=\"stSidebar\"] button");
+  for (var i = 0; i < btns.length; i++) {{
+    if (btns[i].innerText.trim() === "__theme__" && key === "nav_theme") {{ btns[i].click(); return; }}
+    if (btns[i].innerText.trim() === "__logout__" && key === "nav_logout") {{ btns[i].click(); return; }}
+  }}
+}}
+document.addEventListener("keydown", function(e) {{
+  if (e.key === "Escape" && wmsOpen) wmsClose();
+}});
+</script>
+""", unsafe_allow_html=True)
 
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
