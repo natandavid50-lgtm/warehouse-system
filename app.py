@@ -512,7 +512,7 @@ header[data-testid="stHeader"],
   height: 0 !important;
 }
 .main .block-container {
-  padding-top: 72px !important;
+  padding-top: 16px !important;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
   max-width: 100% !important;
@@ -2341,14 +2341,24 @@ div[data-testid="stPopover"] > button:hover {{
   box-shadow: 0 0 20px rgba(0,212,255,.35), 0 4px 24px rgba(0,0,0,.5) !important;
 }}
 /* Style the popover panel */
-div[data-testid="stPopover"] div[data-testid="stPopoverBody"] {{
-  background: rgba(7,21,38,.96) !important;
+div[data-testid="stPopover"] div[data-testid="stPopoverBody"],
+[data-baseweb="popover"] > div > div,
+[data-baseweb="popover"] [role="listbox"] {{
+  background: #040d1c !important;
   border: 1px solid var(--b2) !important;
   border-radius: 16px !important;
   box-shadow: 0 0 0 1px rgba(0,212,255,.1), 0 24px 64px rgba(0,0,0,.8), var(--glow-c) !important;
   backdrop-filter: blur(32px) !important;
+  -webkit-backdrop-filter: blur(32px) !important;
   padding: 8px 6px !important;
   min-width: 240px !important;
+  color: var(--txt) !important;
+}}
+div[data-testid="stPopoverBody"] p,
+div[data-testid="stPopoverBody"] span,
+div[data-testid="stPopoverBody"] label,
+div[data-testid="stPopoverBody"] div {{
+  color: var(--txt) !important;
 }}
 /* Nav buttons inside popover */
 div[data-testid="stPopoverBody"] .stButton > button {{
