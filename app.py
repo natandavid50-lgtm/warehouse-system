@@ -908,6 +908,7 @@ def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
     if "theme"      not in st.session_state: st.session_state.theme      = "dark"
+    if "page"       not in st.session_state: st.session_state.page       = "📊 דשבורד"
 
 init_state()
 
