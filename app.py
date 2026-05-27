@@ -29,7 +29,7 @@ except ImportError:
 st.set_page_config(
     page_title="WMS • אחים כהן",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
     page_icon="📦",
 )
 
@@ -500,110 +500,16 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* ── Hide header/footer/toolbar + Streamlit sidebar completely ── */
+/* Hide Streamlit top header bar */
 header[data-testid="stHeader"],
-#MainMenu, footer,
-[data-testid="stToolbar"],
-[data-testid="stSidebar"],
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"] { display: none !important; }
-
-.main .block-container {
-  padding-top: 1rem !important;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-  max-width: 100% !important;
+#MainMenu,
+footer,
+[data-testid="stToolbar"] {
+  display: none !important;
+  height: 0 !important;
+  visibility: hidden !important;
 }
-
-/* ── Overlay ── */
-#wms-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.5); backdrop-filter: blur(3px);
-  z-index: 9998;
-}
-#wms-overlay.open { display: block; }
-
-/* ── Slide-in menu ── */
-#wms-menu {
-  position: fixed; top: 0; right: -300px;
-  width: 270px; height: 100vh; z-index: 9999;
-  background: linear-gradient(160deg, #040d1c 0%, #020810 100%);
-  border-left: 1px solid rgba(0,212,255,.3);
-  box-shadow: -8px 0 40px rgba(0,0,0,.7);
-  transition: right .28s cubic-bezier(.4,0,.2,1);
-  overflow-y: auto; padding-bottom: 24px;
-}
-#wms-menu.open { right: 0; }
-#wms-menu::before {
-  content: ""; display: block; height: 3px;
-  background: linear-gradient(90deg, transparent, #00d4ff, #00ff88, transparent);
-  box-shadow: 0 0 12px #00d4ff;
-}
-#wms-menu::-webkit-scrollbar { width: 3px; }
-#wms-menu::-webkit-scrollbar-thumb { background: rgba(0,212,255,.3); border-radius: 3px; }
-
-/* ── Nav items inside menu ── */
-.wms-nav-item {
-  display: flex; align-items: center;
-  padding: 12px 18px; margin: 2px 10px;
-  border-radius: 11px; cursor: pointer;
-  font-size: .9rem; font-weight: 600;
-  color: #e2eeff; direction: rtl;
-  border: 1px solid transparent;
-  transition: all .15s;
-}
-.wms-nav-item:hover {
-  background: rgba(0,212,255,.1);
-  border-color: rgba(0,212,255,.2);
-  color: #00d4ff;
-}
-.wms-nav-item.active {
-  background: rgba(0,212,255,.13);
-  border-color: rgba(0,212,255,.35);
-  color: #00d4ff;
-  box-shadow: inset -3px 0 0 #00d4ff;
-}
-.wms-menu-divider { border: none; border-top: 1px solid rgba(0,212,255,.15); margin: 8px 16px; }
-.wms-action-btn {
-  display: flex; align-items: center; justify-content: center;
-  margin: 4px 10px; padding: 9px 14px;
-  border-radius: 10px; cursor: pointer;
-  font-size: .82rem; font-weight: 700;
-  border: 1px solid; transition: all .15s;
-}
-.wms-btn-theme {
-  background: rgba(0,212,255,.07); border-color: rgba(0,212,255,.25); color: #8aaac5;
-}
-.wms-btn-theme:hover { background: rgba(0,212,255,.15); color: #00d4ff; }
-.wms-btn-logout {
-  background: rgba(255,45,85,.08); border-color: rgba(255,45,85,.3); color: #ff2d55;
-}
-.wms-btn-logout:hover { background: rgba(255,45,85,.18); }
-
-/* ── Hamburger button ── */
-#wms-hamburger {
-  position: fixed; top: 14px; right: 14px; z-index: 10000;
-  width: 44px; height: 44px;
-  background: rgba(4,13,28,.92);
-  border: 1px solid rgba(0,212,255,.45); border-radius: 12px;
-  cursor: pointer; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 5px;
-  box-shadow: 0 0 20px rgba(0,212,255,.2), 0 4px 16px rgba(0,0,0,.5);
-  transition: all .2s; backdrop-filter: blur(12px);
-}
-#wms-hamburger:hover {
-  border-color: rgba(0,212,255,.8);
-  box-shadow: 0 0 28px rgba(0,212,255,.4);
-  transform: scale(1.06);
-}
-#wms-hamburger span {
-  display: block; width: 20px; height: 2px;
-  background: #00d4ff; border-radius: 2px;
-  box-shadow: 0 0 6px #00d4ff; transition: all .25s;
-}
-#wms-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-#wms-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-#wms-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.main .block-container { padding-top: 1rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -771,7 +677,6 @@ def init_state():
     if "user_role"  not in st.session_state: st.session_state.user_role  = None
     if "login_time" not in st.session_state: st.session_state.login_time = None
     if "theme"      not in st.session_state: st.session_state.theme      = "dark"
-    if "page"       not in st.session_state: st.session_state.page       = "📊 דשבורד"
 
 init_state()
 
@@ -2153,9 +2058,35 @@ lt   = st.session_state.login_time
 elapsed_min = int((datetime.now() - lt).total_seconds() / 60) if lt else 0
 
 ROLE_ICONS = {"מנהל WMS": "🔑", "צוות מחסן": "📦", "הנהלה": "📊"}
-df_side    = db_load_tasks()
+df_side = db_load_tasks()
 today_side = len(tasks_for_date(df_side, datetime.now()))
 ov_side    = len(get_overdue())
+
+st.sidebar.markdown(f"""
+<div style="padding:20px 0 12px;text-align:center">
+  <div style="font-size:2.4rem;margin-bottom:8px">{ROLE_ICONS.get(role,'👤')}</div>
+  <div style="font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;
+              color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.72rem;color:var(--txt2);margin-top:4px;font-family:var(--mono)">
+    ● מחובר {elapsed_min} דק'
+  </div>
+</div>
+<div style="background:var(--card2);border:1px solid var(--b1);border-radius:10px;
+            padding:10px 12px;margin-bottom:16px;font-family:var(--mono);font-size:.72rem">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">להיום:</span>
+    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="color:var(--txt2)">פיגורים:</span>
+    <span style="color:{'var(--red)' if ov_side else 'var(--green)'};font-weight:700">{ov_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between">
+    <span style="color:var(--txt2)">סה"כ:</span>
+    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
@@ -2164,97 +2095,28 @@ MENUS = {
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
 
+# Theme toggle button
+_is_dark = st.session_state.theme == "dark"
+if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+                     use_container_width=True, key="theme_toggle"):
+    st.session_state.theme = "light" if _is_dark else "dark"
+    st.rerun()
+
+# Inject theme CSS (light overrides dark defaults)
 inject_theme()
 
-# ── Read query params FIRST — this is how the menu communicates with Streamlit ─
-qp = st.query_params
-if "p" in qp:
-    _req = qp["p"]
-    st.query_params.clear()
-    if _req == "__logout__":
-        st.session_state.user_role  = None
-        st.session_state.login_time = None
-        st.session_state.page       = "📊 דשבורד"
-        st.rerun()
-    elif _req == "__theme__":
-        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
-        st.rerun()
-    elif _req in MENUS.get(role, []):
-        st.session_state.page = _req
-        st.rerun()
+choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
-if st.session_state.page not in MENUS[role]:
-    st.session_state.page = MENUS[role][0]
-choice = st.session_state.page
-
-_is_dark   = st.session_state.theme == "dark"
-_theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
-_ov_color  = "#ff2d55" if ov_side else "#00ff88"
-
-# Build nav items
-_nav_html = ""
-for item in MENUS[role]:
-    _cls = "wms-nav-item active" if item == choice else "wms-nav-item"
-    _nav_html += (
-        f'<div class="{_cls}" onclick="wmsGo(\'{item}\')">{item}</div>\n'
-    )
-
-st.markdown(f"""
-<div id="wms-overlay" onclick="wmsClose()"></div>
-
-<div id="wms-hamburger" onclick="wmsToggle()">
-  <span></span><span></span><span></span>
-</div>
-
-<div id="wms-menu">
-  <div style="padding:18px 16px 12px;text-align:center;
-              border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:8px">
-    <div style="font-size:1.8rem;margin-bottom:4px">{ROLE_ICONS.get(role,"👤")}</div>
-    <div style="font-family:Orbitron,monospace;font-weight:700;font-size:.8rem;
-                color:#00d4ff;letter-spacing:1px">{role}</div>
-    <div style="font-size:.65rem;color:#6b8aaa;margin-top:3px;font-family:monospace">
-      מחובר {elapsed_min} דק
-    </div>
-    <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;
-                font-family:monospace;font-size:.68rem">
-      <span style="color:#6b8aaa">היום: <b style="color:#00d4ff">{today_side}</b></span>
-      <span style="color:#6b8aaa">פיגורים: <b style="color:{_ov_color}">{ov_side}</b></span>
-      <span style="color:#6b8aaa">סה"כ: <b style="color:#e2eeff">{len(df_side)}</b></span>
-    </div>
-  </div>
-
-  {_nav_html}
-
-  <hr class="wms-menu-divider">
-  <div class="wms-action-btn wms-btn-theme" onclick="wmsGo('__theme__')">{_theme_lbl}</div>
-  <div class="wms-action-btn wms-btn-logout" onclick="wmsGo('__logout__')">🚪 התנתקות</div>
-</div>
-
-<script>
-var wmsOpen = false;
-function wmsToggle() {{ wmsOpen ? wmsClose() : wmsShow(); }}
-function wmsShow() {{
-  wmsOpen = true;
-  document.getElementById("wms-hamburger").classList.add("open");
-  document.getElementById("wms-menu").classList.add("open");
-  document.getElementById("wms-overlay").classList.add("open");
-}}
-function wmsClose() {{
-  wmsOpen = false;
-  document.getElementById("wms-hamburger").classList.remove("open");
-  document.getElementById("wms-menu").classList.remove("open");
-  document.getElementById("wms-overlay").classList.remove("open");
-}}
-function wmsGo(page) {{
-  var url = new URL(window.location.href);
-  url.searchParams.set("p", page);
-  window.location.href = url.toString();
-}}
-document.addEventListener("keydown", function(e) {{
-  if (e.key === "Escape" && wmsOpen) wmsClose();
-}});
-</script>
-""", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+if elapsed_min >= 50:
+    st.sidebar.markdown(
+        f'<div class="al al-amber" style="font-size:.78rem;padding:8px 12px">'
+        f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
+        unsafe_allow_html=True)
+if st.sidebar.button("🚪 התנתקות", use_container_width=True):
+    st.session_state.user_role = None
+    st.session_state.login_time = None
+    st.rerun()
 
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
@@ -2266,7 +2128,6 @@ PAGE_ICONS = {
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
-
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
 
