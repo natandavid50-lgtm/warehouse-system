@@ -210,8 +210,7 @@ label[data-testid="stWidgetLabel"] p { color: var(--txt) !important; font-weight
 ::-webkit-scrollbar-track { background: var(--bg0); }
 ::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
 
-/* Generic popover buttons (login etc) */
-div[data-testid="stPopover"]:not(#nav-popover) > button {
+div[data-testid="stPopover"] > button {
   width: 100% !important;
   min-height: 58px !important;
   margin-bottom: 6px !important;
@@ -223,7 +222,7 @@ div[data-testid="stPopover"]:not(#nav-popover) > button {
   text-align: right !important;
   transition: all .2s !important;
 }
-div[data-testid="stPopover"]:not(#nav-popover) > button:hover {
+div[data-testid="stPopover"] > button:hover {
   border-color: var(--b2) !important;
   background: var(--card2) !important;
 }
@@ -501,22 +500,55 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* ── Hide everything Streamlit ── */
+/* ── Hide only header/footer ── */
 header[data-testid="stHeader"],
-[data-testid="stSidebar"],
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"],
 #MainMenu, footer,
 [data-testid="stToolbar"] {
   display: none !important;
-  width: 0 !important;
-  height: 0 !important;
 }
 .main .block-container {
-  padding-top: 4px !important;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
+  padding-top: 1rem !important;
   max-width: 100% !important;
+}
+
+/* ── Sidebar dark styling ── */
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, #040d1c 0%, #020810 100%) !important;
+  border-left: 1px solid rgba(0,212,255,.25) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,.6) !important;
+}
+[data-testid="stSidebar"]::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00d4ff, #00ff88, transparent);
+  box-shadow: 0 0 12px #00d4ff;
+}
+[data-testid="stSidebar"] * { color: var(--txt) !important; }
+[data-testid="stSidebar"] .stRadio label {
+  padding: 11px 16px !important;
+  margin: 3px 0 !important;
+  border-radius: 12px !important;
+  font-size: .9rem !important;
+  font-weight: 600 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  transition: all .18s !important;
+  border: 1px solid transparent !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+  background: rgba(0,212,255,.1) !important;
+  border-color: rgba(0,212,255,.2) !important;
+  color: var(--cyan) !important;
+}
+[data-testid="stSidebar"]::-webkit-scrollbar { width: 3px; }
+[data-testid="stSidebar"]::-webkit-scrollbar-thumb { background: rgba(0,212,255,.3); border-radius: 3px; }
+[data-testid="collapsedControl"] {
+  background: #040d1c !important;
+  border: 1px solid rgba(0,212,255,.3) !important;
+  color: var(--cyan) !important;
 }
 
 /* ── Trigger button (top-right) ── */
@@ -2304,196 +2336,51 @@ MENUS = {
 
 inject_theme()
 
-if st.session_state.page not in MENUS[role]:
-    st.session_state.page = MENUS[role][0]
-choice = st.session_state.page
-
-# ── Top-right nav bar with popover ────────────────────────────────────────────
-_is_dark   = st.session_state.theme == "dark"
-_theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
-
-st.markdown(f"""
-<style>
-/* ── NAV POPOVER TRIGGER — fixed top-right ── */
-#nav-popover-container div[data-testid="stPopover"] > button,
-.nav-popover-wrap div[data-testid="stPopover"] > button {{
-  position: fixed !important;
-  top: 12px !important;
-  right: 12px !important;
-  z-index: 99999 !important;
-  background: rgba(4,13,28,.92) !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 12px !important;
-  color: var(--txt) !important;
-  font-family: var(--heb) !important;
-  font-size: .85rem !important;
-  font-weight: 700 !important;
-  padding: 8px 18px !important;
-  backdrop-filter: blur(16px) !important;
-  box-shadow: var(--glow-c), 0 4px 24px rgba(0,0,0,.5) !important;
-  transition: all .2s !important;
-  min-height: unset !important;
-  height: auto !important;
-  width: auto !important;
-  line-height: 1.4 !important;
-}}
-/* Popover panel dark */
-div[data-testid="stPopoverBody"] {{
-  background: #040d1c !important;
-  border: 1px solid var(--b2) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 0 0 1px rgba(0,212,255,.12),
-              0 24px 64px rgba(0,0,0,.85),
-              var(--glow-c) !important;
-  backdrop-filter: blur(32px) !important;
-  -webkit-backdrop-filter: blur(32px) !important;
-  padding: 6px !important;
-  min-width: 250px !important;
-  max-width: 280px !important;
-}}
-/* Force all text dark in popover */
-div[data-testid="stPopoverBody"],
-div[data-testid="stPopoverBody"] * {{
-  color: var(--txt) !important;
-  background-color: transparent !important;
-}}
-div[data-testid="stPopoverBody"] > div,
-div[data-testid="stPopoverBody"] > div > div {{
-  background: #040d1c !important;
-}}
-/* Nav buttons inside popover */
-div[data-testid="stPopoverBody"] .stButton > button {{
-  width: 100% !important;
-  text-align: right !important;
-  direction: rtl !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  border-radius: 10px !important;
-  color: var(--txt) !important;
-  font-size: .9rem !important;
-  font-weight: 600 !important;
-  padding: 10px 14px !important;
-  margin: 2px 0 !important;
-  transition: all .15s !important;
-  justify-content: flex-start !important;
-  box-shadow: none !important;
-}}
-div[data-testid="stPopoverBody"] .stButton > button:hover {{
-  background: rgba(0,212,255,.1) !important;
-  border-color: var(--b1) !important;
-  color: var(--cyan) !important;
-}}
-/* Active page button */
-div[data-testid="stPopoverBody"] .stButton > button[data-active="true"],
-div[data-testid="stPopoverBody"] .active-nav-btn > button {{
-  background: rgba(0,212,255,.13) !important;
-  border-color: var(--b2) !important;
-  color: var(--cyan) !important;
-  box-shadow: inset -3px 0 0 var(--cyan) !important;
-}}
-/* Divider in popover */
-div[data-testid="stPopoverBody"] hr {{
-  border-color: var(--b1) !important;
-  margin: 6px 0 !important;
-}}
-/* Info box in popover */
-.pop-info {{
-  padding: 8px 14px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid var(--b1);
-  font-family: var(--mono);
-  font-size: .68rem;
-  color: var(--txt2);
-  direction: rtl;
-}}
-.pop-role {{
-  font-family: var(--orb);
-  font-size: .78rem;
-  color: var(--cyan);
-  font-weight: 700;
-  margin-bottom: 4px;
-}}
-.pop-stats {{
-  display: flex;
-  gap: 12px;
-  margin-top: 4px;
-}}
-</style>
+# ── Sidebar ────────────────────────────────────────────────────────────────────
+_ov_color = "var(--red)" if ov_side else "var(--green)"
+st.sidebar.markdown(f"""
+<div style="padding:18px 4px 14px;text-align:center;border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
+  <div style="font-size:2rem;margin-bottom:6px">{ROLE_ICONS.get(role,"👤")}</div>
+  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;font-family:var(--mono)">מחובר {elapsed_min} דק</div>
+</div>
+<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:10px;
+            padding:8px 12px;margin:0 8px 12px;font-family:var(--mono);font-size:.68rem">
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+    <span style="color:var(--txt2)">היום:</span>
+    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+    <span style="color:var(--txt2)">פיגורים:</span>
+    <span style="color:{_ov_color};font-weight:700">{ov_side}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between">
+    <span style="color:var(--txt2)">סה"כ:</span>
+    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
+  </div>
+</div>
 """, unsafe_allow_html=True)
 
-with st.popover(f"☰  {choice}", use_container_width=False):
-    st.markdown("""
-<style>
-/* Dark background — target every wrapper layer Streamlit creates */
-[data-testid="stPopoverBody"] { background:#040d1c !important; }
-[data-testid="stPopoverBody"] > div { background:#040d1c !important; }
-[data-testid="stPopoverBody"] > div > div { background:#040d1c !important; }
-[data-testid="stPopoverBody"] > div > div > div { background:#040d1c !important; }
-/* All text white */
-[data-testid="stPopoverBody"] * { color:#e2eeff !important; }
-/* Nav buttons */
-[data-testid="stPopoverBody"] .stButton > button {
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  border-radius: 10px !important;
-  color: #e2eeff !important;
-  font-size: .9rem !important;
-  font-weight: 600 !important;
-  padding: 10px 14px !important;
-  width: 100% !important;
-  text-align: right !important;
-  direction: rtl !important;
-  box-shadow: none !important;
-}
-[data-testid="stPopoverBody"] .stButton > button:hover {
-  background: rgba(0,212,255,.1) !important;
-  border-color: rgba(0,212,255,.3) !important;
-  color: #00d4ff !important;
-}
-[data-testid="stPopoverBody"] hr { border-color: rgba(0,212,255,.18) !important; margin: 4px 0 !important; }
-[data-testid="stPopoverBody"] [data-testid="stHorizontalBlock"] { gap: 6px !important; }
-</style>
-""", unsafe_allow_html=True)
-    # Info header
-    st.markdown(f"""
-    <div class="pop-info">
-      <div class="pop-role">{ROLE_ICONS.get(role,"👤")} {role}</div>
-      <div>● מחובר {elapsed_min} דק'</div>
-      <div class="pop-stats">
-        <span style="color:var(--txt2)">היום: <b style="color:var(--cyan)">{today_side}</b></span>
-        <span style="color:var(--txt2)">פיגורים: <b style="color:{"var(--red)" if ov_side else "var(--green)"}">{ov_side}</b></span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
 
-    # Nav buttons — one per page
-    for _item in MENUS[role]:
-        _label = ("▶ " if _item == choice else "   ") + _item
-        if st.button(_label, key=f"pop_nav_{_item}", use_container_width=True):
-            st.session_state.page = _item
-            st.rerun()
+st.sidebar.markdown("---")
 
-    st.divider()
+_is_dark = st.session_state.theme == "dark"
+if st.sidebar.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+                     use_container_width=True, key="theme_toggle"):
+    st.session_state.theme = "light" if _is_dark else "dark"
+    st.rerun()
 
-    # Theme + logout
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button(_theme_lbl, key="pop_theme", use_container_width=True):
-            st.session_state.theme = "light" if _is_dark else "dark"
-            st.rerun()
-    with col2:
-        if st.button("🚪 יציאה", key="pop_logout", use_container_width=True):
-            st.session_state.user_role  = None
-            st.session_state.login_time = None
-            st.session_state.page       = "📊 דשבורד"
-            st.rerun()
+if elapsed_min >= 50:
+    st.sidebar.markdown(
+        f'<div class="al al-amber" style="font-size:.7rem;padding:6px 10px;margin:4px 0">'
+        f'הסשן יפוג בעוד {60-elapsed_min} דק</div>',
+        unsafe_allow_html=True)
 
-    if elapsed_min >= 50:
-        st.markdown(
-            f'<div style="background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.4);'
-            f'border-radius:8px;padding:5px 10px;font-size:.65rem;color:#ffb800;margin-top:6px;direction:rtl">'
-            f'⚠️ הסשן יפוג בעוד {60-elapsed_min} דק\'</div>',
-            unsafe_allow_html=True)
+if st.sidebar.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
+    st.session_state.user_role  = None
+    st.session_state.login_time = None
+    st.rerun()
 
 PAGE_ICONS = {
     "📊 דשבורד":          "📊 דשבורד בקרה",
