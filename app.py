@@ -500,12 +500,16 @@ div[data-testid="stHorizontalBlock"] > div:nth-child(1) button { border-top: 4px
 div[data-testid="stHorizontalBlock"] > div:nth-child(2) button { border-top: 4px solid var(--green) !important; }
 div[data-testid="stHorizontalBlock"] > div:nth-child(3) button { border-top: 4px solid var(--amber) !important; }
 
-/* ── Hide only header/footer ── */
+/* ── Hide header/footer/toolbar ── */
 header[data-testid="stHeader"],
 #MainMenu, footer,
-[data-testid="stToolbar"] {
-  display: none !important;
-}
+[data-testid="stToolbar"] { display: none !important; }
+
+/* ── Hide Streamlit's own collapse button (we replace it) ── */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+
+/* ── Main content full width ── */
 .main .block-container {
   padding-top: 1rem !important;
   max-width: 100% !important;
@@ -545,235 +549,45 @@ header[data-testid="stHeader"],
 }
 [data-testid="stSidebar"]::-webkit-scrollbar { width: 3px; }
 [data-testid="stSidebar"]::-webkit-scrollbar-thumb { background: rgba(0,212,255,.3); border-radius: 3px; }
-[data-testid="collapsedControl"] {
-  background: #040d1c !important;
-  border: 1px solid rgba(0,212,255,.3) !important;
-  color: var(--cyan) !important;
-}
 
-/* ── Trigger button (top-right) ── */
-#cp-trigger {
+/* ── Custom hamburger FAB ── */
+#wms-hamburger {
   position: fixed;
   top: 14px;
-  right: 16px;
+  right: 14px;
   z-index: 99999;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 18px 8px 14px;
-  background: rgba(10,28,53,.82);
-  border: 1px solid var(--b2);
+  width: 44px;
+  height: 44px;
+  background: rgba(4,13,28,.92);
+  border: 1px solid rgba(0,212,255,.45);
   border-radius: 12px;
   cursor: pointer;
-  font-family: var(--heb);
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--txt);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--glow-c), 0 4px 24px rgba(0,0,0,.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 0 20px rgba(0,212,255,.2), 0 4px 16px rgba(0,0,0,.5);
   transition: all .2s;
-  user-select: none;
+  backdrop-filter: blur(12px);
 }
-#cp-trigger:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  box-shadow: 0 0 20px rgba(0,212,255,.35), 0 4px 24px rgba(0,0,0,.5);
-  transform: translateY(-1px);
+#wms-hamburger:hover {
+  border-color: rgba(0,212,255,.8);
+  box-shadow: 0 0 28px rgba(0,212,255,.4), 0 4px 16px rgba(0,0,0,.5);
+  transform: scale(1.06);
 }
-#cp-trigger .cp-icon {
-  display: flex; flex-direction: column; gap: 4px;
-}
-#cp-trigger .cp-icon span {
-  display: block; width: 18px; height: 2px;
-  background: var(--cyan);
+#wms-hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #00d4ff;
   border-radius: 2px;
-  box-shadow: 0 0 6px var(--cyan);
+  box-shadow: 0 0 6px #00d4ff;
   transition: all .25s;
 }
-#cp-trigger.active .cp-icon span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-#cp-trigger.active .cp-icon span:nth-child(2) { opacity: 0; }
-#cp-trigger.active .cp-icon span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-
-/* ── Overlay ── */
-#cp-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,4,12,.7);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 99990;
-  animation: fadeIn .18s ease;
-}
-#cp-overlay.open { display: block; }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-
-/* ── Command Palette panel ── */
-#cp-panel {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -48%) scale(.96);
-  width: min(480px, 92vw);
-  z-index: 99998;
-  background: rgba(7,21,38,.92);
-  border: 1px solid var(--b2);
-  border-radius: 20px;
-  box-shadow: 0 0 0 1px rgba(0,212,255,.1),
-              0 24px 80px rgba(0,0,0,.8),
-              var(--glow-c);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  overflow: hidden;
-  opacity: 0;
-  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
-              opacity .18s ease;
-}
-#cp-panel.open {
-  display: block;
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-}
-
-/* Panel top bar */
-#cp-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid var(--b1);
-}
-#cp-role-info { display: flex; align-items: center; gap: 10px; }
-#cp-role-name {
-  font-family: var(--orb);
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--cyan);
-  letter-spacing: 1px;
-}
-#cp-session {
-  font-family: var(--mono);
-  font-size: .65rem;
-  color: var(--txt2);
-  margin-top: 2px;
-}
-#cp-stats {
-  display: flex;
-  gap: 14px;
-  font-family: var(--mono);
-  font-size: .7rem;
-}
-.cp-stat-lbl { color: var(--txt2); }
-.cp-stat-val { font-weight: 700; }
-
-/* Search box */
-#cp-search-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--b1);
-  background: rgba(0,212,255,.04);
-}
-#cp-search-wrap .cp-search-icon { font-size: 1rem; opacity: .5; }
-#cp-search {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: var(--heb);
-  font-size: .95rem;
-  color: var(--txt);
-  direction: rtl;
-}
-#cp-search::placeholder { color: var(--txt3); }
-
-/* Nav items list */
-#cp-list {
-  padding: 8px 10px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-#cp-list::-webkit-scrollbar { width: 3px; }
-#cp-list::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
-
-.cp-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: .92rem;
-  font-weight: 600;
-  color: var(--txt);
-  transition: all .14s;
-  border: 1px solid transparent;
-  margin-bottom: 3px;
-  direction: rtl;
-}
-.cp-item:hover, .cp-item.selected {
-  background: rgba(0,212,255,.1);
-  border-color: var(--b1);
-  color: var(--cyan);
-}
-.cp-item.active-page {
-  background: rgba(0,212,255,.13);
-  border-color: var(--b2);
-  color: var(--cyan);
-}
-.cp-item .cp-badge {
-  font-size: .6rem;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: rgba(0,212,255,.12);
-  border: 1px solid var(--b1);
-  color: var(--txt2);
-  font-family: var(--mono);
-}
-.cp-item.active-page .cp-badge {
-  background: rgba(0,212,255,.22);
-  color: var(--cyan);
-}
-
-/* Footer */
-#cp-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  border-top: 1px solid var(--b1);
-  background: rgba(0,0,0,.2);
-}
-.cp-footer-hint {
-  font-size: .65rem;
-  color: var(--txt3);
-  font-family: var(--mono);
-}
-.cp-footer-btns { display: flex; gap: 8px; }
-.cp-footer-btn {
-  font-size: .72rem;
-  padding: 5px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  border: 1px solid;
-  transition: all .15s;
-}
-.cp-btn-theme {
-  background: rgba(0,212,255,.07);
-  border-color: var(--b1);
-  color: var(--txt2);
-}
-.cp-btn-theme:hover { background: rgba(0,212,255,.15); color: var(--cyan); }
-.cp-btn-logout {
-  background: rgba(255,45,85,.08);
-  border-color: rgba(255,45,85,.3);
-  color: var(--red);
-}
-.cp-btn-logout:hover { background: rgba(255,45,85,.18); }
+#wms-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+#wms-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+#wms-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -2336,16 +2150,43 @@ MENUS = {
 
 inject_theme()
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# ── Hamburger button — clicks Streamlit sidebar toggle ─────────────────────────
+st.markdown("""
+<div id="wms-hamburger" onclick="toggleSidebar()">
+  <span></span><span></span><span></span>
+</div>
+<script>
+var sidebarOpen = true;
+function toggleSidebar() {
+  var ham = document.getElementById("wms-hamburger");
+  // Find Streamlit's hidden sidebar toggle button and click it
+  var btn = window.parent.document.querySelector('[data-testid="collapsedControl"] button, button[aria-label="Close sidebar"], button[aria-label="Open sidebar"], [data-testid="stSidebarCollapseButton"] button');
+  if (!btn) {
+    // fallback: find any button inside stSidebar header area
+    var btns = window.parent.document.querySelectorAll('[data-testid="stSidebar"] button');
+    if (btns.length) btn = btns[0];
+  }
+  if (btn) { btn.click(); }
+  sidebarOpen = !sidebarOpen;
+  ham.classList.toggle("is-open", !sidebarOpen);
+}
+</script>
+""", unsafe_allow_html=True)
+
+# ── Sidebar content ────────────────────────────────────────────────────────────
 _ov_color = "var(--red)" if ov_side else "var(--green)"
 st.sidebar.markdown(f"""
-<div style="padding:18px 4px 14px;text-align:center;border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
+<div style="padding:18px 4px 14px;text-align:center;
+            border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
   <div style="font-size:2rem;margin-bottom:6px">{ROLE_ICONS.get(role,"👤")}</div>
-  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;font-family:var(--mono)">מחובר {elapsed_min} דק</div>
+  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;
+              color:var(--cyan);letter-spacing:1px">{role}</div>
+  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;
+              font-family:var(--mono)">מחובר {elapsed_min} דק</div>
 </div>
-<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:10px;
-            padding:8px 12px;margin:0 8px 12px;font-family:var(--mono);font-size:.68rem">
+<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
+            border-radius:10px;padding:8px 12px;margin:0 8px 12px;
+            font-family:var(--mono);font-size:.68rem">
   <div style="display:flex;justify-content:space-between;margin-bottom:3px">
     <span style="color:var(--txt2)">היום:</span>
     <span style="color:var(--cyan);font-weight:700">{today_side}</span>
