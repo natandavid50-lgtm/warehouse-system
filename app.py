@@ -2166,37 +2166,39 @@ MENUS = {
 
 inject_theme()
 
-# Ensure page is valid
+# ── Read query params FIRST — this is how the menu communicates with Streamlit ─
+qp = st.query_params
+if "p" in qp:
+    _req = qp["p"]
+    st.query_params.clear()
+    if _req == "__logout__":
+        st.session_state.user_role  = None
+        st.session_state.login_time = None
+        st.session_state.page       = "📊 דשבורד"
+        st.rerun()
+    elif _req == "__theme__":
+        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+        st.rerun()
+    elif _req in MENUS.get(role, []):
+        st.session_state.page = _req
+        st.rerun()
+
 if st.session_state.page not in MENUS[role]:
     st.session_state.page = MENUS[role][0]
 choice = st.session_state.page
 
-# ── Handle nav clicks from hidden buttons ─────────────────────────────────────
-for _item in MENUS[role]:
-    if st.sidebar.button(_item, key=f"nav_{_item}"):
-        st.session_state.page = _item
-        st.rerun()
-
-_is_dark = st.session_state.theme == "dark"
-if st.sidebar.button("__theme__", key="nav_theme"):
-    st.session_state.theme = "light" if _is_dark else "dark"
-    st.rerun()
-if st.sidebar.button("__logout__", key="nav_logout"):
-    st.session_state.user_role  = None
-    st.session_state.login_time = None
-    st.session_state.page       = "📊 דשבורד"
-    st.rerun()
-
-# ── Build nav items HTML ───────────────────────────────────────────────────────
-_ov_color  = "#ff2d55" if ov_side else "#00ff88"
+_is_dark   = st.session_state.theme == "dark"
 _theme_lbl = "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה"
+_ov_color  = "#ff2d55" if ov_side else "#00ff88"
 
+# Build nav items
 _nav_html = ""
 for item in MENUS[role]:
     _cls = "wms-nav-item active" if item == choice else "wms-nav-item"
-    _nav_html += f'<div class="{_cls}" onclick="wmsNav(\"{item}\")">{item}</div>\n'
+    _nav_html += (
+        f'<div class="{_cls}" onclick="wmsGo(\'{item}\')">{item}</div>\n'
+    )
 
-# ── Render hamburger + custom menu panel ──────────────────────────────────────
 st.markdown(f"""
 <div id="wms-overlay" onclick="wmsClose()"></div>
 
@@ -2224,17 +2226,13 @@ st.markdown(f"""
   {_nav_html}
 
   <hr class="wms-menu-divider">
-
-  <div class="wms-action-btn wms-btn-theme" onclick="wmsClickSidebar('nav_theme')">{_theme_lbl}</div>
-  <div class="wms-action-btn wms-btn-logout" onclick="wmsClickSidebar('nav_logout')">🚪 התנתקות</div>
+  <div class="wms-action-btn wms-btn-theme" onclick="wmsGo('__theme__')">{_theme_lbl}</div>
+  <div class="wms-action-btn wms-btn-logout" onclick="wmsGo('__logout__')">🚪 התנתקות</div>
 </div>
 
 <script>
 var wmsOpen = false;
-
-function wmsToggle() {{
-  wmsOpen ? wmsClose() : wmsShow();
-}}
+function wmsToggle() {{ wmsOpen ? wmsClose() : wmsShow(); }}
 function wmsShow() {{
   wmsOpen = true;
   document.getElementById("wms-hamburger").classList.add("open");
@@ -2247,19 +2245,10 @@ function wmsClose() {{
   document.getElementById("wms-menu").classList.remove("open");
   document.getElementById("wms-overlay").classList.remove("open");
 }}
-function wmsNav(page) {{
-  // Click the matching hidden Streamlit sidebar button
-  var btns = window.parent.document.querySelectorAll("[data-testid=\"stSidebar\"] button");
-  for (var i = 0; i < btns.length; i++) {{
-    if (btns[i].innerText.trim() === page) {{ btns[i].click(); wmsClose(); return; }}
-  }}
-}}
-function wmsClickSidebar(key) {{
-  var btns = window.parent.document.querySelectorAll("[data-testid=\"stSidebar\"] button");
-  for (var i = 0; i < btns.length; i++) {{
-    if (btns[i].innerText.trim() === "__theme__" && key === "nav_theme") {{ btns[i].click(); return; }}
-    if (btns[i].innerText.trim() === "__logout__" && key === "nav_logout") {{ btns[i].click(); return; }}
-  }}
+function wmsGo(page) {{
+  var url = new URL(window.location.href);
+  url.searchParams.set("p", page);
+  window.location.href = url.toString();
 }}
 document.addEventListener("keydown", function(e) {{
   if (e.key === "Escape" && wmsOpen) wmsClose();
