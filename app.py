@@ -2429,17 +2429,24 @@ def page_transfer_value():
     # ── בלוקים לפי מחסן מקור ─────────────────────────────────────────────────────
     with col_blocks:
         sec_header("🔁 העברות לפי מחסן מקור")
+        st.markdown('<div class="al al-cyan" style="font-size:.82rem">👇 לחץ על שורת '
+                    'העברה כדי לפתוח את הפירוט שלה לפי מוצר.</div>', unsafe_allow_html=True)
 
         # רק תנועות שאינן בקטגוריות הסיכום (כלומר ההעברות בין מחסנים)
         tr_rows = [r for r in rows if (r.get("category") or "") not in ("השמדות", "חזרות לספקים")]
 
-        # קיבוץ: מקור -> {יעד: [sum, cnt]}
+        # קיבוץ: מקור -> {יעד: [sum, cnt]}  +  פירוט מסלול לפי מוצר (מעבר אחד)
         src = {}
+        route_detail = {}   # (fw,tw) -> {(sku,product):[qty,val,cnt]}
         for r in tr_rows:
             fw = _txt(r.get("from_wh")); tw = _txt(r.get("to_wh"))
             src.setdefault(fw, {}).setdefault(tw, [0.0, 0])
             src[fw][tw][0] += _num(r.get("move_cost"))
             src[fw][tw][1] += 1
+            rd = route_detail.setdefault((fw, tw), {})
+            k  = (_txt(r.get("sku")), _txt(r.get("product")))
+            d  = rd.setdefault(k, [0.0, 0.0, 0])
+            d[0] += _num(r.get("qty")); d[1] += _num(r.get("move_cost")); d[2] += 1
 
         src_sorted = sorted(src.items(),
                             key=lambda kv: -sum(v[0] for v in kv[1].values()))
@@ -2447,28 +2454,34 @@ def page_transfer_value():
         for fw, dests in src_sorted:
             src_total = sum(v[0] for v in dests.values())
             src_name  = wn(fw)
-            # כותרת בלוק
-            rows_html = ""
-            for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
-                desc = f"מ{src_name} ל{wn(tw)}"
-                rows_html += (
-                    f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                    f'padding:9px 14px;border-bottom:1px solid var(--b0)">'
-                    f'<div><span style="color:var(--txt);font-size:.84rem">{desc}</span>'
-                    f'<span style="font-family:var(--mono);color:var(--txt3);font-size:.7rem;'
-                    f'margin-right:8px">{fw or "—"}→{tw or "—"} · {c} תנועות</span></div>'
-                    f'<span style="font-family:var(--orb);color:var(--green);font-weight:700;'
-                    f'font-size:.95rem;white-space:nowrap">₪{v:,.0f}</span></div>')
+            # כותרת המקור
             st.markdown(
-                f'<div style="background:var(--card);border:1px solid var(--b1);'
-                f'border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)">'
-                f'<div style="background:rgba(255,184,0,.1);border-bottom:1px solid var(--b1);'
-                f'padding:11px 16px;display:flex;justify-content:space-between;align-items:center">'
+                f'<div style="background:rgba(255,184,0,.1);border:1px solid var(--b1);'
+                f'border-radius:12px;padding:11px 16px;margin:16px 0 8px;'
+                f'display:flex;justify-content:space-between;align-items:center">'
                 f'<span style="font-family:var(--orb);font-weight:700;color:var(--amber);'
                 f'font-size:.92rem">{src_name}</span>'
                 f'<span style="font-family:var(--orb);color:var(--amber);font-weight:700;'
-                f'font-size:.95rem">₪{src_total:,.0f}</span></div>'
-                f'{rows_html}</div>', unsafe_allow_html=True)
+                f'font-size:.95rem">₪{src_total:,.0f}</span></div>', unsafe_allow_html=True)
+
+            # שורת העברה לחיצה לכל יעד → פותחת פירוט לפי מוצר
+            for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
+                desc = f"מ{src_name} ל{wn(tw)}"
+                with st.expander(f"{desc}   ·   {fw or '—'}→{tw or '—'}   ·   "
+                                 f"{c} תנועות   —   ₪{v:,.0f}"):
+                    detail = route_detail.get((fw, tw), {})
+                    det_df = pd.DataFrame([{
+                        "מק\"ט":     k[0] or "—",
+                        "תאור מוצר": k[1] or "—",
+                        "כמות":      qv,
+                        "תנועות":    cn,
+                        "ערך (₪)":   f"₪{val:,.0f}",
+                    } for k, (qv, val, cn) in sorted(detail.items(), key=lambda x: -x[1][1])])
+                    st.markdown(
+                        f'<div style="color:var(--txt2);font-size:.78rem;margin-bottom:6px">'
+                        f'{len(detail)} מוצרים · {c} תנועות · סה"כ <b style="color:var(--green)">'
+                        f'₪{v:,.0f}</b></div>', unsafe_allow_html=True)
+                    st.dataframe(det_df, use_container_width=True, hide_index=True)
 
     # ════════════════════════════════════════════════════════════════════════════
     #  כניסה לגליונות (drill-down)
