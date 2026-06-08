@@ -2365,9 +2365,9 @@ def page_transfer_value():
            "#5dd8ff", "#c9a84c", "#d070ff", "#0088cc", "#8899aa",
            "#00b377", "#ff8c1a"]
 
-    # ── סיכומי קטגוריות ──────────────────────────────────────────────────────────
+    # ── סיכום ערך סופי (במבנה גליון "הערך") ──────────────────────────────────────
     st.markdown("---")
-    sec_header("🗂️ סיכומי קטגוריות")
+    sec_header("📊 סיכום ערך")
 
     cat_sum, cat_cnt = {}, {}
     for r in rows:
@@ -2376,89 +2376,111 @@ def page_transfer_value():
         cat_cnt[c] = cat_cnt.get(c, 0) + 1
     cat_sorted = sorted(cat_sum.items(), key=lambda x: -x[1])
 
-    cc1, cc2 = st.columns([3, 4])
-    with cc1:
-        for cat, val in cat_sorted:
-            cpct = (val / turn * 100) if turn else 0
-            st.markdown(
-                f'<div style="background:var(--card2);border:1px solid var(--b1);'
-                f'border-radius:12px;padding:14px 18px;margin-bottom:10px;'
-                f'border-right:4px solid var(--cyan)">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center">'
-                f'<span style="font-weight:700;color:var(--txt)">{cat}</span>'
-                f'<span style="font-family:var(--orb);color:var(--green);font-size:1.15rem">'
-                f'₪{val:,.0f}</span></div>'
-                f'<div style="color:var(--txt2);font-size:.74rem;margin-top:4px">'
-                f'{cat_cnt[cat]:,} תנועות'
-                f'{" · " + format(cpct, ".3f") + "% ממחזור" if turn else ""}</div>'
-                f'</div>', unsafe_allow_html=True)
+    CAT_COLORS = {
+        "השמדות":           "var(--red)",
+        "חזרות לספקים":     "var(--amber)",
+        "החזרות מלקוחות":   "var(--purple)",
+        "העברות בין מחסנים":"var(--cyan)",
+    }
 
-    with cc2:
-        if HAS_PLOTLY and cat_sorted:
-            fig_c = go.Figure(go.Bar(
-                x=[v for _, v in cat_sorted],
-                y=[c for c, _ in cat_sorted],
-                orientation="h",
-                marker=dict(color=PAL[:len(cat_sorted)]),
-                text=[f"₪{v:,.0f}" for _, v in cat_sorted],
-                textposition="auto",
-                textfont=dict(color="#040d1c", size=11, family="Orbitron"),
-                hovertemplate="<b>%{y}</b><br>₪%{x:,.0f}<extra></extra>"))
-            fig_c.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Heebo", color="#e2eeff"), height=max(260, 40*len(cat_sorted)),
-                margin=dict(t=10, b=20, l=0, r=0),
-                yaxis=dict(autorange="reversed", gridcolor="rgba(255,255,255,.04)"),
-                xaxis=dict(gridcolor="rgba(255,255,255,.04)"))
-            st.plotly_chart(fig_c, use_container_width=True)
+    # כרטיסי ערך סופי — אחד לכל קטגוריה
+    grid = st.columns(min(len(cat_sorted), 4) or 1)
+    for i, (cat, val) in enumerate(cat_sorted):
+        clr  = CAT_COLORS.get(cat, "var(--green)")
+        cpct = (val / turn * 100) if turn else 0
+        sub  = f"{cat_cnt[cat]:,} תנועות"
+        if turn:
+            sub += f" · {cpct:.3f}% ממחזור"
+        grid[i % len(grid)].markdown(
+            f'<div style="background:var(--card);border:1px solid var(--b1);border-radius:16px;'
+            f'padding:20px 18px;text-align:center;margin-bottom:12px;border-top:3px solid {clr};'
+            f'box-shadow:var(--shadow)">'
+            f'<div style="color:var(--txt2);font-size:.76rem;font-weight:700;letter-spacing:.5px">{cat}</div>'
+            f'<div style="font-family:var(--orb);font-size:1.7rem;font-weight:800;color:{clr};'
+            f'margin:10px 0;text-shadow:0 0 18px {clr}66">₪{val:,.0f}</div>'
+            f'<div style="color:var(--txt2);font-size:.7rem">{sub}</div>'
+            f'</div>', unsafe_allow_html=True)
 
-    # ── העברות בין מחסנים (לפי מסלול) ───────────────────────────────────────────
-    st.markdown("---")
-    sec_header("🔁 העברות בין מחסנים")
+    # שורת סה"כ כללי + מחזור + אחוז
+    grand = sum(cat_sum.values())
+    st.markdown(
+        f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
+        f'border:1px solid var(--b2);border-radius:14px;padding:18px 26px;margin:8px 0 4px;'
+        f'display:flex;justify-content:space-between;align-items:center;box-shadow:var(--glow-c)">'
+        f'<span style="font-weight:800;color:var(--txt);font-size:1.05rem">סה\"כ ערך העברות</span>'
+        f'<span style="font-family:var(--orb);font-size:1.6rem;color:var(--green);font-weight:800;'
+        f'text-shadow:0 0 18px rgba(0,255,136,.4)">₪{grand:,.0f}</span>'
+        f'</div>', unsafe_allow_html=True)
 
-    route_sum, route_cnt, route_desc = {}, {}, {}
-    for r in rows:
-        key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
-        route_sum[key] = route_sum.get(key, 0) + _num(r.get("move_cost"))
-        route_cnt[key] = route_cnt.get(key, 0) + 1
-        if key not in route_desc and _txt(r.get("wh_desc")):
-            route_desc[key] = _txt(r.get("wh_desc"))
-    routes_sorted = sorted(route_sum.items(), key=lambda x: -x[1])
+    if turn:
+        gp = grand / turn * 100
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;padding:7px 26px;'
+            f'color:var(--txt2);font-size:.82rem">'
+            f'<span>מחזור מכירות</span>'
+            f'<span style="font-family:var(--mono)">₪{turn:,.0f}</span></div>'
+            f'<div style="display:flex;justify-content:space-between;padding:0 26px 6px;'
+            f'color:var(--amber);font-size:.82rem;font-weight:700">'
+            f'<span>אחוז ירידת ערך ממחזור</span>'
+            f'<span style="font-family:var(--mono)">{gp:.3f}%</span></div>',
+            unsafe_allow_html=True)
 
-    # טבלה
-    route_rows = []
-    for (fw, tw), val in routes_sorted:
-        route_rows.append({
-            "ממחסן":   fw or "—",
-            "למחסן":   tw or "—",
-            "תיאור":   route_desc.get((fw, tw), ""),
-            "תנועות":  route_cnt[(fw, tw)],
-            "ערך (₪)": f"₪{val:,.0f}",
-        })
-    df_routes = pd.DataFrame(route_rows)
-    st.dataframe(df_routes, use_container_width=True, hide_index=True)
-
-    # גרף Top מסלולים
-    if HAS_PLOTLY and routes_sorted:
-        top_r = routes_sorted[:15]
-        labels = [f"{fw}→{tw}" for (fw, tw), _ in top_r]
-        fig_r = go.Figure(go.Bar(
-            x=[v for _, v in top_r],
-            y=labels,
+    # גרף סקירה — ערך לפי קטגוריה
+    if HAS_PLOTLY and cat_sorted:
+        fig_c = go.Figure(go.Bar(
+            x=[v for _, v in cat_sorted],
+            y=[c for c, _ in cat_sorted],
             orientation="h",
-            marker=dict(color=[v for _, v in top_r], colorscale="Teal"),
-            text=[f"₪{v:,.0f}" for _, v in top_r],
+            marker=dict(color=PAL[:len(cat_sorted)]),
+            text=[f"₪{v:,.0f}" for _, v in cat_sorted],
             textposition="auto",
-            textfont=dict(color="#040d1c", size=10, family="Orbitron"),
-            customdata=[route_desc.get(k, "") for k, _ in top_r],
-            hovertemplate="<b>%{y}</b><br>%{customdata}<br>₪%{x:,.0f}<extra></extra>"))
-        fig_r.update_layout(
+            textfont=dict(color="#040d1c", size=11, family="Orbitron"),
+            hovertemplate="<b>%{y}</b><br>₪%{x:,.0f}<extra></extra>"))
+        fig_c.update_layout(
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="Heebo", color="#e2eeff"), height=max(280, 32*len(top_r)),
-            margin=dict(t=10, b=20, l=0, r=0),
+            font=dict(family="Heebo", color="#e2eeff"),
+            height=max(220, 46 * len(cat_sorted)),
+            margin=dict(t=14, b=20, l=0, r=0),
             yaxis=dict(autorange="reversed", gridcolor="rgba(255,255,255,.04)"),
             xaxis=dict(gridcolor="rgba(255,255,255,.04)"))
-        st.plotly_chart(fig_r, use_container_width=True)
+        st.plotly_chart(fig_c, use_container_width=True)
+
+    # ── כניסה לגליונות (drill-down לכל קטגוריה) ───────────────────────────────────
+    st.markdown("---")
+    sec_header("📂 כניסה לגליונות")
+    st.markdown('<div class="al al-cyan">👇 לחץ על קטגוריה כדי לראות את פירוט '
+                'ההעברות שלה (ממחסן → למחסן).</div>', unsafe_allow_html=True)
+
+    for cat, cval in cat_sorted:
+        crows = [r for r in rows if (r.get("category") or "אחר") == cat]
+        with st.expander(f"📄 {cat}  —  ₪{cval:,.0f}  ·  {len(crows):,} תנועות"):
+            # סיכום מסלולים בתוך הקטגוריה
+            rs, rc, rd = {}, {}, {}
+            for r in crows:
+                key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
+                rs[key] = rs.get(key, 0) + _num(r.get("move_cost"))
+                rc[key] = rc.get(key, 0) + 1
+                if key not in rd and _txt(r.get("wh_desc")):
+                    rd[key] = _txt(r.get("wh_desc"))
+
+            for (fw, tw), v in sorted(rs.items(), key=lambda x: -x[1]):
+                desc = rd.get((fw, tw), "")
+                desc_html = (f'<span style="color:var(--txt2);font-size:.78rem;'
+                             f'margin-right:8px">· {desc}</span>') if desc else ""
+                st.markdown(
+                    f'<div style="background:var(--card2);border:1px solid var(--b0);'
+                    f'border-radius:10px;padding:12px 16px;margin-bottom:7px;'
+                    f'border-right:4px solid var(--cyan);display:flex;'
+                    f'justify-content:space-between;align-items:center">'
+                    f'<div>'
+                    f'<span style="font-family:var(--mono);color:var(--cyan);font-weight:700">'
+                    f'{fw or "—"} → {tw or "—"}</span>{desc_html}'
+                    f'<div style="color:var(--txt3);font-size:.7rem;margin-top:3px">'
+                    f'{rc[(fw, tw)]:,} תנועות</div>'
+                    f'</div>'
+                    f'<span style="font-family:var(--orb);color:var(--green);'
+                    f'font-weight:700;font-size:1.05rem">₪{v:,.0f}</span>'
+                    f'</div>', unsafe_allow_html=True)
 
     # ── ייצוא + ניקוי ────────────────────────────────────────────────────────────
     st.markdown("---")
