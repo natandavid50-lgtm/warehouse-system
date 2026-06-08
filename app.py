@@ -717,6 +717,53 @@ def db_save_excel_table(file_name, table_data, uploaded_by):
         "table_data":  table_data,
     }).execute()
 
+# ── Inventory Value (ערך מלאי) ───────────────────────────────────────────────
+def db_load_inventory_value() -> list:
+    """טוען את כל פריטי המלאי. מחזיר list של dicts."""
+    try:
+        supabase = get_conn()
+        res = supabase.table("inventory_value").select("*").order("id").execute()
+        return res.data if res.data else []
+    except Exception:
+        return []
+
+def db_add_inventory_value(sku, product_name, category, quantity, unit_cost):
+    supabase = get_conn()
+    supabase.table("inventory_value").insert({
+        "sku":          sku,
+        "product_name": product_name,
+        "category":     category,
+        "quantity":     float(quantity),
+        "unit_cost":    float(unit_cost),
+    }).execute()
+
+def db_update_inventory_value(record_id, sku, product_name, category, quantity, unit_cost):
+    supabase = get_conn()
+    supabase.table("inventory_value").update({
+        "sku":          sku,
+        "product_name": product_name,
+        "category":     category,
+        "quantity":     float(quantity),
+        "unit_cost":    float(unit_cost),
+    }).eq("id", record_id).execute()
+
+def db_delete_inventory_value(record_id):
+    supabase = get_conn()
+    supabase.table("inventory_value").delete().eq("id", record_id).execute()
+
+def db_clear_inventory_value():
+    """מוחק את כל הפריטים (לפני העלאת אקסל חדש שמחליף הכל)."""
+    supabase = get_conn()
+    supabase.table("inventory_value").delete().neq("id", 0).execute()
+
+def db_bulk_insert_inventory_value(rows: list):
+    """הוספת מספר שורות בבת אחת (מהעלאת אקסל). rows = list של dicts."""
+    if not rows:
+        return
+    supabase = get_conn()
+    for i in range(0, len(rows), 500):           # batch של 500 כדי לא לחרוג
+        supabase.table("inventory_value").insert(rows[i:i + 500]).execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2092,6 +2139,304 @@ def page_external_storage():
                             st.rerun()
 
 
+def page_inventory_value():
+    import math
+
+    # ── שער גישה: מנהל WMS בלבד ──────────────────────────────────────────────
+    if st.session_state.user_role != "מנהל WMS":
+        st.markdown(
+            '<div class="al al-red">🔒 <b>אזור זה זמין למנהל WMS בלבד.</b></div>',
+            unsafe_allow_html=True)
+        return
+
+    sec_header("💰 ערך מלאי")
+
+    def _num(v):
+        try:
+            x = float(v)
+            return 0.0 if math.isnan(x) else x
+        except (TypeError, ValueError):
+            return 0.0
+
+    items = db_load_inventory_value()
+
+    # ── KPIs ────────────────────────────────────────────────────────────────
+    total_value = sum(_num(r.get("quantity")) * _num(r.get("unit_cost")) for r in items)
+    total_qty   = sum(_num(r.get("quantity")) for r in items)
+    n_items     = len(items)
+    cats        = {(r.get("category") or "ללא קטגוריה") for r in items}
+    avg_value   = total_value / n_items if n_items else 0
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.markdown(kpi_card(f"₪{total_value:,.0f}", "סה\"כ ערך מלאי",
+                         sub=f"{len(cats)} קטגוריות" if items else "",
+                         icon="💰", kind="green", color="var(--green)"), unsafe_allow_html=True)
+    k2.markdown(kpi_card(f"{n_items:,}",        "מספר פריטים",
+                         icon="🏷️", kind="blue"), unsafe_allow_html=True)
+    k3.markdown(kpi_card(f"{total_qty:,.0f}",   "סה\"כ יחידות",
+                         icon="📦", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
+    k4.markdown(kpi_card(f"₪{avg_value:,.0f}",  "ערך ממוצע לפריט",
+                         icon="📊", kind="purple", color="var(--purple)"), unsafe_allow_html=True)
+
+    # ── DataFrame מחושב לשימוש בגרפים ובטבלה ──────────────────────────────────
+    if items:
+        df_iv = pd.DataFrame([{
+            "id":         r.get("id"),
+            "מק\"ט":      r.get("sku") or "",
+            "שם מוצר":    r.get("product_name") or "",
+            "קטגוריה":    r.get("category") or "ללא קטגוריה",
+            "כמות":       _num(r.get("quantity")),
+            "מחיר ליח׳":  _num(r.get("unit_cost")),
+            "ערך כולל":   _num(r.get("quantity")) * _num(r.get("unit_cost")),
+        } for r in items])
+    else:
+        df_iv = pd.DataFrame()
+
+    # ── גרפים ─────────────────────────────────────────────────────────────────
+    if items and HAS_PLOTLY:
+        st.markdown("---")
+        g1, g2 = st.columns(2)
+
+        with g1:
+            sec_header("📊 ערך לפי קטגוריה")
+            by_cat = (df_iv.groupby("קטגוריה")["ערך כולל"]
+                      .sum().sort_values(ascending=False))
+            PAL = ["#00d4ff", "#00ff88", "#ffb800", "#bf5af2", "#ff2d55",
+                   "#5dd8ff", "#c9a84c", "#d070ff", "#00ff88", "#8899aa"]
+            fig_cat = go.Figure(go.Pie(
+                labels=by_cat.index.tolist(),
+                values=by_cat.values.tolist(),
+                hole=.6,
+                marker_colors=PAL[:len(by_cat)],
+                textinfo="label+percent",
+                textfont=dict(size=11, color="#e2eeff"),
+                hovertemplate="<b>%{label}</b><br>₪%{value:,.0f}<extra></extra>",
+            ))
+            fig_cat.add_annotation(
+                text=f"<b>₪{total_value:,.0f}</b><br><span style='font-size:10'>סה\"כ</span>",
+                x=.5, y=.5, font_size=15, font_color="#00ff88", showarrow=False)
+            fig_cat.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", height=300,
+                margin=dict(t=10, b=0, l=0, r=0),
+                legend=dict(bgcolor="rgba(0,0,0,0)", font_color="#e2eeff", font_size=11),
+                font=dict(family="Heebo"))
+            st.plotly_chart(fig_cat, use_container_width=True)
+
+        with g2:
+            sec_header("🏆 10 פריטים מובילים לפי ערך")
+            top = df_iv.sort_values("ערך כולל", ascending=False).head(10)
+            labels = [(n or s or "—")[:22] for n, s in zip(top["שם מוצר"], top["מק\"ט"])]
+            fig_top = go.Figure(go.Bar(
+                x=top["ערך כולל"].tolist(),
+                y=labels,
+                orientation="h",
+                marker=dict(color=top["ערך כולל"].tolist(), colorscale="Teal"),
+                text=[f"₪{v:,.0f}" for v in top["ערך כולל"]],
+                textposition="auto",
+                textfont=dict(color="#040d1c", size=11, family="Orbitron"),
+                hovertemplate="<b>%{y}</b><br>₪%{x:,.0f}<extra></extra>",
+            ))
+            fig_top.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Heebo", color="#e2eeff"), height=300,
+                margin=dict(t=10, b=20, l=0, r=0),
+                yaxis=dict(autorange="reversed", gridcolor="rgba(255,255,255,.04)"),
+                xaxis=dict(gridcolor="rgba(255,255,255,.04)"))
+            st.plotly_chart(fig_top, use_container_width=True)
+
+    # ── הזנה ידנית ─────────────────────────────────────────────────────────────
+    st.markdown("---")
+    sec_header("➕ הוספת פריט ידנית")
+    with st.form("inv_value_add", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            a_sku  = st.text_input("🏷️ מק\"ט",  placeholder="קוד פריט")
+            a_name = st.text_input("📦 שם מוצר", placeholder="תיאור הפריט")
+        with c2:
+            a_cat  = st.text_input("🗂️ קטגוריה", placeholder="לדוגמה: חומרי גלם")
+            a_qty  = st.number_input("🔢 כמות", min_value=0.0, step=1.0, value=0.0)
+        with c3:
+            a_cost = st.number_input("💵 מחיר ליחידה (₪)", min_value=0.0, step=0.5, value=0.0)
+            st.markdown(
+                f'<div style="margin-top:30px;padding:10px;background:var(--card2);'
+                f'border:1px solid var(--b1);border-radius:10px;text-align:center">'
+                f'<span style="color:var(--txt2);font-size:.72rem">ערך כולל</span><br>'
+                f'<span style="font-family:var(--orb);color:var(--green);font-size:1.2rem">'
+                f'₪{a_qty * a_cost:,.0f}</span></div>', unsafe_allow_html=True)
+
+        if st.form_submit_button("💾 הוסף פריט", use_container_width=True):
+            if not a_sku.strip() and not a_name.strip():
+                st.error("⚠️ יש להזין לפחות מק\"ט או שם מוצר.")
+            else:
+                db_add_inventory_value(
+                    a_sku.strip(), a_name.strip(),
+                    a_cat.strip() or "ללא קטגוריה", a_qty, a_cost)
+                st.success("✅ הפריט נוסף!")
+                st.rerun()
+
+    # ── העלאת אקסל ──────────────────────────────────────────────────────────────
+    st.markdown("---")
+    sec_header("📤 העלאת טבלת אקסל")
+    st.markdown(
+        '<div class="al al-cyan">ℹ️ העלה קובץ אקסל, מפה את העמודות, ושמור. '
+        'אפשר לבחור אם להחליף את כל הנתונים הקיימים או להוסיף אליהם.</div>',
+        unsafe_allow_html=True)
+
+    header_row = st.number_input(
+        "מספר שורת הכותרות בקובץ (0 = השורה הראשונה)",
+        min_value=0, max_value=20, value=0, step=1,
+        help="אם בקובץ שלך יש שורת כותרת/לוגו מעל שמות העמודות, הגדל את הערך.")
+
+    up = st.file_uploader("📁 בחר קובץ (.xlsx / .xls)", type=["xlsx", "xls"],
+                          key="inv_value_uploader")
+
+    if up is not None:
+        try:
+            df_up = pd.read_excel(up, engine="openpyxl", header=int(header_row))
+            df_up = df_up.dropna(axis=1, how="all").dropna(axis=0, how="all")
+            cols  = list(df_up.columns)
+
+            st.markdown(
+                f'<div class="al al-cyan">👁️ <b>תצוגה מקדימה</b> — '
+                f'{len(df_up)} שורות, {len(cols)} עמודות</div>', unsafe_allow_html=True)
+            st.dataframe(df_up.head(8), use_container_width=True, hide_index=True)
+
+            # ── זיהוי אוטומטי של עמודות ──
+            def _guess(keys):
+                for c in cols:
+                    cl = str(c).strip().lower()
+                    if any(k in cl for k in keys):
+                        return c
+                return None
+
+            g_sku  = _guess(["sku", "מק\"ט", "מקט", "ברקוד", "barcode", "קוד"])
+            g_name = _guess(["שם", "תיאור", "מוצר", "פריט", "name", "description"])
+            g_cat  = _guess(["קטגוריה", "קבוצה", "סוג", "category"])
+            g_qty  = _guess(["כמות", "יתרה", "מלאי", "qty", "quantity", "units", "יחיד"])
+            g_cost = _guess(["מחיר", "עלות", "cost", "price", "unit"])
+
+            NONE = "— ללא —"
+            opt_all = [NONE] + cols
+
+            def _idx(lst, val): return lst.index(val) if val in lst else 0
+
+            st.markdown("**מיפוי עמודות:**")
+            m1, m2, m3 = st.columns(3)
+            map_sku  = m1.selectbox("🏷️ מק\"ט",     opt_all, index=_idx(opt_all, g_sku),  key="m_sku")
+            map_name = m2.selectbox("📦 שם מוצר",   opt_all, index=_idx(opt_all, g_name), key="m_name")
+            map_cat  = m3.selectbox("🗂️ קטגוריה",   opt_all, index=_idx(opt_all, g_cat),  key="m_cat")
+            m4, m5 = st.columns(2)
+            map_qty  = m4.selectbox("🔢 כמות *",          cols, index=_idx(cols, g_qty),  key="m_qty")
+            map_cost = m5.selectbox("💵 מחיר ליחידה *",  cols, index=_idx(cols, g_cost), key="m_cost")
+
+            replace = st.checkbox("🔄 החלף את כל הנתונים הקיימים", value=True,
+                                  help="אם לא מסומן — השורות יתווספו לקיימות.")
+
+            if st.button("💾 ייבא לטבלה", key="inv_value_import", use_container_width=True):
+                rows = []
+                for _, r in df_up.iterrows():
+                    qty  = _num(r.get(map_qty))
+                    cost = _num(r.get(map_cost))
+
+                    def _txt(colname):
+                        if colname == NONE:
+                            return ""
+                        v = r.get(colname)
+                        return "" if pd.isna(v) else str(v).strip()
+
+                    sku  = _txt(map_sku)
+                    name = _txt(map_name)
+                    catg = _txt(map_cat) or "ללא קטגוריה"
+
+                    if not sku and not name and qty == 0 and cost == 0:
+                        continue  # דלג על שורות ריקות
+
+                    rows.append({"sku": sku, "product_name": name, "category": catg,
+                                 "quantity": qty, "unit_cost": cost})
+
+                if not rows:
+                    st.warning("⚠️ לא נמצאו שורות תקינות לייבוא.")
+                else:
+                    if replace:
+                        db_clear_inventory_value()
+                    db_bulk_insert_inventory_value(rows)
+                    st.success(f"✅ יובאו {len(rows)} שורות!")
+                    st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ שגיאה בקריאת הקובץ: {e}")
+
+    # ── טבלת נתונים + עריכה/מחיקה + ייצוא ──────────────────────────────────────
+    if items:
+        st.markdown("---")
+        sec_header("📋 כל הפריטים")
+
+        show = df_iv.drop(columns=["id"]).copy()
+        show["מחיר ליח׳"] = show["מחיר ליח׳"].map(lambda v: f"₪{v:,.2f}")
+        show["ערך כולל"]  = show["ערך כולל"].map(lambda v: f"₪{v:,.0f}")
+        st.dataframe(show, use_container_width=True, hide_index=True)
+
+        # ── עריכה / מחיקה של פריט בודד ──
+        with st.expander("✏️ ערוך / מחק פריט"):
+            label_map = {
+                f'{(r.get("sku") or "—")} · {(r.get("product_name") or "—")}': r.get("id")
+                for r in items
+            }
+            pick = st.selectbox("בחר פריט", list(label_map.keys()), key="iv_edit_pick")
+            rid  = label_map[pick]
+            cur  = next((r for r in items if r.get("id") == rid), {})
+
+            with st.form(f"iv_edit_{rid}"):
+                e1, e2, e3 = st.columns(3)
+                with e1:
+                    e_sku  = st.text_input("🏷️ מק\"ט",  value=cur.get("sku") or "")
+                    e_name = st.text_input("📦 שם מוצר", value=cur.get("product_name") or "")
+                with e2:
+                    e_cat  = st.text_input("🗂️ קטגוריה", value=cur.get("category") or "")
+                    e_qty  = st.number_input("🔢 כמות", min_value=0.0, step=1.0,
+                                             value=_num(cur.get("quantity")))
+                with e3:
+                    e_cost = st.number_input("💵 מחיר ליחידה (₪)", min_value=0.0, step=0.5,
+                                             value=_num(cur.get("unit_cost")))
+
+                b1, b2 = st.columns(2)
+                save_b = b1.form_submit_button("💾 שמור", use_container_width=True)
+                del_b  = b2.form_submit_button("🗑️ מחק",  use_container_width=True)
+
+                if save_b:
+                    db_update_inventory_value(
+                        rid, e_sku.strip(), e_name.strip(),
+                        e_cat.strip() or "ללא קטגוריה", e_qty, e_cost)
+                    st.success("✅ עודכן!")
+                    st.rerun()
+                if del_b:
+                    db_delete_inventory_value(rid)
+                    st.success("🗑️ נמחק.")
+                    st.rerun()
+
+        # ── ייצוא לאקסל ──
+        buf = io.BytesIO()
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            df_iv.drop(columns=["id"]).to_excel(w, index=False, sheet_name="ערך מלאי")
+        st.download_button(
+            "📥 ייצוא ערך מלאי — Excel",
+            buf.getvalue(), "ערך_מלאי.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True, key="iv_export_btn")
+
+        # ── אזור מסוכן: ניקוי הכל ──
+        with st.expander("🧨 איפוס מלא"):
+            st.markdown('<div class="al al-red">⚠️ פעולה זו תמחק את <b>כל</b> פריטי המלאי.</div>',
+                        unsafe_allow_html=True)
+            if st.button("🗑️ מחק את כל הפריטים", key="iv_clear_all", use_container_width=True):
+                db_clear_inventory_value()
+                st.success("🗑️ כל הפריטים נמחקו.")
+                st.rerun()
+    else:
+        st.markdown('<div class="al al-amber">ℹ️ <b>אין עדיין פריטים.</b> '
+                    'הוסף ידנית או העלה קובץ אקסל למעלה.</div>', unsafe_allow_html=True)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2112,7 +2457,7 @@ ov_side    = len(get_overdue())
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+                  "📦 ספירות מלאי","💰 ערך מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
@@ -2178,6 +2523,7 @@ PAGE_ICONS = {
     "➕ הוספת משימה":     "➕ הוספת משימה חדשה",
     "⚙️ ניהול משימות":    "⚙️ ניהול ועריכת משימות",
     "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
+    "💰 ערך מלאי":        "💰 ניהול ערך מלאי",
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
@@ -2195,6 +2541,7 @@ if   choice == "📊 דשבורד":          page_dashboard()
 elif choice == "📋 סידור עבודה":     page_work()
 elif choice == "📅 לוח שנה":         page_calendar()
 elif choice == "📦 ספירות מלאי":     page_inventory()
+elif choice == "💰 ערך מלאי":        page_inventory_value()
 elif choice == "➕ הוספת משימה":     page_add()
 elif choice == "⚙️ ניהול משימות":    page_manage()
 elif choice == "🔬 אנליטיקס":        page_analytics()
