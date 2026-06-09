@@ -774,8 +774,7 @@ def db_load_hidden_routes() -> set:
 
 def db_add_hidden_route(from_wh, to_wh):
     supabase = get_conn()
-    supabase.table("hidden_routes").upsert(
-        {"from_wh": from_wh, "to_wh": to_wh}, on_conflict="from_wh,to_wh").execute()
+    supabase.table("hidden_routes").insert({"from_wh": from_wh, "to_wh": to_wh}).execute()
 
 def db_remove_hidden_route(from_wh, to_wh):
     supabase = get_conn()
@@ -2566,12 +2565,16 @@ def page_transfer_value():
                                  default=default_hidden)
             if st.form_submit_button("💾 שמור תצוגה", use_container_width=True):
                 new_hidden = {route_label[l] for l in sel}
-                for ft in new_hidden - hidden_routes:
-                    db_add_hidden_route(ft[0], ft[1])
-                for ft in hidden_routes - new_hidden:
-                    db_remove_hidden_route(ft[0], ft[1])
-                st.success("✅ התצוגה עודכנה!")
-                st.rerun()
+                try:
+                    for ft in new_hidden - hidden_routes:
+                        db_add_hidden_route(ft[0], ft[1])
+                    for ft in hidden_routes - new_hidden:
+                        db_remove_hidden_route(ft[0], ft[1])
+                    st.success("✅ התצוגה עודכנה!")
+                    st.rerun()
+                except Exception as e:
+                    st.error("❌ לא ניתן לשמור. ודא שהרצת את hidden_routes_supabase.sql "
+                             "ב-Supabase (יצירת הטבלה + כיבוי RLS).")
 
         if hidden_routes:
             st.markdown(f'<div style="color:var(--txt2);font-size:.78rem;margin-top:6px">'
