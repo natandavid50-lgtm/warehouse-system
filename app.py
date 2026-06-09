@@ -2141,11 +2141,8 @@ def page_external_storage():
 def page_transfer_value():
     import math
 
-    # ── שער גישה: מנהל WMS בלבד ──────────────────────────────────────────────
-    if st.session_state.user_role != "מנהל WMS":
-        st.markdown('<div class="al al-red">🔒 <b>אזור זה זמין למנהל WMS בלבד.</b></div>',
-                    unsafe_allow_html=True)
-        return
+    role       = st.session_state.user_role
+    is_manager = (role == "מנהל WMS")
 
     def _num(v):
         try:
@@ -2174,9 +2171,35 @@ def page_transfer_value():
         c = _txt(code)
         return WH_NAMES.get(c, c or "—")
 
-    sec_header("💰 ערך מלאי")
+    # ── CSS לאריחים צפים ─────────────────────────────────────────────────────────
+    st.markdown("""
+    <style>
+    div[class*="st-key-ivtile_"] button {
+        min-height: 120px !important;
+        border-radius: 18px !important;
+        border: 1px solid var(--b2) !important;
+        background: linear-gradient(135deg, var(--card), var(--card2)) !important;
+        display: flex !important; flex-direction: column !important;
+        align-items: center !important; justify-content: center !important;
+        gap: 4px !important; line-height: 1.35 !important;
+        font-family: var(--orb) !important; color: var(--txt2) !important;
+        box-shadow: var(--shadow) !important; transition: all .18s !important;
+    }
+    div[class*="st-key-ivtile_"] button:hover {
+        border-color: var(--cyan) !important;
+        box-shadow: var(--glow-c) !important;
+        transform: translateY(-3px) !important;
+    }
+    div[class*="st-key-ivtile_"] button p { font-size: .9rem !important; margin: 0 !important; }
+    div[class*="st-key-ivtile_"] button p strong {
+        font-size: 1.45rem !important; color: var(--green) !important;
+        text-shadow: 0 0 14px rgba(0,255,136,.45);
+    }
+    </style>""", unsafe_allow_html=True)
 
-    # ── בורר חודש ──────────────────────────────────────────────────────────────
+    sec_header("🚧 דף בבניה")
+
+    # ── בורר חודש (לכל המשתמשים) ──────────────────────────────────────────────
     months = db_movement_months()
     today = datetime.now()
     cur_month = f"{today.year}-{today.month:02d}"
@@ -2195,7 +2218,7 @@ def page_transfer_value():
     rows = db_load_movements(sel_month)
     turn = db_load_turnover(sel_month)
 
-    # ── טופס מחזור (נשתמש בו בכמה מקומות) ──────────────────────────────────────
+    # ── טפסי ניהול (זמינים למנהל בלבד) ─────────────────────────────────────────
     def render_turnover_form(expanded):
         with st.expander(f"📈 עדכון מחזור מכירות — {month_label(sel_month)}", expanded=expanded):
             with st.form("turnover_form"):
@@ -2207,7 +2230,6 @@ def page_transfer_value():
                     st.success("✅ נשמר!")
                     st.rerun()
 
-    # ── מעלה קבצים (נשתמש בו בכמה מקומות) ──────────────────────────────────────
     def render_uploader():
         st.markdown(
             '<div class="al al-cyan">ℹ️ העלה את קובץ האקסל החודשי. המערכת מזהה אוטומטית '
@@ -2318,32 +2340,28 @@ def page_transfer_value():
             st.error(f"❌ שגיאה בקריאת הקובץ: {e}")
 
     # ════════════════════════════════════════════════════════════════════════════
-    #  אין נתונים — הצג מעלה קבצים בלבד
+    #  אין נתונים
     # ════════════════════════════════════════════════════════════════════════════
     if not rows:
-        render_turnover_form(expanded=False)
+        if is_manager:
+            render_turnover_form(expanded=False)
+            st.markdown("---")
+            sec_header("📤 העלאת קובץ העברות חודשי")
+            render_uploader()
         st.markdown("---")
-        sec_header("📤 העלאת קובץ העברות חודשי")
-        render_uploader()
-        st.markdown("---")
-        st.markdown('<div class="al al-amber">ℹ️ <b>אין עדיין נתונים לחודש זה.</b> '
-                    'העלה קובץ למעלה.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="al al-amber">ℹ️ <b>אין עדיין נתונים לחודש זה.</b></div>',
+                    unsafe_allow_html=True)
         return
 
     # ════════════════════════════════════════════════════════════════════════════
     #  חישובים
     # ════════════════════════════════════════════════════════════════════════════
-    def pct_of_turn(v):
-        return (v / turn * 100) if turn else None
-
-    # סכומי קטגוריות
     cat_sum, cat_cnt = {}, {}
     for r in rows:
         c = r.get("category") or "אחר"
         cat_sum[c] = cat_sum.get(c, 0) + _num(r.get("move_cost"))
         cat_cnt[c] = cat_cnt.get(c, 0) + 1
 
-    # מסלולים (לכל הקטגוריות) — לחישוב LIMB וכו'
     route_sum = {}
     for r in rows:
         key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
@@ -2351,140 +2369,120 @@ def page_transfer_value():
 
     grand = sum(cat_sum.values())
 
-    # ════════════════════════════════════════════════════════════════════════════
-    #  כותרת הדו"ח
-    # ════════════════════════════════════════════════════════════════════════════
+    # קיבוץ מקור→יעד + פירוט מוצר (מעבר אחד)
+    src, route_detail = {}, {}
+    for r in rows:
+        fw = _txt(r.get("from_wh")); tw = _txt(r.get("to_wh"))
+        src.setdefault(fw, {}).setdefault(tw, [0.0, 0])
+        src[fw][tw][0] += _num(r.get("move_cost"))
+        src[fw][tw][1] += 1
+        rd = route_detail.setdefault((fw, tw), {})
+        k  = (_txt(r.get("sku")), _txt(r.get("product")))
+        dd = rd.setdefault(k, [0.0, 0.0, 0])
+        dd[0] += _num(r.get("qty")); dd[1] += _num(r.get("move_cost")); dd[2] += 1
+    src_sorted = sorted(src.items(), key=lambda kv: -sum(v[0] for v in kv[1].values()))
+
+    # ── כותרת ──────────────────────────────────────────────────────────────────
     st.markdown(
         f'<div style="background:linear-gradient(135deg,var(--card),var(--card2),var(--card));'
         f'border:1px solid var(--b2);border-radius:16px;padding:16px 28px;margin-bottom:18px;'
         f'text-align:center;box-shadow:var(--glow-c)">'
         f'<div style="font-family:var(--orb);font-size:1.2rem;font-weight:800;color:var(--cyan);'
         f'letter-spacing:1px;text-shadow:0 0 20px rgba(0,212,255,.4)">'
-        f'ערך מלאי · העברות בין מחסנים — {month_label(sel_month)}</div></div>',
+        f'דף בבניה · העברות בין מחסנים — {month_label(sel_month)}</div></div>',
         unsafe_allow_html=True)
 
-    # ════════════════════════════════════════════════════════════════════════════
-    #  שתי עמודות:  בלוקים לפי מקור  |  תיבת סיכום
-    # ════════════════════════════════════════════════════════════════════════════
-    col_blocks, col_sum = st.columns([3, 2])
+    # ── רצועת סיכום (אריחי מידע) ─────────────────────────────────────────────────
+    def info_tile(label, value, color, pct=None):
+        pct_html = (f'<div style="color:var(--amber);font-family:var(--mono);font-size:.72rem;'
+                    f'margin-top:2px">{pct:.3f}% ממחזור</div>' if pct is not None else "")
+        return (f'<div style="background:var(--card);border:1px solid var(--b1);'
+                f'border-top:3px solid {color};border-radius:14px;padding:14px;text-align:center;'
+                f'box-shadow:var(--shadow);height:100%">'
+                f'<div style="color:var(--txt2);font-size:.74rem;font-weight:700">{label}</div>'
+                f'<div style="font-family:var(--orb);font-size:1.3rem;font-weight:800;color:{color};'
+                f'margin-top:6px;text-shadow:0 0 14px {color}55">₪{value:,.0f}</div>{pct_html}</div>')
 
-    # ── תיבת סיכום קטגוריות + מחזור ──────────────────────────────────────────────
-    with col_sum:
-        sec_header("📊 סיכום ערך")
+    strip = [("סה\"כ ערך", grand, "var(--green)", None)]
+    if turn:
+        strip.append(("מחזור מכירות", turn, "var(--cyan)", None))
+        strip.append(("אחוז ממחזור", None, "var(--amber)", grand / turn * 100))
+    if "השמדות" in cat_sum:
+        strip.append(("סה\"כ השמדות", cat_sum["השמדות"], "var(--red)",
+                      (cat_sum["השמדות"]/turn*100) if turn else None))
+    if "חזרות לספקים" in cat_sum:
+        strip.append(("חזרות לספקים", cat_sum["חזרות לספקים"], "var(--amber)",
+                      (cat_sum["חזרות לספקים"]/turn*100) if turn else None))
 
-        def sum_row(label, val, color="var(--green)", show_pct=True):
-            p = pct_of_turn(val)
-            pct_html = (f'<span style="color:var(--amber);font-family:var(--mono);'
-                        f'font-size:.78rem;margin-left:10px">{p:.3f}%</span>'
-                        if (show_pct and p is not None) else "")
-            return (
-                f'<div style="background:var(--card2);border:1px solid var(--b1);'
-                f'border-radius:12px;padding:13px 16px;margin-bottom:9px;'
-                f'border-right:4px solid {color};display:flex;justify-content:space-between;'
-                f'align-items:center">'
-                f'<span style="font-weight:700;color:var(--txt);font-size:.9rem">{label}</span>'
-                f'<span style="white-space:nowrap"><span style="font-family:var(--orb);'
-                f'color:{color};font-weight:700;font-size:1.05rem">₪{val:,.0f}</span>{pct_html}</span>'
-                f'</div>')
+    scols = st.columns(len(strip))
+    for col, item in zip(scols, strip):
+        label, value, color, pct = item
+        if value is None:   # אחוז בלבד
+            col.markdown(
+                f'<div style="background:var(--card);border:1px solid var(--b1);'
+                f'border-top:3px solid {color};border-radius:14px;padding:14px;text-align:center;'
+                f'box-shadow:var(--shadow);height:100%">'
+                f'<div style="color:var(--txt2);font-size:.74rem;font-weight:700">{label}</div>'
+                f'<div style="font-family:var(--orb);font-size:1.3rem;font-weight:800;color:{color};'
+                f'margin-top:6px">{pct:.3f}%</div></div>', unsafe_allow_html=True)
+        else:
+            col.markdown(info_tile(label, value, color, pct), unsafe_allow_html=True)
 
-        html = ""
-        if "השמדות" in cat_sum:
-            html += sum_row("סה\"כ השמדות", cat_sum["השמדות"], "var(--red)")
-        if "חזרות לספקים" in cat_sum:
-            html += sum_row("סה\"כ חזרות לספקים", cat_sum["חזרות לספקים"], "var(--amber)")
-        if "החזרות מלקוחות" in cat_sum:
-            html += sum_row("החזרות מלקוחות", cat_sum["החזרות מלקוחות"], "var(--purple)")
+    # ── גריד אריחים לחיצים לפי מחסן מקור ─────────────────────────────────────────
+    st.markdown("---")
+    sec_header("🔁 העברות לפי מחסן מקור")
+    st.markdown('<div class="al al-cyan" style="font-size:.82rem">👇 לחץ על ריבוע כדי '
+                'לפתוח את הפירוט שלו.</div>', unsafe_allow_html=True)
 
-        # LIMB (אם קיים)
-        limb_in  = route_sum.get(("LIMB", "500"), 0)
-        limb_out = route_sum.get(("500", "LIMB"), 0)
-        if limb_in:
-            html += sum_row("LIMB → מחסן ראשי", limb_in, "var(--cyan)", show_pct=False)
-        if limb_out:
-            html += sum_row("מחסן ראשי → LIMB", limb_out, "var(--cyan)", show_pct=False)
+    if "iv_open_src" not in st.session_state:
+        st.session_state.iv_open_src = None
 
-        st.markdown(html, unsafe_allow_html=True)
+    NCOLS = 3
+    for i in range(0, len(src_sorted), NCOLS):
+        chunk = src_sorted[i:i + NCOLS]
+        cols = st.columns(NCOLS)
+        for col, (fw, dests) in zip(cols, chunk):
+            stotal = sum(v[0] for v in dests.values())
+            is_open = (st.session_state.iv_open_src == fw)
+            arrow = "🔻 " if is_open else ""
+            if col.button(f"{arrow}{wn(fw)}\n\n**₪{stotal:,.0f}**",
+                          key=f"ivtile_{fw}", use_container_width=True):
+                st.session_state.iv_open_src = None if is_open else fw
+                st.rerun()
 
-        # סה"כ + מחזור
+    # ── פאנל פירוט לאריח שנבחר ────────────────────────────────────────────────────
+    sel = st.session_state.iv_open_src
+    if sel is not None and sel in src:
+        dests = src[sel]
+        stotal = sum(v[0] for v in dests.values())
         st.markdown(
-            f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
-            f'border:1px solid var(--b2);border-radius:12px;padding:14px 18px;margin-top:4px;'
-            f'box-shadow:var(--glow-c)">'
-            f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'<span style="font-weight:800;color:var(--txt)">סה\"כ ערך העברות</span>'
-            f'<span style="font-family:var(--orb);color:var(--green);font-weight:800;'
-            f'font-size:1.25rem">₪{grand:,.0f}</span></div>'
-            + (f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
-               f'padding-top:8px;border-top:1px solid var(--b0)">'
-               f'<span style="color:var(--txt2);font-size:.82rem">מחזור מכירות</span>'
-               f'<span style="font-family:var(--mono);color:var(--cyan)">₪{turn:,.0f}</span></div>'
-               f'<div style="display:flex;justify-content:space-between;margin-top:4px">'
-               f'<span style="color:var(--amber);font-size:.82rem;font-weight:700">אחוז ממחזור</span>'
-               f'<span style="font-family:var(--mono);color:var(--amber)">{grand/turn*100:.3f}%</span></div>'
-               if turn else
-               '<div style="color:var(--txt2);font-size:.76rem;margin-top:8px">'
-               'הזן מחזור מכירות (למטה) כדי לראות אחוזים</div>')
-            + '</div>', unsafe_allow_html=True)
+            f'<div style="background:rgba(0,212,255,.07);border:1px solid var(--b2);'
+            f'border-radius:14px;padding:13px 18px;margin:6px 0 12px;display:flex;'
+            f'justify-content:space-between;align-items:center;box-shadow:var(--glow-c)">'
+            f'<span style="font-family:var(--orb);font-weight:800;color:var(--cyan);'
+            f'font-size:1rem">📂 פירוט — {wn(sel)}</span>'
+            f'<span style="font-family:var(--orb);color:var(--green);font-weight:800">'
+            f'₪{stotal:,.0f}</span></div>', unsafe_allow_html=True)
 
-    # ── בלוקים לפי מחסן מקור ─────────────────────────────────────────────────────
-    with col_blocks:
-        sec_header("🔁 העברות לפי מחסן מקור")
-        st.markdown('<div class="al al-cyan" style="font-size:.82rem">👇 לחץ על שורת '
-                    'העברה כדי לפתוח את הפירוט שלה לפי מוצר.</div>', unsafe_allow_html=True)
-
-        # כל התנועות מכל הגליונות (כמו באקסל — תנועת השמדה/חזרה מופיעה גם כאן)
-        tr_rows = rows
-
-        # קיבוץ: מקור -> {יעד: [sum, cnt]}  +  פירוט מסלול לפי מוצר (מעבר אחד)
-        src = {}
-        route_detail = {}   # (fw,tw) -> {(sku,product):[qty,val,cnt]}
-        for r in tr_rows:
-            fw = _txt(r.get("from_wh")); tw = _txt(r.get("to_wh"))
-            src.setdefault(fw, {}).setdefault(tw, [0.0, 0])
-            src[fw][tw][0] += _num(r.get("move_cost"))
-            src[fw][tw][1] += 1
-            rd = route_detail.setdefault((fw, tw), {})
-            k  = (_txt(r.get("sku")), _txt(r.get("product")))
-            d  = rd.setdefault(k, [0.0, 0.0, 0])
-            d[0] += _num(r.get("qty")); d[1] += _num(r.get("move_cost")); d[2] += 1
-
-        src_sorted = sorted(src.items(),
-                            key=lambda kv: -sum(v[0] for v in kv[1].values()))
-
-        for fw, dests in src_sorted:
-            src_total = sum(v[0] for v in dests.values())
-            src_name  = wn(fw)
-            # כותרת המקור
-            st.markdown(
-                f'<div style="background:rgba(255,184,0,.1);border:1px solid var(--b1);'
-                f'border-radius:12px;padding:11px 16px;margin:16px 0 8px;'
-                f'display:flex;justify-content:space-between;align-items:center">'
-                f'<span style="font-family:var(--orb);font-weight:700;color:var(--amber);'
-                f'font-size:.92rem">{src_name}</span>'
-                f'<span style="font-family:var(--orb);color:var(--amber);font-weight:700;'
-                f'font-size:.95rem">₪{src_total:,.0f}</span></div>', unsafe_allow_html=True)
-
-            # שורת העברה לחיצה לכל יעד → פותחת פירוט לפי מוצר
-            for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
-                desc = f"מ{src_name} ל{wn(tw)}"
-                with st.expander(f"{desc}   ·   {fw or '—'}→{tw or '—'}   ·   "
-                                 f"{c} תנועות   —   ₪{v:,.0f}"):
-                    detail = route_detail.get((fw, tw), {})
-                    det_df = pd.DataFrame([{
-                        "מק\"ט":     k[0] or "—",
-                        "תאור מוצר": k[1] or "—",
-                        "כמות":      qv,
-                        "תנועות":    cn,
-                        "ערך (₪)":   f"₪{val:,.0f}",
-                    } for k, (qv, val, cn) in sorted(detail.items(), key=lambda x: -x[1][1])])
-                    st.markdown(
-                        f'<div style="color:var(--txt2);font-size:.78rem;margin-bottom:6px">'
-                        f'{len(detail)} מוצרים · {c} תנועות · סה"כ <b style="color:var(--green)">'
-                        f'₪{v:,.0f}</b></div>', unsafe_allow_html=True)
-                    st.dataframe(det_df, use_container_width=True, hide_index=True)
+        for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
+            with st.expander(f"מ{wn(sel)} ל{wn(tw)}   ·   {sel or '—'}→{tw or '—'}   ·   "
+                             f"{c} תנועות   —   ₪{v:,.0f}"):
+                detail = route_detail.get((sel, tw), {})
+                det_df = pd.DataFrame([{
+                    "מק\"ט":     k[0] or "—",
+                    "תאור מוצר": k[1] or "—",
+                    "כמות":      qv,
+                    "תנועות":    cn,
+                    "ערך (₪)":   f"₪{val:,.0f}",
+                } for k, (qv, val, cn) in sorted(detail.items(), key=lambda x: -x[1][1])])
+                st.markdown(
+                    f'<div style="color:var(--txt2);font-size:.78rem;margin-bottom:6px">'
+                    f'{len(detail)} מוצרים · {c} תנועות · סה"כ <b style="color:var(--green)">'
+                    f'₪{v:,.0f}</b></div>', unsafe_allow_html=True)
+                st.dataframe(det_df, use_container_width=True, hide_index=True)
 
     # ════════════════════════════════════════════════════════════════════════════
-    #  כניסה לגליונות (drill-down)
+    #  כניסה לגליונות (drill-down) — לכל המשתמשים
     # ════════════════════════════════════════════════════════════════════════════
     st.markdown("---")
     sec_header("📂 כניסה לגליונות")
@@ -2517,11 +2515,13 @@ def page_transfer_value():
                     unsafe_allow_html=True)
 
     # ════════════════════════════════════════════════════════════════════════════
-    #  ניהול נתונים (העלאה / מחזור / ייצוא / מחיקה)
+    #  ניהול נתונים — מנהל WMS בלבד (שינוי / העלאה / ייצוא / מחיקה)
     # ════════════════════════════════════════════════════════════════════════════
-    st.markdown("---")
-    sec_header("⚙️ ניהול נתונים")
+    if not is_manager:
+        return
 
+    st.markdown("---")
+    sec_header("⚙️ ניהול נתונים (מנהל בלבד)")
     render_turnover_form(expanded=(turn == 0))
 
     with st.expander("📤 העלאת / עדכון קובץ חודשי"):
@@ -2542,7 +2542,7 @@ def page_transfer_value():
             df_export.to_excel(w, index=False, sheet_name="העברות")
         st.download_button(
             f"📥 ייצוא נתוני {month_label(sel_month)} — Excel",
-            buf.getvalue(), f"ערך_העברות_{sel_month}.xlsx",
+            buf.getvalue(), f"דף_בבניה_{sel_month}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True, key="export_transfers")
         st.markdown('<div class="al al-red" style="margin-top:14px">⚠️ מחיקת כל '
@@ -2573,9 +2573,9 @@ ov_side    = len(get_overdue())
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "📦 ספירות מלאי","💰 ערך מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
-    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
-    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
+                  "📦 ספירות מלאי","🚧 דף בבניה","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+    "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🚧 דף בבניה","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+    "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🚧 דף בבניה","🏭 אחסנה חיצונית"],
 }
 
 inject_theme()
@@ -2639,7 +2639,7 @@ PAGE_ICONS = {
     "➕ הוספת משימה":     "➕ הוספת משימה חדשה",
     "⚙️ ניהול משימות":    "⚙️ ניהול ועריכת משימות",
     "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
-    "💰 ערך מלאי":        "💰 ערך מלאי — העברות בין מחסנים",
+    "🚧 דף בבניה":        "🚧 דף בבניה",
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
@@ -2657,7 +2657,7 @@ if   choice == "📊 דשבורד":          page_dashboard()
 elif choice == "📋 סידור עבודה":     page_work()
 elif choice == "📅 לוח שנה":         page_calendar()
 elif choice == "📦 ספירות מלאי":     page_inventory()
-elif choice == "💰 ערך מלאי":        page_transfer_value()
+elif choice == "🚧 דף בבניה":        page_transfer_value()
 elif choice == "➕ הוספת משימה":     page_add()
 elif choice == "⚙️ ניהול משימות":    page_manage()
 elif choice == "🔬 אנליטיקס":        page_analytics()
