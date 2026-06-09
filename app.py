@@ -1909,13 +1909,46 @@ def page_inventory():
                 st.error("❌ לא ניתן לשמור. ודא שהרצת את count_plan_supabase.sql "
                          "ב-Supabase (יצירת הטבלה + כיבוי RLS).")
     else:
-        # ── חישוב התקדמות ──
-        total_rows = len(plan)
-        done_rows  = [p for p in plan
-                      if (p.get("counter_name") or "").strip()
-                      or (p.get("count_date") or "").strip()]
-        total_sku  = sum(_n(p.get("sku_count")) for p in plan)
-        done_sku   = sum(_n(p.get("sku_count")) for p in done_rows)
+        # ── עותק עבודה בזיכרון עם מזהים יציבים ──
+        work_key = f"cp_work_{sel_month}"
+        if st.session_state.get("cp_work_month") != sel_month or work_key not in st.session_state:
+            st.session_state[work_key] = [
+                {"_id": f"row{idx}", "row_label": p.get("row_label") or "",
+                 "sku_count": int(_n(p.get("sku_count"))),
+                 "counter_name": p.get("counter_name") or "",
+                 "count_date": p.get("count_date") or ""}
+                for idx, p in enumerate(plan)
+            ]
+            st.session_state["cp_work_month"] = sel_month
+            st.session_state["cp_next_id"] = len(plan)
+            # ניקוי מפתחות ווידג'טים ישנים
+            for k in list(st.session_state.keys()):
+                if k.startswith(("cp_rl_", "cp_sc_", "cp_cn_", "cp_cd_")):
+                    del st.session_state[k]
+        work = st.session_state[work_key]
+
+        # פריסום ערכי התחלה למפתחות הווידג'טים (פעם אחת לכל שדה)
+        for row in work:
+            rid = row["_id"]
+            for fld, pre in (("row_label", "cp_rl"), ("counter_name", "cp_cn"),
+                             ("count_date", "cp_cd")):
+                k = f"{pre}_{rid}"
+                if k not in st.session_state:
+                    st.session_state[k] = row[fld]
+            ks = f"cp_sc_{rid}"
+            if ks not in st.session_state:
+                st.session_state[ks] = int(row["sku_count"])
+
+        def _sv(pre, rid, default=""):
+            return st.session_state.get(f"{pre}_{rid}", default)
+
+        # ── חישוב התקדמות (חי, מהעריכה הנוכחית) ──
+        total_rows = len(work)
+        done_rows  = [r for r in work
+                      if str(_sv("cp_cn", r["_id"])).strip()
+                      or str(_sv("cp_cd", r["_id"])).strip()]
+        total_sku  = sum(int(_sv("cp_sc", r["_id"], 0) or 0) for r in work)
+        done_sku   = sum(int(_sv("cp_sc", r["_id"], 0) or 0) for r in done_rows)
         pct_rows   = (len(done_rows) / total_rows * 100) if total_rows else 0
         pct_sku    = (done_sku / total_sku * 100) if total_sku else 0
 
@@ -1960,43 +1993,73 @@ def page_inventory():
         m3.markdown(kpi_card(f"{total_rows - len(done_rows)}", "שורות שנותרו",
                              icon="⏳", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
 
-        # ── טבלה לעריכה ──
-        st.markdown("##### עריכת התוכנית (שם סופר, תאריך, ומס' מקטים ניתנים לעדכון)")
-        plan_df = pd.DataFrame([{
-            "שורה":        p.get("row_label") or "",
-            "מס' מקטים":   int(_n(p.get("sku_count"))),
-            "שם סופר":     p.get("counter_name") or "",
-            "תאריך ספירה": p.get("count_date") or "",
-        } for p in plan])
+        # ── עיצוב מותאם לשורות ──
+        st.markdown("""
+        <style>
+        div[class*="st-key-cprow_"] { border-bottom: 1px solid var(--b0); padding: 2px 0; }
+        div[class*="st-key-cprow_"]:hover { background: rgba(0,212,255,.04); border-radius: 10px; }
+        div[class*="st-key-cprow_done_"] { border-right: 3px solid var(--green); border-radius: 8px; }
+        </style>""", unsafe_allow_html=True)
 
-        edited = st.data_editor(
-            plan_df, use_container_width=True, hide_index=True, num_rows="dynamic",
-            key=f"plan_editor_{sel_month}",
-            column_config={
-                "שורה":        st.column_config.TextColumn("שורה", width="small"),
-                "מס' מקטים":   st.column_config.NumberColumn("מס' מקטים", min_value=0, step=1),
-                "שם סופר":     st.column_config.TextColumn("שם סופר"),
-                "תאריך ספירה": st.column_config.TextColumn("תאריך ספירה",
-                                                           help="לדוגמה: 9/6/26"),
-            })
+        st.markdown("##### עריכת התוכנית")
+        # כותרת
+        h = st.columns([0.5, 1, 1, 1.7, 1.7, 0.5])
+        for c, t in zip(h, ["", "שורה", "מס' מקטים", "שם סופר", "תאריך ספירה", ""]):
+            c.markdown(f'<div style="font-family:var(--orb);color:var(--cyan);font-size:.74rem;'
+                       f'font-weight:700;padding:4px 2px;text-align:center">{t}</div>',
+                       unsafe_allow_html=True)
 
+        # שורות
+        for row in work:
+            rid  = row["_id"]
+            done = bool(str(_sv("cp_cn", rid)).strip() or str(_sv("cp_cd", rid)).strip())
+            rc = st.container(key=f"cprow_done_{rid}" if done else f"cprow_{rid}")
+            cols = rc.columns([0.5, 1, 1, 1.7, 1.7, 0.5])
+            cols[0].markdown(
+                f'<div style="text-align:center;font-size:1.1rem;padding-top:6px">'
+                f'{"✅" if done else "⏳"}</div>', unsafe_allow_html=True)
+            cols[1].text_input("שורה", key=f"cp_rl_{rid}", label_visibility="collapsed")
+            cols[2].number_input("מקטים", key=f"cp_sc_{rid}", min_value=0, step=1,
+                                 label_visibility="collapsed")
+            cols[3].text_input("סופר", key=f"cp_cn_{rid}", label_visibility="collapsed",
+                               placeholder="שם סופר")
+            cols[4].text_input("תאריך", key=f"cp_cd_{rid}", label_visibility="collapsed",
+                               placeholder="dd/mm/yy")
+            if cols[5].button("🗑", key=f"cp_del_{rid}", help="מחק שורה"):
+                work.remove(row)
+                for pre in ("cp_rl", "cp_sc", "cp_cn", "cp_cd"):
+                    st.session_state.pop(f"{pre}_{rid}", None)
+                st.rerun()
+
+        # ➕ הוספת שורה
+        if st.button("➕ הוסף שורה", key="cp_add_row", use_container_width=True):
+            nid = st.session_state.get("cp_next_id", len(work))
+            work.append({"_id": f"row{nid}", "row_label": "", "sku_count": 0,
+                         "counter_name": "", "count_date": ""})
+            st.session_state["cp_next_id"] = nid + 1
+            st.rerun()
+
+        st.markdown("")
         b1, b2 = st.columns([3, 1])
         if b1.button("💾 שמור תוכנית", key="save_plan", use_container_width=True):
             new_rows = []
-            for i, row in edited.iterrows():
-                rl = str(row["שורה"]).strip()
-                if not rl and not str(row["שם סופר"]).strip():
+            for i, row in enumerate(work):
+                rid = row["_id"]
+                rl  = str(_sv("cp_rl", rid)).strip()
+                cn  = str(_sv("cp_cn", rid)).strip()
+                if not rl and not cn:
                     continue
                 new_rows.append({
                     "month": sel_month, "row_label": rl,
-                    "sku_count": int(_n(row["מס' מקטים"])),
-                    "counter_name": str(row["שם סופר"]).strip(),
-                    "count_date": str(row["תאריך ספירה"]).strip(),
+                    "sku_count": int(_sv("cp_sc", rid, 0) or 0),
+                    "counter_name": cn,
+                    "count_date": str(_sv("cp_cd", rid)).strip(),
                     "sort_order": i,
                 })
             try:
                 db_clear_count_plan(sel_month)
                 db_bulk_insert_count_plan(new_rows)
+                st.session_state["cp_work_month"] = None   # רענון מה-DB
                 st.success("✅ התוכנית נשמרה!")
                 st.rerun()
             except Exception:
@@ -2006,6 +2069,7 @@ def page_inventory():
         if st.session_state.user_role == "מנהל WMS":
             if b2.button("🗑️ אפס", key="reset_plan", use_container_width=True):
                 db_clear_count_plan(sel_month)
+                st.session_state["cp_work_month"] = None
                 st.rerun()
 
 
