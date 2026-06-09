@@ -2695,7 +2695,7 @@ def page_transfer_value():
         if summary["goods_value"]:
             added  = (summary["goods_dir"] == "התווסף")
             signed = summary["goods_value"] if added else -summary["goods_value"]
-            html += sum_row(f"סחורה בשווי ({summary['goods_dir']})", signed,
+            html += sum_row(f"{summary['goods_dir']} סחורה בשווי", signed,
                             "var(--green)" if added else "var(--red)")
 
         limb_in  = route_sum.get(("LIMB", "500"), 0)
@@ -2706,22 +2706,6 @@ def page_transfer_value():
             html += sum_row("מחסן ראשי → LIMB", limb_out, "var(--cyan)", show_pct=False)
 
         st.markdown(html, unsafe_allow_html=True)
-
-        # סה"כ ערך העברות (כולל אחוז ממחזור)
-        st.markdown(
-            f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
-            f'border:1px solid var(--b2);border-radius:12px;padding:14px 18px;margin-top:4px;'
-            f'box-shadow:var(--glow-c)">'
-            f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'<span style="font-weight:800;color:var(--txt)">סה\"כ ערך העברות</span>'
-            f'<span style="font-family:var(--orb);color:var(--green);font-weight:800;'
-            f'font-size:1.25rem">₪{grand:,.0f}</span></div>'
-            + (f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
-               f'padding-top:8px;border-top:1px solid var(--b0)">'
-               f'<span style="color:var(--amber);font-size:.82rem;font-weight:700">אחוז ממחזור</span>'
-               f'<span style="font-family:var(--mono);color:var(--amber)">{grand/turn*100:.3f}%</span></div>'
-               if turn else "")
-            + '</div>', unsafe_allow_html=True)
 
         # ── מילוי ידני (מנהל בלבד) ──
         if is_manager:
@@ -2771,8 +2755,8 @@ def page_transfer_value():
 
             for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
                 desc = f"מ{src_name} ל{wn(tw)}"
-                with st.expander(f"{desc}   ·   {fw or '—'}→{tw or '—'}   ·   "
-                                 f"{c} תנועות   —   ₪{v:,.0f}"):
+                with st.expander(f"₪{v:,.0f}   ·   {fw or '—'}→{tw or '—'}   ·   "
+                                 f"{c} תנועות   ·   {desc}"):
                     detail = route_detail.get((fw, tw), {})
                     det_df = pd.DataFrame([{
                         "מק\"ט":     k[0] or "—",
