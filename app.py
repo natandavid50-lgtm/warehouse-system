@@ -1899,11 +1899,15 @@ def page_inventory():
                 (30, 51), (31, 51), (32, 67), (33, 59), (34, 56), (35, 56),
                 (36, 50), (37, 50), (38, 24), (39, 102), (60, 21), (61, 26),
             ]
-            db_bulk_insert_count_plan([{
-                "month": sel_month, "row_label": str(rl), "sku_count": sc,
-                "counter_name": "", "count_date": "", "sort_order": i,
-            } for i, (rl, sc) in enumerate(default_plan)])
-            st.rerun()
+            try:
+                db_bulk_insert_count_plan([{
+                    "month": sel_month, "row_label": str(rl), "sku_count": sc,
+                    "counter_name": "", "count_date": "", "sort_order": i,
+                } for i, (rl, sc) in enumerate(default_plan)])
+                st.rerun()
+            except Exception:
+                st.error("❌ לא ניתן לשמור. ודא שהרצת את count_plan_supabase.sql "
+                         "ב-Supabase (יצירת הטבלה + כיבוי RLS).")
     else:
         # ── חישוב התקדמות ──
         total_rows = len(plan)
@@ -1990,10 +1994,14 @@ def page_inventory():
                     "count_date": str(row["תאריך ספירה"]).strip(),
                     "sort_order": i,
                 })
-            db_clear_count_plan(sel_month)
-            db_bulk_insert_count_plan(new_rows)
-            st.success("✅ התוכנית נשמרה!")
-            st.rerun()
+            try:
+                db_clear_count_plan(sel_month)
+                db_bulk_insert_count_plan(new_rows)
+                st.success("✅ התוכנית נשמרה!")
+                st.rerun()
+            except Exception:
+                st.error("❌ לא ניתן לשמור. ודא שהרצת את count_plan_supabase.sql "
+                         "ב-Supabase (יצירת הטבלה + כיבוי RLS).")
 
         if st.session_state.user_role == "מנהל WMS":
             if b2.button("🗑️ אפס", key="reset_plan", use_container_width=True):
