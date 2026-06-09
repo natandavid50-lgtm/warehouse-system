@@ -780,6 +780,37 @@ def db_remove_hidden_route(from_wh, to_wh):
     supabase = get_conn()
     supabase.table("hidden_routes").delete().eq("from_wh", from_wh).eq("to_wh", to_wh).execute()
 
+def db_load_month_summary(month) -> dict:
+    """טוען מחזור + ערכי סיכום ידניים לחודש."""
+    out = {"turnover": 0.0, "destructions": None, "returns": None,
+           "goods_value": 0.0, "goods_dir": "הופחת"}
+    try:
+        supabase = get_conn()
+        res = supabase.table("monthly_turnover").select("*").eq("month", month).limit(1).execute()
+        if res.data:
+            d = res.data[0]
+            out["turnover"]    = float(d.get("turnover") or 0)
+            out["destructions"] = (None if d.get("manual_destructions") is None
+                                   else float(d.get("manual_destructions")))
+            out["returns"]      = (None if d.get("manual_returns") is None
+                                   else float(d.get("manual_returns")))
+            out["goods_value"]  = float(d.get("goods_value") or 0)
+            out["goods_dir"]    = d.get("goods_dir") or "הופחת"
+    except Exception:
+        pass
+    return out
+
+def db_save_month_summary(month, turnover, destructions, returns, goods_value, goods_dir):
+    supabase = get_conn()
+    supabase.table("monthly_turnover").upsert({
+        "month": month,
+        "turnover": float(turnover or 0),
+        "manual_destructions": None if destructions is None else float(destructions),
+        "manual_returns":      None if returns is None else float(returns),
+        "goods_value": float(goods_value or 0),
+        "goods_dir": goods_dir,
+    }, on_conflict="month").execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2207,7 +2238,8 @@ def page_transfer_value():
     sel_month = cM.selectbox("📅 חודש", month_opts, format_func=month_label)
 
     rows = db_load_movements(sel_month)
-    turn = db_load_turnover(sel_month)
+    summary = db_load_month_summary(sel_month)
+    turn = summary["turnover"]
 
     # ── טפסי ניהול (זמינים למנהל בלבד) ─────────────────────────────────────────
     def render_turnover_form(expanded):
@@ -2217,7 +2249,9 @@ def page_transfer_value():
                                      value=float(turn), step=1000.0, format="%.2f",
                                      help="לא נמצא בקובץ ההעברות — מזינים ידנית לחישוב האחוזים.")
                 if st.form_submit_button("💾 שמור מחזור", use_container_width=True):
-                    db_save_turnover(sel_month, nt)
+                    db_save_month_summary(sel_month, nt, summary["destructions"],
+                                          summary["returns"], summary["goods_value"],
+                                          summary["goods_dir"])
                     st.success("✅ נשמר!")
                     st.rerun()
 
@@ -2429,14 +2463,26 @@ def page_transfer_value():
             st.markdown('<div class="al al-amber" style="font-size:.8rem">הזן מחזור מכירות '
                         '(בניהול נתונים) כדי לראות אחוזים.</div>', unsafe_allow_html=True)
 
-        # 2) סה"כ השמדות   3) סה"כ חזרות לספקים   ואז השאר
+        # 2) סה"כ השמדות   3) סה"כ חזרות לספקים  (ידני גובר על אוטומטי)
+        destr_disp = (summary["destructions"] if summary["destructions"] is not None
+                      else cat_sum.get("השמדות"))
+        ret_disp   = (summary["returns"] if summary["returns"] is not None
+                      else cat_sum.get("חזרות לספקים"))
+
         html = ""
-        if "השמדות" in cat_sum:
-            html += sum_row("סה\"כ השמדות", cat_sum["השמדות"], "var(--red)")
-        if "חזרות לספקים" in cat_sum:
-            html += sum_row("סה\"כ חזרות לספקים", cat_sum["חזרות לספקים"], "var(--amber)")
+        if destr_disp is not None:
+            html += sum_row("סה\"כ השמדות", destr_disp, "var(--red)")
+        if ret_disp is not None:
+            html += sum_row("סה\"כ חזרות לספקים", ret_disp, "var(--amber)")
         if "החזרות מלקוחות" in cat_sum:
             html += sum_row("החזרות מלקוחות", cat_sum["החזרות מלקוחות"], "var(--purple)")
+
+        # סחורה בשווי (התווסף/הופחת) — מילוי ידני
+        if summary["goods_value"]:
+            added  = (summary["goods_dir"] == "התווסף")
+            signed = summary["goods_value"] if added else -summary["goods_value"]
+            html += sum_row(f"סחורה בשווי ({summary['goods_dir']})", signed,
+                            "var(--green)" if added else "var(--red)")
 
         limb_in  = route_sum.get(("LIMB", "500"), 0)
         limb_out = route_sum.get(("500", "LIMB"), 0)
@@ -2463,7 +2509,34 @@ def page_transfer_value():
                if turn else "")
             + '</div>', unsafe_allow_html=True)
 
-    # ── בלוקים לפי מחסן מקור (כותרות כתומות, כמו באקסל) ──────────────────────────
+        # ── מילוי ידני (מנהל בלבד) ──
+        if is_manager:
+            with st.expander("✏️ מילוי ידני של ערכי הסיכום"):
+                with st.form("manual_summary"):
+                    use_manual = st.checkbox(
+                        "מילוי ידני של סה\"כ השמדות / חזרות לספקים",
+                        value=(summary["destructions"] is not None or summary["returns"] is not None),
+                        help="אם לא מסומן — יוצגו הערכים האוטומטיים שחושבו מהקובץ.")
+                    md = st.number_input("סה\"כ השמדות (₪)", min_value=0.0, step=100.0,
+                        value=float(summary["destructions"] if summary["destructions"] is not None
+                                    else cat_sum.get("השמדות", 0)))
+                    mr = st.number_input("סה\"כ חזרות לספקים (₪)", min_value=0.0, step=100.0,
+                        value=float(summary["returns"] if summary["returns"] is not None
+                                    else cat_sum.get("חזרות לספקים", 0)))
+                    st.markdown("**סחורה בשווי:**")
+                    gdir = st.radio("כיוון", ["הופחת", "התווסף"], horizontal=True,
+                                    index=(1 if summary["goods_dir"] == "התווסף" else 0))
+                    gv = st.number_input("סכום (₪)", min_value=0.0, step=100.0,
+                                         value=float(summary["goods_value"]),
+                                         help="0 = לא להציג שורה זו.")
+                    if st.form_submit_button("💾 שמור", use_container_width=True):
+                        db_save_month_summary(
+                            sel_month, turn,
+                            (md if use_manual else None),
+                            (mr if use_manual else None),
+                            gv, gdir)
+                        st.success("✅ נשמר!")
+                        st.rerun()
     with col_blocks:
         sec_header("🔁 העברות לפי מחסן מקור")
         st.markdown('<div class="al al-cyan" style="font-size:.82rem">👇 לחץ על שורת '
