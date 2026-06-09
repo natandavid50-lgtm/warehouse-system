@@ -763,6 +763,24 @@ def db_save_turnover(month, turnover):
     supabase.table("monthly_turnover").upsert(
         {"month": month, "turnover": float(turnover)}, on_conflict="month").execute()
 
+def db_load_hidden_routes() -> set:
+    """מחזיר קבוצת מסלולים מוסתרים {(from_wh, to_wh)}."""
+    try:
+        supabase = get_conn()
+        res = supabase.table("hidden_routes").select("*").execute()
+        return {(r.get("from_wh") or "", r.get("to_wh") or "") for r in (res.data or [])}
+    except Exception:
+        return set()
+
+def db_add_hidden_route(from_wh, to_wh):
+    supabase = get_conn()
+    supabase.table("hidden_routes").upsert(
+        {"from_wh": from_wh, "to_wh": to_wh}, on_conflict="from_wh,to_wh").execute()
+
+def db_remove_hidden_route(from_wh, to_wh):
+    supabase = get_conn()
+    supabase.table("hidden_routes").delete().eq("from_wh", from_wh).eq("to_wh", to_wh).execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2330,14 +2348,19 @@ def page_transfer_value():
     # ════════════════════════════════════════════════════════════════════════════
     #  חישובים
     # ════════════════════════════════════════════════════════════════════════════
+    # מסלולים שהמנהל בחר להסתיר — לא יוצגו ולא ייכללו בסיכומים
+    hidden_routes = db_load_hidden_routes()
+    visible_rows = [r for r in rows
+                    if (_txt(r.get("from_wh")), _txt(r.get("to_wh"))) not in hidden_routes]
+
     cat_sum, cat_cnt = {}, {}
-    for r in rows:
+    for r in visible_rows:
         c = r.get("category") or "אחר"
         cat_sum[c] = cat_sum.get(c, 0) + _num(r.get("move_cost"))
         cat_cnt[c] = cat_cnt.get(c, 0) + 1
 
     route_sum = {}
-    for r in rows:
+    for r in visible_rows:
         key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
         route_sum[key] = route_sum.get(key, 0) + _num(r.get("move_cost"))
 
@@ -2345,7 +2368,7 @@ def page_transfer_value():
 
     # קיבוץ מקור→יעד + פירוט מוצר (מעבר אחד)
     src, route_detail = {}, {}
-    for r in rows:
+    for r in visible_rows:
         fw = _txt(r.get("from_wh")); tw = _txt(r.get("to_wh"))
         src.setdefault(fw, {}).setdefault(tw, [0.0, 0])
         src[fw][tw][0] += _num(r.get("move_cost"))
@@ -2393,6 +2416,21 @@ def page_transfer_value():
                 f'color:{color};font-weight:700;font-size:1.05rem">₪{val:,.0f}</span>{pct_html}</span>'
                 f'</div>')
 
+        # 1) מחזור מכירות — ראשון ובולט
+        if turn:
+            st.markdown(
+                f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
+                f'border:1px solid var(--b2);border-top:3px solid var(--cyan);'
+                f'border-radius:12px;padding:14px 18px;margin-bottom:11px;box-shadow:var(--glow-c)">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center">'
+                f'<span style="font-weight:800;color:var(--txt)">מחזור מכירות</span>'
+                f'<span style="font-family:var(--orb);color:var(--cyan);font-weight:800;'
+                f'font-size:1.2rem">₪{turn:,.0f}</span></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="al al-amber" style="font-size:.8rem">הזן מחזור מכירות '
+                        '(בניהול נתונים) כדי לראות אחוזים.</div>', unsafe_allow_html=True)
+
+        # 2) סה"כ השמדות   3) סה"כ חזרות לספקים   ואז השאר
         html = ""
         if "השמדות" in cat_sum:
             html += sum_row("סה\"כ השמדות", cat_sum["השמדות"], "var(--red)")
@@ -2410,6 +2448,7 @@ def page_transfer_value():
 
         st.markdown(html, unsafe_allow_html=True)
 
+        # סה"כ ערך העברות (כולל אחוז ממחזור)
         st.markdown(
             f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
             f'border:1px solid var(--b2);border-radius:12px;padding:14px 18px;margin-top:4px;'
@@ -2420,14 +2459,9 @@ def page_transfer_value():
             f'font-size:1.25rem">₪{grand:,.0f}</span></div>'
             + (f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
                f'padding-top:8px;border-top:1px solid var(--b0)">'
-               f'<span style="color:var(--txt2);font-size:.82rem">מחזור מכירות</span>'
-               f'<span style="font-family:var(--mono);color:var(--cyan)">₪{turn:,.0f}</span></div>'
-               f'<div style="display:flex;justify-content:space-between;margin-top:4px">'
                f'<span style="color:var(--amber);font-size:.82rem;font-weight:700">אחוז ממחזור</span>'
                f'<span style="font-family:var(--mono);color:var(--amber)">{grand/turn*100:.3f}%</span></div>'
-               if turn else
-               '<div style="color:var(--txt2);font-size:.76rem;margin-top:8px">'
-               'הזן מחזור מכירות (בניהול נתונים) כדי לראות אחוזים</div>')
+               if turn else "")
             + '</div>', unsafe_allow_html=True)
 
     # ── בלוקים לפי מחסן מקור (כותרות כתומות, כמו באקסל) ──────────────────────────
@@ -2474,7 +2508,7 @@ def page_transfer_value():
     sec_header("📂 כניסה לגליונות")
     cat_sorted = sorted(cat_sum.items(), key=lambda x: -x[1])
     for cat, cval in cat_sorted:
-        crows = [r for r in rows if (r.get("category") or "אחר") == cat]
+        crows = [r for r in visible_rows if (r.get("category") or "אחר") == cat]
         with st.expander(f"📄 {cat}  —  ₪{cval:,.0f}  ·  {len(crows):,} תנועות"):
             rs, rc, rd = {}, {}, {}
             for r in crows:
@@ -2510,6 +2544,40 @@ def page_transfer_value():
     sec_header("⚙️ ניהול נתונים (מנהל בלבד)")
     render_turnover_form(expanded=(turn == 0))
 
+    # ── הסתרת מסלולים מהתצוגה ─────────────────────────────────────────────────
+    with st.expander("👁️ הסתרת מסלולים מהתצוגה"):
+        st.markdown('<div class="al al-cyan" style="font-size:.82rem">בחר מסלולים שלא '
+                    'יוצגו בדו"ח (לא יימחקו — רק יוסתרו, וגם לא ייכללו בסיכומים). '
+                    'ההסתרה חלה על כל החודשים.</div>', unsafe_allow_html=True)
+
+        # כל המסלולים בחודש (כולל מוסתרים) לבחירה
+        all_routes = {}
+        for r in rows:
+            key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
+            all_routes[key] = all_routes.get(key, 0) + _num(r.get("move_cost"))
+        route_label = {
+            f"{wn(f)} → {wn(t)}  ({f or '—'}→{t or '—'})  ·  ₪{v:,.0f}": (f, t)
+            for (f, t), v in sorted(all_routes.items(), key=lambda x: -x[1])
+        }
+        default_hidden = [lbl for lbl, ft in route_label.items() if ft in hidden_routes]
+
+        with st.form("hide_routes_form"):
+            sel = st.multiselect("מסלולים להסתרה", list(route_label.keys()),
+                                 default=default_hidden)
+            if st.form_submit_button("💾 שמור תצוגה", use_container_width=True):
+                new_hidden = {route_label[l] for l in sel}
+                for ft in new_hidden - hidden_routes:
+                    db_add_hidden_route(ft[0], ft[1])
+                for ft in hidden_routes - new_hidden:
+                    db_remove_hidden_route(ft[0], ft[1])
+                st.success("✅ התצוגה עודכנה!")
+                st.rerun()
+
+        if hidden_routes:
+            st.markdown(f'<div style="color:var(--txt2);font-size:.78rem;margin-top:6px">'
+                        f'כרגע מוסתרים {len(hidden_routes)} מסלולים.</div>',
+                        unsafe_allow_html=True)
+
     with st.expander("📤 העלאת / עדכון קובץ חודשי"):
         render_uploader()
 
@@ -2523,7 +2591,7 @@ def page_transfer_value():
             "כמות": _num(r.get("qty")), "יח'": r.get("unit"),
             "עלות ליח'": _num(r.get("unit_cost")), "עלות תנועה": _num(r.get("move_cost")),
             "משפחה": r.get("family"),
-        } for r in rows])
+        } for r in visible_rows])
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             df_export.to_excel(w, index=False, sheet_name="העברות")
         st.download_button(
