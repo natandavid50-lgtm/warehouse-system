@@ -717,6 +717,52 @@ def db_save_excel_table(file_name, table_data, uploaded_by):
         "table_data":  table_data,
     }).execute()
 
+# ── Transfers Value (ערך העברות בין מחסנים) ──────────────────────────────────
+def db_load_movements(month=None) -> list:
+    """טוען תנועות. אם month מצוין — רק לאותו חודש."""
+    try:
+        supabase = get_conn()
+        q = supabase.table("transfer_movements").select("*")
+        if month:
+            q = q.eq("month", month)
+        res = q.order("id").execute()
+        return res.data if res.data else []
+    except Exception:
+        return []
+
+def db_movement_months() -> list:
+    """רשימת החודשים שיש להם נתונים, מהחדש לישן."""
+    try:
+        supabase = get_conn()
+        res = supabase.table("transfer_movements").select("month").execute()
+        return sorted({r["month"] for r in (res.data or []) if r.get("month")}, reverse=True)
+    except Exception:
+        return []
+
+def db_clear_movements(month):
+    supabase = get_conn()
+    supabase.table("transfer_movements").delete().eq("month", month).execute()
+
+def db_bulk_insert_movements(rows: list):
+    if not rows:
+        return
+    supabase = get_conn()
+    for i in range(0, len(rows), 500):
+        supabase.table("transfer_movements").insert(rows[i:i + 500]).execute()
+
+def db_load_turnover(month) -> float:
+    try:
+        supabase = get_conn()
+        res = supabase.table("monthly_turnover").select("*").eq("month", month).limit(1).execute()
+        return float(res.data[0]["turnover"]) if res.data else 0.0
+    except Exception:
+        return 0.0
+
+def db_save_turnover(month, turnover):
+    supabase = get_conn()
+    supabase.table("monthly_turnover").upsert(
+        {"month": month, "turnover": float(turnover)}, on_conflict="month").execute()
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE INIT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2092,6 +2138,421 @@ def page_external_storage():
                             st.rerun()
 
 
+def page_transfer_value():
+    import math
+
+    # ── שער גישה: מנהל WMS בלבד ──────────────────────────────────────────────
+    if st.session_state.user_role != "מנהל WMS":
+        st.markdown('<div class="al al-red">🔒 <b>אזור זה זמין למנהל WMS בלבד.</b></div>',
+                    unsafe_allow_html=True)
+        return
+
+    def _num(v):
+        try:
+            x = float(v)
+            return 0.0 if math.isnan(x) else x
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _txt(v):
+        return "" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v).strip()
+
+    # ── מיפוי קוד מחסן → שם ידידותי (ניתן לעריכה לפי הצורך) ─────────────────────
+    WH_NAMES = {
+        "500": "מחסן ראשי",      "552": "מפעל",
+        "573": "שיקום סחורה",     "575": "החזרת לספקים",
+        "605": "השמדות",          "606": "השמדות הבטחת איכות",
+        "670": "פגומים",          "671": "החזרות מלקוחות",
+        "675": "פגומים קבלן",     "678": "סחורה שנעלמה",
+        "550": "חו\"ג גלריה",     "554": "בית שמש",
+        "100": "בית שמש",         "121": "בית שמש",        "125": "בית שמש",
+        "672": "החזרות מלקוחות",  "680": "החזרת לספקים",
+        "950": "אחסנה חיצונית",   "108": "ויסוצקי",        "120": "חו\"ג",
+        "LIMB": "LIMB",
+    }
+    def wn(code):
+        c = _txt(code)
+        return WH_NAMES.get(c, c or "—")
+
+    sec_header("💰 ערך מלאי")
+
+    # ── בורר חודש ──────────────────────────────────────────────────────────────
+    months = db_movement_months()
+    today = datetime.now()
+    cur_month = f"{today.year}-{today.month:02d}"
+    month_opts = months if months else [cur_month]
+
+    def month_label(m):
+        try:
+            y, mm = m.split("-")
+            return f"{MONTHS_HE[int(mm)-1]} {y}"
+        except Exception:
+            return m
+
+    cM, _ = st.columns([2, 3])
+    sel_month = cM.selectbox("📅 חודש", month_opts, format_func=month_label)
+
+    rows = db_load_movements(sel_month)
+    turn = db_load_turnover(sel_month)
+
+    # ── טופס מחזור (נשתמש בו בכמה מקומות) ──────────────────────────────────────
+    def render_turnover_form(expanded):
+        with st.expander(f"📈 עדכון מחזור מכירות — {month_label(sel_month)}", expanded=expanded):
+            with st.form("turnover_form"):
+                nt = st.number_input("מחזור מכירות חודשי (₪)", min_value=0.0,
+                                     value=float(turn), step=1000.0, format="%.2f",
+                                     help="לא נמצא בקובץ ההעברות — מזינים ידנית לחישוב האחוזים.")
+                if st.form_submit_button("💾 שמור מחזור", use_container_width=True):
+                    db_save_turnover(sel_month, nt)
+                    st.success("✅ נשמר!")
+                    st.rerun()
+
+    # ── מעלה קבצים (נשתמש בו בכמה מקומות) ──────────────────────────────────────
+    def render_uploader():
+        st.markdown(
+            '<div class="al al-cyan">ℹ️ העלה את קובץ האקסל החודשי. המערכת מזהה אוטומטית '
+            'את גליונות התנועות (כל גליון = קטגוריה), את החודש מהתאריך, ומחשבת הכל.</div>',
+            unsafe_allow_html=True)
+        up = st.file_uploader("📁 בחר קובץ (.xlsx / .xls)", type=["xlsx", "xls"],
+                              key="transfer_uploader")
+        if up is None:
+            return
+        try:
+            xls = pd.ExcelFile(up, engine="openpyxl")
+
+            def find_col(cols, *subs):
+                for c in cols:
+                    if any(s in str(c) for s in subs):
+                        return c
+                return None
+
+            def cat_label(sheet):
+                s = str(sheet)
+                if "השמד" in s:                              return "השמדות"
+                if "ספק" in s:                               return "חזרות לספקים"
+                if "לקוח" in s:                              return "החזרות מלקוחות"
+                if s.lower() in ("datasheet", "data", "sheet1"): return "העברות בין מחסנים"
+                return s
+
+            detected = []
+            for sh in xls.sheet_names:
+                try:
+                    d = pd.read_excel(xls, sheet_name=sh, header=0).dropna(axis=0, how="all")
+                except Exception:
+                    continue
+                cstr = [str(c) for c in d.columns]
+                if any("עלות תנועה" in c for c in cstr) and any("מחסן" in c for c in cstr) and len(d) > 0:
+                    detected.append((sh, d, list(d.columns)))
+
+            if not detected:
+                st.markdown('<div class="al al-amber">⚠️ לא זוהו גליונות מתאימים.</div>',
+                            unsafe_allow_html=True)
+                return
+
+            st.markdown(f'<div class="al al-green">✅ זוהו <b>{len(detected)}</b> גליונות:</div>',
+                        unsafe_allow_html=True)
+            chosen, all_months = [], []
+            for sh, d, cols in detected:
+                c_cost = find_col(cols, "עלות תנועה")
+                c_date = find_col(cols, "תאריך")
+                s_sum = sum(_num(v) for v in d[c_cost]) if c_cost else 0
+                if c_date is not None:
+                    for v in d[c_date]:
+                        try:
+                            ts = pd.to_datetime(v); all_months.append(f"{ts.year}-{ts.month:02d}")
+                        except Exception:
+                            pass
+                if st.checkbox(f"📄 {sh} → «{cat_label(sh)}» | {len(d)} שורות | ₪{s_sum:,.0f}",
+                               value=True, key=f"sheet_{sh}"):
+                    chosen.append((sh, d, cols))
+
+            auto_month = max(set(all_months), key=all_months.count) if all_months else cur_month
+            m_in = st.text_input("📅 חודש היעד (YYYY-MM)", value=auto_month, key="tgt_month")
+            replace = st.checkbox("🔄 החלף את כל נתוני החודש הקיימים", value=True, key="repl")
+
+            if st.button("💾 ייבא לחודש", key="import_transfers", use_container_width=True):
+                out = []
+                for sh, d, cols in chosen:
+                    cmap = {
+                        "from_wh":   find_col(cols, "ממחסן"),
+                        "to_wh":     find_col(cols, "למחסן"),
+                        "wh_desc":   find_col(cols, "תאור מחסן", "תיאור מחסן"),
+                        "doc":       find_col(cols, "תעודה"),
+                        "sku":       find_col(cols, "מק"),
+                        "product":   find_col(cols, "תאור מוצר", "מוצר", "תיאור"),
+                        "qty":       find_col(cols, "כמות"),
+                        "unit":      find_col(cols, "יח"),
+                        "unit_cost": find_col(cols, "עלות ליח"),
+                        "move_cost": find_col(cols, "עלות תנועה"),
+                        "family":    find_col(cols, "משפחה"),
+                    }
+                    label = cat_label(sh)
+                    for _, r in d.iterrows():
+                        mc = _num(r.get(cmap["move_cost"])) if cmap["move_cost"] else 0
+                        fw = _txt(r.get(cmap["from_wh"]))   if cmap["from_wh"]   else ""
+                        tw = _txt(r.get(cmap["to_wh"]))     if cmap["to_wh"]     else ""
+                        if mc == 0 and not fw and not tw:
+                            continue
+                        out.append({
+                            "month": m_in.strip(), "category": label,
+                            "from_wh": fw, "to_wh": tw,
+                            "wh_desc":   _txt(r.get(cmap["wh_desc"]))   if cmap["wh_desc"]   else "",
+                            "doc":       _txt(r.get(cmap["doc"]))       if cmap["doc"]       else "",
+                            "sku":       _txt(r.get(cmap["sku"]))       if cmap["sku"]       else "",
+                            "product":   _txt(r.get(cmap["product"]))   if cmap["product"]   else "",
+                            "qty":       _num(r.get(cmap["qty"]))       if cmap["qty"]       else 0,
+                            "unit":      _txt(r.get(cmap["unit"]))      if cmap["unit"]      else "",
+                            "unit_cost": _num(r.get(cmap["unit_cost"])) if cmap["unit_cost"] else 0,
+                            "move_cost": mc,
+                            "family":    _txt(r.get(cmap["family"]))    if cmap["family"]    else "",
+                        })
+                if not out:
+                    st.warning("⚠️ לא נמצאו שורות תקינות.")
+                else:
+                    if replace:
+                        db_clear_movements(m_in.strip())
+                    db_bulk_insert_movements(out)
+                    st.success(f"✅ יובאו {len(out)} תנועות ל-{month_label(m_in.strip())}!")
+                    st.rerun()
+        except Exception as e:
+            st.error(f"❌ שגיאה בקריאת הקובץ: {e}")
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  אין נתונים — הצג מעלה קבצים בלבד
+    # ════════════════════════════════════════════════════════════════════════════
+    if not rows:
+        render_turnover_form(expanded=False)
+        st.markdown("---")
+        sec_header("📤 העלאת קובץ העברות חודשי")
+        render_uploader()
+        st.markdown("---")
+        st.markdown('<div class="al al-amber">ℹ️ <b>אין עדיין נתונים לחודש זה.</b> '
+                    'העלה קובץ למעלה.</div>', unsafe_allow_html=True)
+        return
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  חישובים
+    # ════════════════════════════════════════════════════════════════════════════
+    def pct_of_turn(v):
+        return (v / turn * 100) if turn else None
+
+    # סכומי קטגוריות
+    cat_sum, cat_cnt = {}, {}
+    for r in rows:
+        c = r.get("category") or "אחר"
+        cat_sum[c] = cat_sum.get(c, 0) + _num(r.get("move_cost"))
+        cat_cnt[c] = cat_cnt.get(c, 0) + 1
+
+    # מסלולים (לכל הקטגוריות) — לחישוב LIMB וכו'
+    route_sum = {}
+    for r in rows:
+        key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
+        route_sum[key] = route_sum.get(key, 0) + _num(r.get("move_cost"))
+
+    grand = sum(cat_sum.values())
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  כותרת הדו"ח
+    # ════════════════════════════════════════════════════════════════════════════
+    st.markdown(
+        f'<div style="background:linear-gradient(135deg,var(--card),var(--card2),var(--card));'
+        f'border:1px solid var(--b2);border-radius:16px;padding:16px 28px;margin-bottom:18px;'
+        f'text-align:center;box-shadow:var(--glow-c)">'
+        f'<div style="font-family:var(--orb);font-size:1.2rem;font-weight:800;color:var(--cyan);'
+        f'letter-spacing:1px;text-shadow:0 0 20px rgba(0,212,255,.4)">'
+        f'ערך מלאי · העברות בין מחסנים — {month_label(sel_month)}</div></div>',
+        unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  שתי עמודות:  בלוקים לפי מקור  |  תיבת סיכום
+    # ════════════════════════════════════════════════════════════════════════════
+    col_blocks, col_sum = st.columns([3, 2])
+
+    # ── תיבת סיכום קטגוריות + מחזור ──────────────────────────────────────────────
+    with col_sum:
+        sec_header("📊 סיכום ערך")
+
+        def sum_row(label, val, color="var(--green)", show_pct=True):
+            p = pct_of_turn(val)
+            pct_html = (f'<span style="color:var(--amber);font-family:var(--mono);'
+                        f'font-size:.78rem;margin-left:10px">{p:.3f}%</span>'
+                        if (show_pct and p is not None) else "")
+            return (
+                f'<div style="background:var(--card2);border:1px solid var(--b1);'
+                f'border-radius:12px;padding:13px 16px;margin-bottom:9px;'
+                f'border-right:4px solid {color};display:flex;justify-content:space-between;'
+                f'align-items:center">'
+                f'<span style="font-weight:700;color:var(--txt);font-size:.9rem">{label}</span>'
+                f'<span style="white-space:nowrap"><span style="font-family:var(--orb);'
+                f'color:{color};font-weight:700;font-size:1.05rem">₪{val:,.0f}</span>{pct_html}</span>'
+                f'</div>')
+
+        html = ""
+        if "השמדות" in cat_sum:
+            html += sum_row("סה\"כ השמדות", cat_sum["השמדות"], "var(--red)")
+        if "חזרות לספקים" in cat_sum:
+            html += sum_row("סה\"כ חזרות לספקים", cat_sum["חזרות לספקים"], "var(--amber)")
+        if "החזרות מלקוחות" in cat_sum:
+            html += sum_row("החזרות מלקוחות", cat_sum["החזרות מלקוחות"], "var(--purple)")
+
+        # LIMB (אם קיים)
+        limb_in  = route_sum.get(("LIMB", "500"), 0)
+        limb_out = route_sum.get(("500", "LIMB"), 0)
+        if limb_in:
+            html += sum_row("LIMB → מחסן ראשי", limb_in, "var(--cyan)", show_pct=False)
+        if limb_out:
+            html += sum_row("מחסן ראשי → LIMB", limb_out, "var(--cyan)", show_pct=False)
+
+        st.markdown(html, unsafe_allow_html=True)
+
+        # סה"כ + מחזור
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,var(--card),var(--card2));'
+            f'border:1px solid var(--b2);border-radius:12px;padding:14px 18px;margin-top:4px;'
+            f'box-shadow:var(--glow-c)">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center">'
+            f'<span style="font-weight:800;color:var(--txt)">סה\"כ ערך העברות</span>'
+            f'<span style="font-family:var(--orb);color:var(--green);font-weight:800;'
+            f'font-size:1.25rem">₪{grand:,.0f}</span></div>'
+            + (f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
+               f'padding-top:8px;border-top:1px solid var(--b0)">'
+               f'<span style="color:var(--txt2);font-size:.82rem">מחזור מכירות</span>'
+               f'<span style="font-family:var(--mono);color:var(--cyan)">₪{turn:,.0f}</span></div>'
+               f'<div style="display:flex;justify-content:space-between;margin-top:4px">'
+               f'<span style="color:var(--amber);font-size:.82rem;font-weight:700">אחוז ממחזור</span>'
+               f'<span style="font-family:var(--mono);color:var(--amber)">{grand/turn*100:.3f}%</span></div>'
+               if turn else
+               '<div style="color:var(--txt2);font-size:.76rem;margin-top:8px">'
+               'הזן מחזור מכירות (למטה) כדי לראות אחוזים</div>')
+            + '</div>', unsafe_allow_html=True)
+
+    # ── בלוקים לפי מחסן מקור ─────────────────────────────────────────────────────
+    with col_blocks:
+        sec_header("🔁 העברות לפי מחסן מקור")
+        st.markdown('<div class="al al-cyan" style="font-size:.82rem">👇 לחץ על שורת '
+                    'העברה כדי לפתוח את הפירוט שלה לפי מוצר.</div>', unsafe_allow_html=True)
+
+        # כל התנועות מכל הגליונות (כמו באקסל — תנועת השמדה/חזרה מופיעה גם כאן)
+        tr_rows = rows
+
+        # קיבוץ: מקור -> {יעד: [sum, cnt]}  +  פירוט מסלול לפי מוצר (מעבר אחד)
+        src = {}
+        route_detail = {}   # (fw,tw) -> {(sku,product):[qty,val,cnt]}
+        for r in tr_rows:
+            fw = _txt(r.get("from_wh")); tw = _txt(r.get("to_wh"))
+            src.setdefault(fw, {}).setdefault(tw, [0.0, 0])
+            src[fw][tw][0] += _num(r.get("move_cost"))
+            src[fw][tw][1] += 1
+            rd = route_detail.setdefault((fw, tw), {})
+            k  = (_txt(r.get("sku")), _txt(r.get("product")))
+            d  = rd.setdefault(k, [0.0, 0.0, 0])
+            d[0] += _num(r.get("qty")); d[1] += _num(r.get("move_cost")); d[2] += 1
+
+        src_sorted = sorted(src.items(),
+                            key=lambda kv: -sum(v[0] for v in kv[1].values()))
+
+        for fw, dests in src_sorted:
+            src_total = sum(v[0] for v in dests.values())
+            src_name  = wn(fw)
+            # כותרת המקור
+            st.markdown(
+                f'<div style="background:rgba(255,184,0,.1);border:1px solid var(--b1);'
+                f'border-radius:12px;padding:11px 16px;margin:16px 0 8px;'
+                f'display:flex;justify-content:space-between;align-items:center">'
+                f'<span style="font-family:var(--orb);font-weight:700;color:var(--amber);'
+                f'font-size:.92rem">{src_name}</span>'
+                f'<span style="font-family:var(--orb);color:var(--amber);font-weight:700;'
+                f'font-size:.95rem">₪{src_total:,.0f}</span></div>', unsafe_allow_html=True)
+
+            # שורת העברה לחיצה לכל יעד → פותחת פירוט לפי מוצר
+            for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
+                desc = f"מ{src_name} ל{wn(tw)}"
+                with st.expander(f"{desc}   ·   {fw or '—'}→{tw or '—'}   ·   "
+                                 f"{c} תנועות   —   ₪{v:,.0f}"):
+                    detail = route_detail.get((fw, tw), {})
+                    det_df = pd.DataFrame([{
+                        "מק\"ט":     k[0] or "—",
+                        "תאור מוצר": k[1] or "—",
+                        "כמות":      qv,
+                        "תנועות":    cn,
+                        "ערך (₪)":   f"₪{val:,.0f}",
+                    } for k, (qv, val, cn) in sorted(detail.items(), key=lambda x: -x[1][1])])
+                    st.markdown(
+                        f'<div style="color:var(--txt2);font-size:.78rem;margin-bottom:6px">'
+                        f'{len(detail)} מוצרים · {c} תנועות · סה"כ <b style="color:var(--green)">'
+                        f'₪{v:,.0f}</b></div>', unsafe_allow_html=True)
+                    st.dataframe(det_df, use_container_width=True, hide_index=True)
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  כניסה לגליונות (drill-down)
+    # ════════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    sec_header("📂 כניסה לגליונות")
+    cat_sorted = sorted(cat_sum.items(), key=lambda x: -x[1])
+    for cat, cval in cat_sorted:
+        crows = [r for r in rows if (r.get("category") or "אחר") == cat]
+        with st.expander(f"📄 {cat}  —  ₪{cval:,.0f}  ·  {len(crows):,} תנועות"):
+            rs, rc, rd = {}, {}, {}
+            for r in crows:
+                key = (_txt(r.get("from_wh")), _txt(r.get("to_wh")))
+                rs[key] = rs.get(key, 0) + _num(r.get("move_cost"))
+                rc[key] = rc.get(key, 0) + 1
+                if key not in rd and _txt(r.get("wh_desc")):
+                    rd[key] = _txt(r.get("wh_desc"))
+            for (fw, tw), v in sorted(rs.items(), key=lambda x: -x[1]):
+                desc = rd.get((fw, tw), "")
+                desc_html = (f'<span style="color:var(--txt2);font-size:.78rem;'
+                             f'margin-right:8px">· {desc}</span>') if desc else ""
+                st.markdown(
+                    f'<div style="background:var(--card2);border:1px solid var(--b0);'
+                    f'border-radius:10px;padding:11px 16px;margin-bottom:7px;'
+                    f'border-right:4px solid var(--cyan);display:flex;'
+                    f'justify-content:space-between;align-items:center">'
+                    f'<div><span style="font-family:var(--mono);color:var(--cyan);'
+                    f'font-weight:700">{fw or "—"} → {tw or "—"}</span>{desc_html}'
+                    f'<div style="color:var(--txt3);font-size:.7rem;margin-top:3px">'
+                    f'{rc[(fw, tw)]:,} תנועות</div></div>'
+                    f'<span style="font-family:var(--orb);color:var(--green);'
+                    f'font-weight:700;font-size:1.05rem">₪{v:,.0f}</span></div>',
+                    unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  ניהול נתונים (העלאה / מחזור / ייצוא / מחיקה)
+    # ════════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    sec_header("⚙️ ניהול נתונים")
+
+    render_turnover_form(expanded=(turn == 0))
+
+    with st.expander("📤 העלאת / עדכון קובץ חודשי"):
+        render_uploader()
+
+    with st.expander("📥 ייצוא ומחיקה"):
+        buf = io.BytesIO()
+        df_export = pd.DataFrame([{
+            "חודש": r.get("month"), "קטגוריה": r.get("category"),
+            "ממחסן": r.get("from_wh"), "למחסן": r.get("to_wh"),
+            "תאור מחסן": r.get("wh_desc"), "תעודה": r.get("doc"),
+            "מק\"ט": r.get("sku"), "תאור מוצר": r.get("product"),
+            "כמות": _num(r.get("qty")), "יח'": r.get("unit"),
+            "עלות ליח'": _num(r.get("unit_cost")), "עלות תנועה": _num(r.get("move_cost")),
+            "משפחה": r.get("family"),
+        } for r in rows])
+        with pd.ExcelWriter(buf, engine="openpyxl") as w:
+            df_export.to_excel(w, index=False, sheet_name="העברות")
+        st.download_button(
+            f"📥 ייצוא נתוני {month_label(sel_month)} — Excel",
+            buf.getvalue(), f"ערך_העברות_{sel_month}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True, key="export_transfers")
+        st.markdown('<div class="al al-red" style="margin-top:14px">⚠️ מחיקת כל '
+                    f'תנועות <b>{month_label(sel_month)}</b>.</div>', unsafe_allow_html=True)
+        if st.button("🗑️ מחק את נתוני החודש", key="clear_month", use_container_width=True):
+            db_clear_movements(sel_month)
+            st.success("🗑️ נמחק.")
+            st.rerun()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2112,7 +2573,7 @@ ov_side    = len(get_overdue())
 
 MENUS = {
     "מנהל WMS":  ["📊 דשבורד","📋 סידור עבודה","📅 לוח שנה",
-                  "📦 ספירות מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
+                  "📦 ספירות מלאי","💰 ערך מלאי","➕ הוספת משימה","⚙️ ניהול משימות","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "הנהלה":     ["📊 דשבורד","📅 לוח שנה","📦 ספירות מלאי","🔬 אנליטיקס","🏭 אחסנה חיצונית"],
     "צוות מחסן": ["📊 דשבורד","📋 סידור עבודה","📦 ספירות מלאי","📅 לוח שנה","🏭 אחסנה חיצונית"],
 }
@@ -2178,6 +2639,7 @@ PAGE_ICONS = {
     "➕ הוספת משימה":     "➕ הוספת משימה חדשה",
     "⚙️ ניהול משימות":    "⚙️ ניהול ועריכת משימות",
     "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
+    "💰 ערך מלאי":        "💰 ערך מלאי — העברות בין מחסנים",
     "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
     "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
 }
@@ -2195,6 +2657,7 @@ if   choice == "📊 דשבורד":          page_dashboard()
 elif choice == "📋 סידור עבודה":     page_work()
 elif choice == "📅 לוח שנה":         page_calendar()
 elif choice == "📦 ספירות מלאי":     page_inventory()
+elif choice == "💰 ערך מלאי":        page_transfer_value()
 elif choice == "➕ הוספת משימה":     page_add()
 elif choice == "⚙️ ניהול משימות":    page_manage()
 elif choice == "🔬 אנליטיקס":        page_analytics()
