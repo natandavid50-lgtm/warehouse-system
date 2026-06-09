@@ -2695,7 +2695,7 @@ def page_transfer_value():
         if summary["goods_value"]:
             added  = (summary["goods_dir"] == "התווסף")
             signed = summary["goods_value"] if added else -summary["goods_value"]
-            html += sum_row(f"{summary['goods_dir']} סחורה בשווי", signed,
+            html += sum_row(f"{summary['goods_dir']} סחורה בשווי (LIMB)", signed,
                             "var(--green)" if added else "var(--red)")
 
         limb_in  = route_sum.get(("LIMB", "500"), 0)
@@ -2755,8 +2755,8 @@ def page_transfer_value():
 
             for tw, (v, c) in sorted(dests.items(), key=lambda x: -x[1][0]):
                 desc = f"מ{src_name} ל{wn(tw)}"
-                with st.expander(f"₪{v:,.0f}   ·   {fw or '—'}→{tw or '—'}   ·   "
-                                 f"{c} תנועות   ·   {desc}"):
+                with st.expander(f"{fw or '—'}→{tw or '—'}   ·   {c} תנועות   ·   "
+                                 f"{desc}   —   ₪{v:,.0f}"):
                     detail = route_detail.get((fw, tw), {})
                     det_df = pd.DataFrame([{
                         "מק\"ט":     k[0] or "—",
