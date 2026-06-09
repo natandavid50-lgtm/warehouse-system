@@ -657,6 +657,27 @@ def db_save_inventory(month, skus_total, skus_counted, locs_total, locs_counted,
     }
     supabase.table("inventory").upsert(data, on_conflict="month").execute()
 
+# ── Count Plan (תוכנית ספירה) ─────────────────────────────────────────────────
+def db_load_count_plan(month) -> list:
+    try:
+        supabase = get_conn()
+        res = (supabase.table("count_plan").select("*")
+               .eq("month", month).order("sort_order").execute())
+        return res.data if res.data else []
+    except Exception:
+        return []
+
+def db_clear_count_plan(month):
+    supabase = get_conn()
+    supabase.table("count_plan").delete().eq("month", month).execute()
+
+def db_bulk_insert_count_plan(rows: list):
+    if not rows:
+        return
+    supabase = get_conn()
+    for i in range(0, len(rows), 500):
+        supabase.table("count_plan").insert(rows[i:i + 500]).execute()
+
 # ── External Storage ────────────────────────────────────────────────────────────
 def db_load_external_storage() -> list:
     try:
@@ -1852,6 +1873,132 @@ def page_inventory():
             "📥 ייצוא כל הספירות — Excel",
             buf.getvalue(), "ספירות_מלאי.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    # ════════════════════════════════════════════════════════════════════════════
+    #  תוכנית ספירה חודשית (מילוי ידני)
+    # ════════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    sec_header("📋 תוכנית ספירה — "
+               f"{MONTHS_HE[int(sel_month.split('-')[1])-1]} {sel_month.split('-')[0]}")
+
+    def _n(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
+
+    plan = db_load_count_plan(sel_month)
+
+    if not plan:
+        st.markdown('<div class="al al-amber">ℹ️ עדיין אין תוכנית ספירה לחודש זה.</div>',
+                    unsafe_allow_html=True)
+        if st.button("📋 טען תוכנית התחלתית", key="seed_plan", use_container_width=True):
+            default_plan = [
+                (11, 63), (15, 84), (20, 33), (21, 40), (22, 37), (23, 37),
+                (24, 64), (25, 69), (26, 36), (27, 37), (28, 37), (29, 35),
+                (30, 51), (31, 51), (32, 67), (33, 59), (34, 56), (35, 56),
+                (36, 50), (37, 50), (38, 24), (39, 102), (60, 21), (61, 26),
+            ]
+            db_bulk_insert_count_plan([{
+                "month": sel_month, "row_label": str(rl), "sku_count": sc,
+                "counter_name": "", "count_date": "", "sort_order": i,
+            } for i, (rl, sc) in enumerate(default_plan)])
+            st.rerun()
+    else:
+        # ── חישוב התקדמות ──
+        total_rows = len(plan)
+        done_rows  = [p for p in plan
+                      if (p.get("counter_name") or "").strip()
+                      or (p.get("count_date") or "").strip()]
+        total_sku  = sum(_n(p.get("sku_count")) for p in plan)
+        done_sku   = sum(_n(p.get("sku_count")) for p in done_rows)
+        pct_rows   = (len(done_rows) / total_rows * 100) if total_rows else 0
+        pct_sku    = (done_sku / total_sku * 100) if total_sku else 0
+
+        # ── גלגלי התקדמות ──
+        gc1, gc2 = st.columns(2)
+        if HAS_PLOTLY:
+            def gauge(pct, title, color):
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=round(pct, 1),
+                    number={"suffix": "%", "font": {"size": 30, "color": color,
+                                                    "family": "Orbitron"}},
+                    title={"text": title, "font": {"size": 14, "color": "#e2eeff",
+                                                   "family": "Heebo"}},
+                    gauge={
+                        "axis": {"range": [0, 100], "tickcolor": "#8899aa"},
+                        "bar": {"color": color},
+                        "bgcolor": "rgba(0,0,0,0)",
+                        "borderwidth": 1, "bordercolor": "rgba(255,255,255,.1)",
+                        "steps": [{"range": [0, 100], "color": "rgba(255,255,255,.04)"}],
+                    }))
+                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", height=230,
+                                  margin=dict(t=40, b=10, l=20, r=20),
+                                  font=dict(family="Heebo"))
+                return fig
+            gc1.plotly_chart(gauge(pct_sku, "אחוז מקטים שנספרו", "#00ff88"),
+                             use_container_width=True)
+            gc2.plotly_chart(gauge(pct_rows, "אחוז שורות שנספרו", "#00d4ff"),
+                             use_container_width=True)
+        else:
+            gc1.markdown(kpi_card(f"{pct_sku:.1f}%", "אחוז מקטים שנספרו",
+                                  icon="🏷️", kind="green", color="var(--green)"),
+                         unsafe_allow_html=True)
+            gc2.markdown(kpi_card(f"{pct_rows:.1f}%", "אחוז שורות שנספרו",
+                                  icon="📋", kind="blue"), unsafe_allow_html=True)
+
+        m1, m2, m3 = st.columns(3)
+        m1.markdown(kpi_card(f"{len(done_rows)}/{total_rows}", "שורות שנספרו",
+                             icon="✅", kind="green", color="var(--green)"), unsafe_allow_html=True)
+        m2.markdown(kpi_card(f"{done_sku:,.0f}/{total_sku:,.0f}", "מקטים שנספרו",
+                             icon="🏷️", kind="blue"), unsafe_allow_html=True)
+        m3.markdown(kpi_card(f"{total_rows - len(done_rows)}", "שורות שנותרו",
+                             icon="⏳", kind="amber", color="var(--amber)"), unsafe_allow_html=True)
+
+        # ── טבלה לעריכה ──
+        st.markdown("##### עריכת התוכנית (שם סופר, תאריך, ומס' מקטים ניתנים לעדכון)")
+        plan_df = pd.DataFrame([{
+            "שורה":        p.get("row_label") or "",
+            "מס' מקטים":   int(_n(p.get("sku_count"))),
+            "שם סופר":     p.get("counter_name") or "",
+            "תאריך ספירה": p.get("count_date") or "",
+        } for p in plan])
+
+        edited = st.data_editor(
+            plan_df, use_container_width=True, hide_index=True, num_rows="dynamic",
+            key=f"plan_editor_{sel_month}",
+            column_config={
+                "שורה":        st.column_config.TextColumn("שורה", width="small"),
+                "מס' מקטים":   st.column_config.NumberColumn("מס' מקטים", min_value=0, step=1),
+                "שם סופר":     st.column_config.TextColumn("שם סופר"),
+                "תאריך ספירה": st.column_config.TextColumn("תאריך ספירה",
+                                                           help="לדוגמה: 9/6/26"),
+            })
+
+        b1, b2 = st.columns([3, 1])
+        if b1.button("💾 שמור תוכנית", key="save_plan", use_container_width=True):
+            new_rows = []
+            for i, row in edited.iterrows():
+                rl = str(row["שורה"]).strip()
+                if not rl and not str(row["שם סופר"]).strip():
+                    continue
+                new_rows.append({
+                    "month": sel_month, "row_label": rl,
+                    "sku_count": int(_n(row["מס' מקטים"])),
+                    "counter_name": str(row["שם סופר"]).strip(),
+                    "count_date": str(row["תאריך ספירה"]).strip(),
+                    "sort_order": i,
+                })
+            db_clear_count_plan(sel_month)
+            db_bulk_insert_count_plan(new_rows)
+            st.success("✅ התוכנית נשמרה!")
+            st.rerun()
+
+        if st.session_state.user_role == "מנהל WMS":
+            if b2.button("🗑️ אפס", key="reset_plan", use_container_width=True):
+                db_clear_count_plan(sel_month)
+                st.rerun()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
