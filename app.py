@@ -2003,8 +2003,8 @@ def page_inventory():
 
         st.markdown("##### עריכת התוכנית")
         # כותרת
-        h = st.columns([0.5, 1, 1, 1.7, 1.7, 0.5])
-        for c, t in zip(h, ["", "שורה", "מס' מקטים", "שם סופר", "תאריך ספירה", ""]):
+        h = st.columns([0.5, 1, 1, 1.8, 1.8])
+        for c, t in zip(h, ["", "שורה", "מס' מקטים", "שם סופר", "תאריך ספירה"]):
             c.markdown(f'<div style="font-family:var(--orb);color:var(--cyan);font-size:.74rem;'
                        f'font-weight:700;padding:4px 2px;text-align:center">{t}</div>',
                        unsafe_allow_html=True)
@@ -2014,7 +2014,7 @@ def page_inventory():
             rid  = row["_id"]
             done = bool(str(_sv("cp_cn", rid)).strip() or str(_sv("cp_cd", rid)).strip())
             rc = st.container(key=f"cprow_done_{rid}" if done else f"cprow_{rid}")
-            cols = rc.columns([0.5, 1, 1, 1.7, 1.7, 0.5])
+            cols = rc.columns([0.5, 1, 1, 1.8, 1.8])
             cols[0].markdown(
                 f'<div style="text-align:center;font-size:1.1rem;padding-top:6px">'
                 f'{"✅" if done else "⏳"}</div>', unsafe_allow_html=True)
@@ -2025,11 +2025,6 @@ def page_inventory():
                                placeholder="שם סופר")
             cols[4].text_input("תאריך", key=f"cp_cd_{rid}", label_visibility="collapsed",
                                placeholder="dd/mm/yy")
-            if cols[5].button("🗑", key=f"cp_del_{rid}", help="מחק שורה"):
-                work.remove(row)
-                for pre in ("cp_rl", "cp_sc", "cp_cn", "cp_cd"):
-                    st.session_state.pop(f"{pre}_{rid}", None)
-                st.rerun()
 
         # ➕ הוספת שורה
         if st.button("➕ הוסף שורה", key="cp_add_row", use_container_width=True):
