@@ -2920,6 +2920,7 @@ div[class*="st-key-menu_toggle"] button {
     background: linear-gradient(135deg, var(--card), var(--card2)) !important;
     border: 1px solid var(--cyan) !important; color: var(--cyan) !important;
     box-shadow: 0 0 14px rgba(0,212,255,.25) !important;
+    max-width: 200px !important; min-height: 42px !important;
 }
 div[class*="st-key-navpanel"] {
     background: linear-gradient(160deg, var(--card), var(--card2)) !important;
@@ -2927,6 +2928,7 @@ div[class*="st-key-navpanel"] {
     box-shadow: 0 0 34px rgba(0,212,255,.18) !important; padding: 8px 12px !important;
     margin-bottom: 14px !important;
 }
+div[class*="st-key-navpanel"] .stButton > button { min-height: 42px !important; }
 div[class*="st-key-nav_"] button { font-family: var(--orb) !important; letter-spacing: .5px !important; }
 </style>""", unsafe_allow_html=True)
 
@@ -2956,12 +2958,10 @@ if HAS_PLOTLY:
 if "menu_open" not in st.session_state:
     st.session_state.menu_open = False
 
-_mc1, _mc2 = st.columns([1, 4])
-with _mc1:
-    if st.button(("✕  סגור" if st.session_state.menu_open else "☰  תפריט"),
-                 key="menu_toggle", use_container_width=True):
-        st.session_state.menu_open = not st.session_state.menu_open
-        st.rerun()
+if st.button(("✕  סגור" if st.session_state.menu_open else "☰  תפריט"),
+             key="menu_toggle", use_container_width=True):
+    st.session_state.menu_open = not st.session_state.menu_open
+    st.rerun()
 
 if st.session_state.menu_open:
     with st.container(key="navpanel"):
@@ -2996,13 +2996,12 @@ if st.session_state.menu_open:
                 st.rerun()
 
         st.markdown("---")
-        _cc1, _cc2 = st.columns(2)
         _is_dark = st.session_state.theme == "dark"
-        if _cc1.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
-                       use_container_width=True, key="theme_btn"):
+        if st.button("☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
+                     use_container_width=True, key="theme_btn"):
             st.session_state.theme = "light" if _is_dark else "dark"
             st.rerun()
-        if _cc2.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
+        if st.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
             st.session_state.user_role  = None
             st.session_state.login_time = None
             st.rerun()
