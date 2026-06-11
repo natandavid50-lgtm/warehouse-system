@@ -29,7 +29,7 @@ except ImportError:
 st.set_page_config(
     page_title="WMS • אחים כהן",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
     page_icon="📦",
 )
 
@@ -2908,73 +2908,90 @@ MENUS = {
 
 inject_theme()
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# ── ניווט: תפריט "☰" שנפתח בלחיצה (במקום sidebar) ──────────────────────────────
+st.markdown("""
+<style>
+section[data-testid="stSidebar"], div[data-testid="collapsedControl"],
+button[data-testid="stSidebarCollapseButton"] { display:none !important; }
+div[data-testid="stPopover"] > div { min-width: 240px; }
+</style>""", unsafe_allow_html=True)
+
 _ov_color = "var(--red)" if ov_side else "var(--green)"
-st.sidebar.markdown(f"""
-<div style="padding:16px 4px 12px;text-align:center;
-            border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
-  <div style="font-size:2rem;margin-bottom:6px">{ROLE_ICONS.get(role,"👤")}</div>
-  <div style="font-family:var(--orb);font-weight:700;font-size:.82rem;
-              color:var(--cyan);letter-spacing:1px">{role}</div>
-  <div style="font-size:.65rem;color:var(--txt2);margin-top:3px;
-              font-family:var(--mono)">מחובר {elapsed_min} דק</div>
-</div>
-<div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
-            border-radius:10px;padding:8px 12px;margin:0 8px 12px;
-            font-family:var(--mono);font-size:.68rem">
-  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-    <span style="color:var(--txt2)">היום:</span>
-    <span style="color:var(--cyan);font-weight:700">{today_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-    <span style="color:var(--txt2)">פיגורים:</span>
-    <span style="color:{_ov_color};font-weight:700">{ov_side}</span>
-  </div>
-  <div style="display:flex;justify-content:space-between">
-    <span style="color:var(--txt2)">סה"כ:</span>
-    <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
-choice = st.sidebar.radio("", MENUS[role], label_visibility="collapsed")
+# העמוד הנוכחי נשמר בזיכרון
+if st.session_state.get("page") not in MENUS[role]:
+    st.session_state.page = MENUS[role][0]
+choice = st.session_state.page
 
-st.sidebar.markdown("---")
-
-_is_dark = st.session_state.theme == "dark"
-if st.sidebar.button(
-    "☀️ מצב בהיר" if _is_dark else "🌙 מצב כהה",
-    use_container_width=True, key="theme_btn"):
-    st.session_state.theme = "light" if _is_dark else "dark"
-    st.rerun()
-
-if elapsed_min >= 50:
-    st.sidebar.markdown(
-        f'<div class="al al-amber" style="font-size:.7rem;padding:6px 10px;margin:4px 0">'
-        f'הסשן יפוג בעוד {60-elapsed_min} דק</div>',
-        unsafe_allow_html=True)
-
-if st.sidebar.button("🚪 התנתקות", use_container_width=True, key="logout_btn"):
-    st.session_state.user_role  = None
-    st.session_state.login_time = None
-    st.rerun()
-
-# ── Page render ───────────────────────────────────────────────────────────────
 PAGE_ICONS = {
-    "📊 דשבורד":          "📊 דשבורד בקרה",
-    "📋 סידור עבודה":     "📋 סידור עבודה שבועי",
-    "📅 לוח שנה":         "📅 לוח שנה",
-    "➕ הוספת משימה":     "➕ הוספת משימה חדשה",
-    "⚙️ ניהול משימות":    "⚙️ ניהול ועריכת משימות",
-    "📦 ספירות מלאי":     "📦 דשבורד ספירות מלאי",
-    "🚧 דף בבניה":        "🚧 דף בבניה",
-    "🔬 אנליטיקס":        "🔬 אנליטיקס מתקדם",
-    "🏭 אחסנה חיצונית":  "🏭 אחסנה חיצונית",
+    "\U0001F4CA \u05d3\u05e9\u05d1\u05d5\u05e8\u05d3":          "\U0001F4CA \u05d3\u05e9\u05d1\u05d5\u05e8\u05d3 \u05d1\u05e7\u05e8\u05d4",
+    "\U0001F4CB \u05e1\u05d9\u05d3\u05d5\u05e8 \u05e2\u05d1\u05d5\u05d3\u05d4":     "\U0001F4CB \u05e1\u05d9\u05d3\u05d5\u05e8 \u05e2\u05d1\u05d5\u05d3\u05d4 \u05e9\u05d1\u05d5\u05e2\u05d9",
+    "\U0001F4C5 \u05dc\u05d5\u05d7 \u05e9\u05e0\u05d4":         "\U0001F4C5 \u05dc\u05d5\u05d7 \u05e9\u05e0\u05d4",
+    "\u2795 \u05d4\u05d5\u05e1\u05e4\u05ea \u05de\u05e9\u05d9\u05de\u05d4":     "\u2795 \u05d4\u05d5\u05e1\u05e4\u05ea \u05de\u05e9\u05d9\u05de\u05d4 \u05d7\u05d3\u05e9\u05d4",
+    "\u2699\ufe0f \u05e0\u05d9\u05d4\u05d5\u05dc \u05de\u05e9\u05d9\u05de\u05d5\u05ea":    "\u2699\ufe0f \u05e0\u05d9\u05d4\u05d5\u05dc \u05d5\u05e2\u05e8\u05d9\u05db\u05ea \u05de\u05e9\u05d9\u05de\u05d5\u05ea",
+    "\U0001F4E6 \u05e1\u05e4\u05d9\u05e8\u05d5\u05ea \u05de\u05dc\u05d0\u05d9":     "\U0001F4E6 \u05d3\u05e9\u05d1\u05d5\u05e8\u05d3 \u05e1\u05e4\u05d9\u05e8\u05d5\u05ea \u05de\u05dc\u05d0\u05d9",
+    "\U0001F6A7 \u05d3\u05e3 \u05d1\u05d1\u05e0\u05d9\u05d4":        "\U0001F6A7 \u05d3\u05e3 \u05d1\u05d1\u05e0\u05d9\u05d4",
+    "\U0001F52C \u05d0\u05e0\u05dc\u05d9\u05d8\u05d9\u05e7\u05e1":        "\U0001F52C \u05d0\u05e0\u05dc\u05d9\u05d8\u05d9\u05e7\u05e1 \u05de\u05ea\u05e7\u05d3\u05dd",
+    "\U0001F3ED \u05d0\u05d7\u05e1\u05e0\u05d4 \u05d7\u05d9\u05e6\u05d5\u05e0\u05d9\u05ea":  "\U0001F3ED \u05d0\u05d7\u05e1\u05e0\u05d4 \u05d7\u05d9\u05e6\u05d5\u05e0\u05d9\u05ea",
 }
 
 if HAS_PLOTLY:
     pio.templates.default = "plotly_white" if st.session_state.get("theme") == "light" else "plotly_dark"
 
+# ── כפתור התפריט (☰) ──
+with st.popover("\u2630  \u05ea\u05e4\u05e8\u05d9\u05d8", use_container_width=False):
+    st.markdown(f"""
+    <div style="padding:6px 4px 10px;text-align:center;
+                border-bottom:1px solid rgba(0,212,255,.15);margin-bottom:10px">
+      <div style="font-size:1.8rem;margin-bottom:4px">{ROLE_ICONS.get(role,"\U0001F464")}</div>
+      <div style="font-family:var(--orb);font-weight:700;font-size:.8rem;
+                  color:var(--cyan);letter-spacing:1px">{role}</div>
+      <div style="font-size:.62rem;color:var(--txt2);margin-top:2px;
+                  font-family:var(--mono)">\u05de\u05d7\u05d5\u05d1\u05e8 {elapsed_min} \u05d3\u05e7</div>
+    </div>
+    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
+                border-radius:10px;padding:8px 12px;margin:0 0 12px;
+                font-family:var(--mono);font-size:.66rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:var(--txt2)">\u05d4\u05d9\u05d5\u05dd:</span>
+        <span style="color:var(--cyan);font-weight:700">{today_side}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="color:var(--txt2)">\u05e4\u05d9\u05d2\u05d5\u05e8\u05d9\u05dd:</span>
+        <span style="color:{_ov_color};font-weight:700">{ov_side}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--txt2)">\u05e1\u05d4"\u05db:</span>
+        <span style="color:var(--txt);font-weight:700">{len(df_side)}</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    for _item in MENUS[role]:
+        if st.button(_item, key=f"nav_{_item}", use_container_width=True,
+                     type=("primary" if _item == choice else "secondary")):
+            st.session_state.page = _item
+            st.rerun()
+
+    st.markdown("---")
+    _is_dark = st.session_state.theme == "dark"
+    if st.button("\u2600\ufe0f \u05de\u05e6\u05d1 \u05d1\u05d4\u05d9\u05e8" if _is_dark else "\U0001F319 \u05de\u05e6\u05d1 \u05db\u05d4\u05d4",
+                 use_container_width=True, key="theme_btn"):
+        st.session_state.theme = "light" if _is_dark else "dark"
+        st.rerun()
+
+    if elapsed_min >= 50:
+        st.markdown(
+            f'<div class="al al-amber" style="font-size:.7rem;padding:6px 10px;margin:4px 0">'
+            f'\u05d4\u05e1\u05e9\u05df \u05d9\u05e4\u05d5\u05d2 \u05d1\u05e2\u05d5\u05d3 {60-elapsed_min} \u05d3\u05e7</div>',
+            unsafe_allow_html=True)
+
+    if st.button("\U0001F6AA \u05d4\u05ea\u05e0\u05ea\u05e7\u05d5\u05ea", use_container_width=True, key="logout_btn"):
+        st.session_state.user_role  = None
+        st.session_state.login_time = None
+        st.rerun()
+
+# ── \u05d1\u05d0\u05e0\u05e8 \u05d4\u05e2\u05de\u05d5\u05d3 ──
 st.markdown(
     f'<div class="mega-banner" style="padding:18px 32px;margin-bottom:20px">'
     f'<h1 style="font-size:1.4rem;letter-spacing:2px">{PAGE_ICONS.get(choice, choice)}</h1>'
