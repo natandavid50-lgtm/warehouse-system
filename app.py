@@ -1683,12 +1683,12 @@ def page_inventory():
     color_acc  = "#c084fc" if pct_acc  >= 98 else "#ffb800" if pct_acc  >= 90 else "#ff2d55"
 
     k1, k2, k3 = st.columns(3)
-    k1.markdown(kpi_card(f"{pct_skus}%", 'ספירת מק"טים',
+    k1.markdown(kpi_card(f"{pct_skus}%", 'ספירת איתורים',
                          sub=f'{skus_c:,} / {skus_t:,} מק"טים',
                          color=color_skus, icon="🏷️", kind="blue"), unsafe_allow_html=True)
     k1.markdown(pbar(pct_skus, color_skus, 10), unsafe_allow_html=True)
 
-    k2.markdown(kpi_card(f"{pct_locs}%", "ספירת איתורים",
+    k2.markdown(kpi_card(f"{pct_locs}%", 'ספירת מק"טים',
                          sub=f'{locs_c:,} / {locs_t:,} איתורים',
                          color=color_locs, icon="📍", kind="blue"), unsafe_allow_html=True)
     k2.markdown(pbar(pct_locs, color_locs, 10), unsafe_allow_html=True)
