@@ -1764,8 +1764,8 @@ def page_inventory():
                 subplot_titles=["מק\"טים","איתורים","דיוק"])
 
             for col_idx, (val, total, color, label) in enumerate([
-                (skus_c, skus_t, color_skus, "מק\"טים"),
-                (locs_c, locs_t, color_locs, "איתורים"),
+                (skus_c, skus_t, color_skus, "איתורים"),
+                (locs_c, locs_t, color_locs, "מק\"טים"),
                 (no_gap, max(locs_c,1), color_acc, "דיוק"),
             ], start=1):
                 remain = max(0, total - val)
