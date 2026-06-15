@@ -1734,7 +1734,7 @@ def page_inventory():
                 unsafe_allow_html=True)
 
         detail_row('איתורים שנספרו', skus_c, skus_t, color_skus)
-        detail_row("מק"טים שנספרו", locs_c, locs_t, color_locs)
+        detail_row('מק"טים שנספרו', locs_c, locs_t, color_locs)
         detail_row("איתורים ללא פער", no_gap, locs_c, color_acc)
 
         gap_count = locs_c - no_gap
