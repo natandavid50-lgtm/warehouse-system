@@ -1794,7 +1794,7 @@ def page_inventory():
             st.plotly_chart(fig, use_container_width=True)
 
             fig2 = go.Figure()
-            cats_bar = ["איתורים", "מק"טים"]
+            cats_bar = ["איתורים","מק\טים"]
             counted  = [skus_c, locs_c]
             remaining= [skus_t - skus_c, locs_t - locs_c]
             fig2.add_trace(go.Bar(
