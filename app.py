@@ -1761,7 +1761,7 @@ def page_inventory():
 
             fig = make_subplots(rows=1, cols=3,
                 specs=[[{"type":"pie"},{"type":"pie"},{"type":"pie"}]],
-                subplot_titles=["מק\"טים","איתורים","דיוק"])
+                subplot_titles=["איתורים","מק\"טים","דיוק"])
 
             for col_idx, (val, total, color, label) in enumerate([
                 (skus_c, skus_t, color_skus, "איתורים"),
