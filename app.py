@@ -1676,7 +1676,7 @@ def page_inventory():
 
     pct_skus = round(skus_c / skus_t * 100)
     pct_locs = round(locs_c / locs_t * 100)
-    pct_acc  = round(no_gap / max(skus_c, 1) * 100)
+    pct_acc  = round(no_gap / max(locs_c, 1) * 100)
 
     color_skus = "#00ff88" if pct_skus >= 90 else "#ffb800" if pct_skus >= 70 else "#ff2d55"
     color_locs = "#c9a84c" if pct_locs >= 90 else "#ffb800" if pct_locs >= 70 else "#ff2d55"
@@ -1694,7 +1694,7 @@ def page_inventory():
     k2.markdown(pbar(pct_locs, color_locs, 10), unsafe_allow_html=True)
 
     k3.markdown(kpi_card(f"{pct_acc}%", "דיוק ספירה",
-                         sub=f'{no_gap:,} ללא פער מתוך {skus_c:,}',
+                         sub=f'{no_gap:,} ללא פער מתוך {locs_c:,}',
                          color=color_acc, icon="🎯", kind="blue"), unsafe_allow_html=True)
     k3.markdown(pbar(pct_acc, color_acc, 10), unsafe_allow_html=True)
 
@@ -1735,10 +1735,10 @@ def page_inventory():
 
         detail_row('איתורים שנספרו', skus_c, skus_t, color_skus)
         detail_row('מק"טים שנספרו', locs_c, locs_t, color_locs)
-        detail_row("איתורים ללא פער", no_gap, skus_c, color_acc)
+        detail_row("איתורים ללא פער", no_gap, locs_c, color_acc)
 
-        gap_count = skus_c - no_gap
-        gap_pct   = round(gap_count / max(skus_c, 1) * 100)
+        gap_count = locs_c - no_gap
+        gap_pct   = round(gap_count / max(locs_c, 1) * 100)
         gap_color = "#ff2d55" if gap_pct > 10 else "#ffb800" if gap_pct > 5 else "#00ff88"
         st.markdown(
             f'<div style="background:var(--card2);border:1px solid rgba(255,45,85,.3);'
@@ -1766,7 +1766,7 @@ def page_inventory():
             for col_idx, (val, total, color, label) in enumerate([
                 (skus_c, skus_t, color_skus, "איתורים"),
                 (locs_c, locs_t, color_locs, "מק\"טים"),
-                (no_gap, max(skus_c,1), color_acc, "דיוק"),
+                (no_gap, max(locs_c,1), color_acc, "דיוק"),
             ], start=1):
                 remain = max(0, total - val)
                 pct_v  = round(val / max(total, 1) * 100)
@@ -1826,7 +1826,7 @@ def page_inventory():
             "חודש":      f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
             "מק\"טים %": round(int(r["skus_counted"]) / max(int(r["skus_total"]), 1) * 100),
             "איתורים %": round(int(r["locs_counted"]) / max(int(r["locs_total"]), 1) * 100),
-            "דיוק %":    round(int(r["no_gap"]) / max(int(r["skus_counted"]), 1) * 100),
+            "דיוק %":    round(int(r["no_gap"]) / max(int(r["locs_counted"]), 1) * 100),
         } for r in hist])
 
         fig_h = go.Figure()
@@ -1865,7 +1865,7 @@ def page_inventory():
                 "איתורים שנספרו":     r["locs_counted"],
                 "אחוז ספירת איתורים": f"{round(int(r['locs_counted'])/max(int(r['locs_total']),1)*100)}%",
                 "ללא פער":            r["no_gap"],
-                "אחוז דיוק":         f"{round(int(r['no_gap'])/max(int(r['skus_counted']),1)*100)}%",
+                "אחוז דיוק":         f"{round(int(r['no_gap'])/max(int(r['locs_counted']),1)*100)}%",
             })
         with pd.ExcelWriter(buf, engine="openpyxl") as w:
             pd.DataFrame(export_data).to_excel(w, index=False, sheet_name="ספירות מלאי")
