@@ -1157,41 +1157,31 @@ def page_dashboard():
                     mark_done(t["id"], t["date"]); st.rerun()
 
     # ════════════════════════════════════════════════════════════════════════════
-    #  תמצית נתונים — סקירה כללית מכל המערכת
+    #  תמצית נתונים — מצב נוכחי
     # ════════════════════════════════════════════════════════════════════════════
     sec_header("📊 תמצית נתונים")
 
-    # משימות להיום
     _today_tasks = tasks_for_date(df, today.date())
     _t_tot = len(_today_tasks)
     _t_don = sum(1 for t in _today_tasks if t["is_done"])
+    _t_pct = round(_t_don / _t_tot * 100) if _t_tot else 0
+    _t_color = "var(--green)" if _t_pct >= 80 else "var(--amber)" if _t_pct >= 50 else "var(--red)"
 
-    # משטחים באחסנה חיצונית
     _ext = db_load_external_storage()
     _total_pallets = sum(int(r.get("pallets", 0) or 0) for r in _ext)
 
-    # דיוק ספירות מלאי — חודש אחרון
-    _inv = db_load_inventory()
-    _inv_months = sorted({r["month"] for r in _inv}, reverse=True)
-    if _inv_months:
-        _agg = inv_aggregate(_inv, _inv_months[0])
-        _inv_acc = round(int(_agg["no_gap"]) / max(int(_agg["locs_counted"]), 1) * 100)
-        _inv_lbl = MONTHS_HE[int(_inv_months[0].split('-')[1])-1]
-    else:
-        _inv_acc, _inv_lbl = 0, "—"
-    _acc_color = "var(--green)" if _inv_acc >= 98 else "var(--amber)" if _inv_acc >= 90 else "var(--red)"
-
     o1, o2, o3, o4 = st.columns(4)
-    o1.markdown(kpi_card(f"{_t_don}/{_t_tot}", "משימות להיום", icon="📋",
+    o1.markdown(kpi_card(f"{_t_don}/{_t_tot}", "משימות להיום", icon="\U0001F4CB",
                          kind="blue"), unsafe_allow_html=True)
-    o2.markdown(kpi_card(f"{_total_pallets:,}", 'סה"כ משטחים (אחסנה חיצונית)', icon="📦",
-                         kind="green", color="var(--green)"), unsafe_allow_html=True)
-    o3.markdown(kpi_card(f"{_inv_acc}%", f"דיוק ספירות מלאי ({_inv_lbl})", icon="🎯",
-                         color=_acc_color, kind="blue"), unsafe_allow_html=True)
-    o4.markdown(kpi_card(len(overdue), "פיגורים", icon="🚨",
+    o2.markdown(kpi_card(f"{_t_pct}%", "ביצוע היום", icon="\U0001F4C8", color=_t_color,
+                         kind="green" if _t_pct >= 80 else "red"), unsafe_allow_html=True)
+    o3.markdown(kpi_card(len(overdue), "פיגורים", icon="\U0001F6A8",
                          kind="red", color="var(--red)"), unsafe_allow_html=True)
+    o4.markdown(kpi_card(f"{_total_pallets:,}", 'סה"כ משטחים (אחסנה חיצונית)', icon="\U0001F4E6",
+                         kind="green", color="var(--green)"), unsafe_allow_html=True)
 
     # ── ניתוח חודשי ──
+    _inv = db_load_inventory()
     _cur_month = today.strftime("%Y-%m")
     _m_tot = _m_don = 0
     for _d in range(1, today.day + 1):
@@ -1208,25 +1198,27 @@ def page_dashboard():
     _cur_has_inv = _cur_month in {r["month"] for r in _inv}
     if _cur_has_inv:
         _ca = inv_aggregate(_inv, _cur_month)
-        _cur_acc = round(int(_ca["no_gap"]) / max(int(_ca["locs_counted"]), 1) * 100)
-        _cur_skus = round(int(_ca["skus_counted"]) / max(int(_ca["skus_total"]), 1) * 100)
+        _cur_acc   = round(int(_ca["no_gap"]) / max(int(_ca["locs_counted"]), 1) * 100)
+        _cur_makat = round(int(_ca["locs_counted"]) / max(int(_ca["locs_total"]), 1) * 100)
+        _cur_itur  = round(int(_ca["skus_counted"]) / max(int(_ca["skus_total"]), 1) * 100)
     else:
-        _cur_acc = _cur_skus = 0
+        _cur_acc = _cur_makat = _cur_itur = 0
+
+    def _ac(p):
+        return "var(--green)" if p >= 98 else "var(--amber)" if p >= 90 else "var(--red)"
 
     st.markdown("---")
-    sec_header(f"📅 ניתוח חודשי — {MONTHS_HE[today.month-1]} {today.year}")
+    sec_header(f"\U0001F4C5 ניתוח חודשי \u2014 {MONTHS_HE[today.month-1]} {today.year}")
     m1, m2, m3, m4 = st.columns(4)
     m1.markdown(kpi_card(f"{_m_pct}%", "ביצוע משימות החודש",
-                         sub=f"{_m_don:,}/{_m_tot:,} משימות", icon="📈",
+                         sub=f"{_m_don:,}/{_m_tot:,} משימות", icon="\U0001F4C8",
                          kind="green" if _m_pct >= 80 else "red", color=_m_color), unsafe_allow_html=True)
-    m2.markdown(kpi_card(f"{_cur_acc}%" if _cur_has_inv else "—", "דיוק ספירות החודש",
-                         icon="🎯", kind="blue",
-                         color="var(--green)" if _cur_acc >= 98 else "var(--amber)" if _cur_acc >= 90 else "var(--red)"),
-                unsafe_allow_html=True)
-    m3.markdown(kpi_card(f"{_cur_skus}%" if _cur_has_inv else "—", "ספירת מק\"טים החודש",
-                         icon="🏷️", kind="blue"), unsafe_allow_html=True)
-    m4.markdown(kpi_card(f"{_total_pallets:,}", "משטחים באחסנה", icon="📦",
-                         kind="green", color="var(--green)"), unsafe_allow_html=True)
+    m2.markdown(kpi_card(f"{_cur_acc}%" if _cur_has_inv else "\u2014", "דיוק ספירות החודש",
+                         icon="\U0001F3AF", kind="blue", color=_ac(_cur_acc)), unsafe_allow_html=True)
+    m3.markdown(kpi_card(f"{_cur_makat}%" if _cur_has_inv else "\u2014", 'ספירת מק"טים החודש',
+                         icon="\U0001F3F7\ufe0f", kind="blue"), unsafe_allow_html=True)
+    m4.markdown(kpi_card(f"{_cur_itur}%" if _cur_has_inv else "\u2014", "ספירת איתורים החודש",
+                         icon="\U0001F4CD", kind="blue"), unsafe_allow_html=True)
     st.markdown(f'<div style="margin:8px 0 4px">{pbar(_m_pct, _m_color, 8)}</div>',
                 unsafe_allow_html=True)
 
