@@ -1696,10 +1696,15 @@ def page_inventory():
                         help="מספר האיתורים שהספירה תאמה בדיוק את מה שהיה במערכת")
 
                     if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
-                        db_save_inventory(sel_month, sel_zone, skus_total, skus_counted,
-                                          locs_total, locs_counted, no_gap)
-                        st.success("✅ נתונים נשמרו!")
-                        st.rerun()
+                        try:
+                            db_save_inventory(sel_month, sel_zone, skus_total, skus_counted,
+                                              locs_total, locs_counted, no_gap)
+                            st.success("✅ נתונים נשמרו!")
+                            st.rerun()
+                        except Exception:
+                            st.error("❌ לא ניתן לשמור. ודא שהרצת את "
+                                     "inventory_zones_supabase.sql ב-Supabase "
+                                     "(הוספת עמודת אזור + הסרת אילוץ הייחודיות הישן).")
 
         rec = next((r for r in db_load_inventory()
                     if r["month"] == sel_month and r.get("zone") == sel_zone), rec)
