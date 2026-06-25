@@ -1701,10 +1701,9 @@ def page_inventory():
                                               locs_total, locs_counted, no_gap)
                             st.success("✅ נתונים נשמרו!")
                             st.rerun()
-                        except Exception:
-                            st.error("❌ לא ניתן לשמור. ודא שהרצת את "
-                                     "inventory_zones_supabase.sql ב-Supabase "
-                                     "(הוספת עמודת אזור + הסרת אילוץ הייחודיות הישן).")
+                        except Exception as e:
+                            st.error("❌ לא ניתן לשמור.")
+                            st.caption(f"פירוט השגיאה: {str(e)[:400]}")
 
         rec = next((r for r in db_load_inventory()
                     if r["month"] == sel_month and r.get("zone") == sel_zone), rec)
