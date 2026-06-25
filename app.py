@@ -1750,6 +1750,47 @@ def page_inventory():
                          color=color_acc, icon="🎯", kind="blue"), unsafe_allow_html=True)
     k3.markdown(pbar(pct_acc, color_acc, 10), unsafe_allow_html=True)
 
+    # ── גלגלי דיוק לפי אזור (בתצוגת "כללי" בלבד) ──────────────────────────────
+    if is_combined:
+        st.markdown("---")
+        sec_header("🎯 דיוק ספירה לפי אזור")
+        zcols = st.columns(len(INV_ZONES))
+        for zc, zname in zip(zcols, INV_ZONES):
+            zrec = next((r for r in inventory
+                         if r["month"] == sel_month and r.get("zone") == zname), None)
+            z_locs = int(zrec["locs_counted"]) if zrec else 0
+            z_nogap = int(zrec["no_gap"]) if zrec else 0
+            z_acc = round(z_nogap / max(z_locs, 1) * 100) if z_locs else 0
+            z_color = "#c084fc" if z_acc >= 98 else "#ffb800" if z_acc >= 90 else "#ff2d55"
+            if HAS_PLOTLY:
+                gfig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=z_acc,
+                    number={"suffix": "%", "font": {"size": 26, "color": z_color,
+                                                    "family": "Orbitron"}},
+                    title={"text": zname, "font": {"size": 13, "color": "#e2eeff",
+                                                   "family": "Heebo"}},
+                    gauge={
+                        "axis": {"range": [0, 100], "tickcolor": "#8899aa"},
+                        "bar": {"color": z_color},
+                        "bgcolor": "rgba(0,0,0,0)",
+                        "borderwidth": 1, "bordercolor": "rgba(255,255,255,.1)",
+                        "steps": [{"range": [0, 100], "color": "rgba(255,255,255,.04)"}],
+                        "threshold": {"line": {"color": "#c084fc", "width": 2},
+                                      "thickness": 0.75, "value": 95},
+                    }))
+                gfig.update_layout(paper_bgcolor="rgba(0,0,0,0)", height=210,
+                                   margin=dict(t=40, b=10, l=20, r=20),
+                                   font=dict(family="Heebo"))
+                zc.plotly_chart(gfig, use_container_width=True)
+            else:
+                zc.markdown(kpi_card(f"{z_acc}%", zname, icon="🎯",
+                                     color=z_color, kind="blue"), unsafe_allow_html=True)
+            zc.markdown(
+                f'<div style="text-align:center;color:var(--txt2);font-size:.72rem;'
+                f'margin-top:-6px">{z_nogap:,} ללא פער מתוך {z_locs:,}</div>',
+                unsafe_allow_html=True)
+
     st.markdown("---")
 
     left_col, right_col = st.columns([3, 4])
