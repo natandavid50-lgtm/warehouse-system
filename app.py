@@ -1703,7 +1703,7 @@ def page_inventory():
                             st.rerun()
                         except Exception as e:
                             st.error("❌ לא ניתן לשמור.")
-                            st.caption(f"פירוט השגיאה: {str(e)[:400]}")
+                            st.code(repr(e)[:600] or "שגיאה לא ידועה")
 
         rec = next((r for r in db_load_inventory()
                     if r["month"] == sel_month and r.get("zone") == sel_zone), rec)
