@@ -637,25 +637,51 @@ def db_mark_done(task_id, done_dates_str):
     supabase.table("tasks").update({"done_dates": done_dates_str}).eq("id", task_id).execute()
 
 # ── Inventory ──────────────────────────────────────────────────────────────────
+INV_ZONES = ["אזור יבש", "אזור קפוא ‎-18°", "אזור קירור ‎4°"]
+
 def db_load_inventory() -> list:
     try:
         supabase = get_conn()
         res = supabase.table("inventory").select("*").order("month", desc=True).execute()
-        return res.data if res.data else []
+        rows = res.data if res.data else []
+        for r in rows:                       # נרמול: רשומות ישנות ללא אזור
+            if not r.get("zone"):
+                r["zone"] = INV_ZONES[0]
+        return rows
     except Exception as e:
         return []
 
-def db_save_inventory(month, skus_total, skus_counted, locs_total, locs_counted, no_gap):
+def db_save_inventory(month, zone, skus_total, skus_counted, locs_total, locs_counted, no_gap):
     supabase = get_conn()
     data = {
-        "month": month,
+        "month": month, "zone": zone,
         "skus_total": int(skus_total),
         "skus_counted": int(skus_counted),
         "locs_total": int(locs_total),
         "locs_counted": int(locs_counted),
-        "no_gap": int(no_gap)
+        "no_gap": int(no_gap),
     }
-    supabase.table("inventory").upsert(data, on_conflict="month").execute()
+    # מחיקה+הוספה (חודש+אזור) — עמיד ולא תלוי באילוץ on_conflict
+    supabase.table("inventory").delete().eq("month", month).eq("zone", zone).execute()
+    supabase.table("inventory").insert(data).execute()
+
+def inv_blank(month, zone=None):
+    d = {"month": month, "skus_total": 0, "skus_counted": 0,
+         "locs_total": 0, "locs_counted": 0, "no_gap": 0}
+    if zone is not None:
+        d["zone"] = zone
+    return d
+
+def inv_aggregate(rows: list, month: str) -> dict:
+    """מסכם את כל אזורי החודש לרשומה אחת (תצוגת 'כללי')."""
+    agg = inv_blank(month, zone="כללי")
+    for r in rows:
+        if r.get("month") != month:
+            continue
+        for f in ("skus_total", "skus_counted", "locs_total", "locs_counted", "no_gap"):
+            agg[f] += int(r.get(f) or 0)
+    return agg
+
 
 # ── Count Plan (תוכנית ספירה) ─────────────────────────────────────────────────
 def db_load_count_plan(month) -> list:
@@ -1099,7 +1125,7 @@ def login_screen():
 
     st.markdown("---")
     df = db_load_tasks()
-    inv_count = len(db_load_inventory())
+    inv_count = len({r["month"] for r in db_load_inventory()})
     c1, c2, c3 = st.columns(3)
     c1.markdown(kpi_card(len(df), "משימות במערכת", icon="📋", kind="blue"), unsafe_allow_html=True)
     c2.markdown(kpi_card(len(get_overdue()), "פיגורים", icon="⚠️", kind="red", color="var(--red)"), unsafe_allow_html=True)
@@ -1623,50 +1649,72 @@ def page_inventory():
         month_options.append(f"{dt.year}-{dt.month:02d}")
     month_options = list(dict.fromkeys(month_options))
 
-    col_sel, col_new = st.columns([2, 3])
+    col_sel, col_zone = st.columns([2, 3])
     sel_month = col_sel.selectbox(
         "📅 בחר חודש לצפייה / עריכה",
         month_options,
         format_func=lambda x: f"{MONTHS_HE[int(x.split('-')[1])-1]} {x.split('-')[0]}"
     )
+    sel_zone = col_zone.radio(
+        "🗂️ אזור ספירה", ["כללי"] + INV_ZONES, horizontal=True,
+        help="«כללי» מסכם את כל האזורים יחד. בחר אזור ספציפי כדי לצפות/לערוך אותו.")
 
-    rec = next((r for r in inventory if r["month"] == sel_month), None)
-    if rec is None:
-        rec = {"month": sel_month,
-               "skus_total": 0, "skus_counted": 0,
-               "locs_total": 0, "locs_counted": 0, "no_gap": 0}
+    is_combined = (sel_zone == "כללי")
 
-    if st.session_state.user_role == "מנהל WMS":
-        with st.expander("✏️ הזן / עדכן נתוני ספירה לחודש זה", expanded=(rec["skus_total"] == 0)):
-            with st.form("inv_form"):
-                st.markdown(f"##### עדכון נתוני ספירה — "
-                            f"{MONTHS_HE[int(sel_month.split('-')[1])-1]} {sel_month.split('-')[0]}")
-                st.markdown("---")
-                st.markdown("**מק\"טים (SKUs)**")
-                c1, c2 = st.columns(2)
-                skus_total   = c1.number_input('סך מק"טים במחסן',   min_value=0, value=int(rec["skus_total"]),   step=1)
-                skus_counted = c2.number_input('מק"טים שנספרו',      min_value=0, value=int(rec["skus_counted"]), step=1)
+    if is_combined:
+        rec = inv_aggregate(inventory, sel_month)
+        st.markdown('<div class="al al-cyan" style="font-size:.85rem">📊 תצוגת '
+                    '<b>כללי</b> — סיכום כל אזורי הספירה יחד (לצפייה בלבד). '
+                    'לעריכה, בחר אזור ספציפי למעלה.</div>', unsafe_allow_html=True)
+    else:
+        rec = next((r for r in inventory
+                    if r["month"] == sel_month and r.get("zone") == sel_zone), None)
+        if rec is None:
+            rec = inv_blank(sel_month, zone=sel_zone)
 
-                st.markdown("**איתורים (Locations)**")
-                c3, c4 = st.columns(2)
-                locs_total   = c3.number_input("סך איתורים במחסן",   min_value=0, value=int(rec["locs_total"]),   step=1)
-                locs_counted = c4.number_input("איתורים שנספרו",      min_value=0, value=int(rec["locs_counted"]), step=1)
+        if st.session_state.user_role == "מנהל WMS":
+            with st.expander(f"✏️ הזן / עדכן נתוני ספירה — {sel_zone}",
+                             expanded=(int(rec["skus_total"]) == 0)):
+                with st.form("inv_form"):
+                    st.markdown(f"##### עדכון נתוני ספירה — {sel_zone} · "
+                                f"{MONTHS_HE[int(sel_month.split('-')[1])-1]} {sel_month.split('-')[0]}")
+                    st.markdown("---")
+                    st.markdown("**מק\"טים (SKUs)**")
+                    c1, c2 = st.columns(2)
+                    skus_total   = c1.number_input('סך מק"טים במחסן',   min_value=0, value=int(rec["skus_total"]),   step=1)
+                    skus_counted = c2.number_input('מק"טים שנספרו',      min_value=0, value=int(rec["skus_counted"]), step=1)
 
-                st.markdown("**דיוק**")
-                no_gap = st.number_input(
-                    "איתורים שנספרו ללא פער (מתוך שנספרו)",
-                    min_value=0, value=int(rec["no_gap"]), step=1,
-                    help="מספר האיתורים שהספירה תאמה בדיוק את מה שהיה במערכת")
+                    st.markdown("**איתורים (Locations)**")
+                    c3, c4 = st.columns(2)
+                    locs_total   = c3.number_input("סך איתורים במחסן",   min_value=0, value=int(rec["locs_total"]),   step=1)
+                    locs_counted = c4.number_input("איתורים שנספרו",      min_value=0, value=int(rec["locs_counted"]), step=1)
 
-                if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
-                    db_save_inventory(sel_month, skus_total, skus_counted,
-                                      locs_total, locs_counted, no_gap)
-                    st.success("✅ נתונים נשמרו!")
-                    st.rerun()
+                    st.markdown("**דיוק**")
+                    no_gap = st.number_input(
+                        "איתורים שנספרו ללא פער (מתוך שנספרו)",
+                        min_value=0, value=int(rec["no_gap"]), step=1,
+                        help="מספר האיתורים שהספירה תאמה בדיוק את מה שהיה במערכת")
 
-    rec = next((r for r in db_load_inventory() if r["month"] == sel_month), rec)
+                    if st.form_submit_button("💾 שמור נתונים", use_container_width=True):
+                        db_save_inventory(sel_month, sel_zone, skus_total, skus_counted,
+                                          locs_total, locs_counted, no_gap)
+                        st.success("✅ נתונים נשמרו!")
+                        st.rerun()
 
-    st.markdown("---")
+        rec = next((r for r in db_load_inventory()
+                    if r["month"] == sel_month and r.get("zone") == sel_zone), rec)
+
+    _zlabel = "כל האזורים" if is_combined else sel_zone
+    _zcolor = "var(--green)" if is_combined else "var(--cyan)"
+    st.markdown(
+        f'<div style="background:rgba(0,212,255,.06);border:1px solid var(--b1);'
+        f'border-right:4px solid {_zcolor};border-radius:12px;padding:11px 18px;'
+        f'margin:14px 0;display:flex;justify-content:space-between;align-items:center">'
+        f'<span style="font-family:var(--orb);font-weight:700;color:{_zcolor};'
+        f'font-size:.95rem">🗂️ {_zlabel}</span>'
+        f'<span style="color:var(--txt2);font-family:var(--mono);font-size:.8rem">'
+        f'{MONTHS_HE[int(sel_month.split("-")[1])-1]} {sel_month.split("-")[0]}</span></div>',
+        unsafe_allow_html=True)
 
     skus_t = max(int(rec["skus_total"]),   1)
     skus_c = int(rec["skus_counted"])
@@ -1818,10 +1866,12 @@ def page_inventory():
                 xaxis=dict(gridcolor="rgba(255,255,255,.03)"))
             st.plotly_chart(fig2, use_container_width=True)
 
-    if len(db_load_inventory()) >= 2 and HAS_PLOTLY:
+    _inv_all = db_load_inventory()
+    _inv_months = sorted({r["month"] for r in _inv_all})
+    if len(_inv_months) >= 2 and HAS_PLOTLY:
         st.markdown("---")
-        sec_header("📈 מגמה היסטורית")
-        hist = sorted(db_load_inventory(), key=lambda x: x["month"])
+        sec_header("📈 מגמה היסטורית (כל האזורים יחד)")
+        hist = [inv_aggregate(_inv_all, m) for m in _inv_months]
         hdf = pd.DataFrame([{
             "חודש":      f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
             "מק\"טים %": round(int(r["skus_counted"]) / max(int(r["skus_total"]), 1) * 100),
@@ -1855,9 +1905,10 @@ def page_inventory():
     if db_load_inventory():
         buf = io.BytesIO()
         export_data = []
-        for r in sorted(db_load_inventory(), key=lambda x: x["month"], reverse=True):
+        for r in sorted(db_load_inventory(), key=lambda x: (x["month"], x.get("zone", "")), reverse=True):
             export_data.append({
                 "חודש":               f"{MONTHS_HE[int(r['month'].split('-')[1])-1]} {r['month'].split('-')[0]}",
+                "אזור":               r.get("zone", ""),
                 'סך מק"טים':         r["skus_total"],
                 'מק"טים שנספרו':      r["skus_counted"],
                 'אחוז ספירת מק"טים': f"{round(int(r['skus_counted'])/max(int(r['skus_total']),1)*100)}%",
