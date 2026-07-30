@@ -1090,7 +1090,7 @@ def check_timeout():
 def login_screen():
     st.markdown("""
     <div class="mega-banner">
-      <h1>⬡ אחים כהן · WMS ⬡</h1>
+      <h1>⬡ . · WMS ⬡</h1>
       <div class="sub">
         <span class="live-dot"></span>
         מערכת ניהול מחסן מתקדמת
