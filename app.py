@@ -27,7 +27,7 @@ except ImportError:
 #  CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="WMS • אחים כהן",
+    page_title="WMS • Task Flow",
     layout="wide",
     initial_sidebar_state="collapsed",
     page_icon="📦",
@@ -1091,7 +1091,7 @@ def check_timeout():
 def login_screen():
     st.markdown("""
     <div class="mega-banner">
-      <h1>⬡ אחים כהן · WMS ⬡</h1>
+      <h1>⬡ Task Flow · WMS ⬡</h1>
       <div class="sub">
         <span class="live-dot"></span>
         מערכת ניהול מחסן מתקדמת
