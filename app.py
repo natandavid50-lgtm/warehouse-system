@@ -3,16 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import calendar as cal_lib
 import io
-import hashlib
-import random
 
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
-    
-    pio.templates.default = "plotly_dark"
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
