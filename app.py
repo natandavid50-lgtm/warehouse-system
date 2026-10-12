@@ -2,7 +2,35 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import calendar as cal_lib
+import io
+import hashlib
+import random
 
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    import plotly.io as pio  # 🎯 1. הוספנו את הייבוא של ה-io של פלוטלי
+    
+    pio.templates.default = "plotly_dark"
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
+
+try:
+    from streamlit_calendar import calendar as st_calendar
+    HAS_CAL = True
+except ImportError:
+    HAS_CAL = False
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  CONFIG
+# ═══════════════════════════════════════════════════════════════════════════════
+st.set_page_config(
+    page_title="WMS • אחים כהן",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    page_icon="📦",
 )
 
 ADMIN_HASH = hashlib.sha256(b"1234").hexdigest()
@@ -1063,7 +1091,7 @@ def check_timeout():
 def login_screen():
     st.markdown("""
     <div class="mega-banner">
-      <h1>⬡ Task Flow · WMS ⬡</h1>
+      <h1>⬡ אחים כהן · WMS ⬡</h1>
       <div class="sub">
         <span class="live-dot"></span>
         מערכת ניהול מחסן מתקדמת
